@@ -4,55 +4,91 @@ import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { MODES, type DiagramMode } from "@/lib/modes";
+import type { DiagramStyle } from "@/lib/styles";
 
 interface ShapeItem {
   type: string;
   label: string;
-  icon: React.ReactNode;
-  color: string;
+  // Function to render icon based on style
+  renderIcon: (style: DiagramStyle) => React.ReactNode;
+  colorfulBg: string;
 }
 
 const playgroundShapes: ShapeItem[] = [
   {
     type: "rectangle",
     label: "Rectangle",
-    icon: <div className="w-8 h-6 border-2 border-gray-500 bg-white rounded" />,
-    color: "bg-gray-50",
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-8 h-6",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-gray-500 bg-white rounded"
+        )}
+      />
+    ),
+    colorfulBg: "bg-gray-50",
   },
   {
     type: "circle",
     label: "Circle",
-    icon: <div className="w-7 h-7 border-2 border-green-500 bg-white rounded-full" />,
-    color: "bg-green-50",
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-7 h-7",
+          style === "engineering"
+            ? "border-2 border-black bg-white rounded-full"
+            : "border-2 border-green-500 bg-white rounded-full"
+        )}
+      />
+    ),
+    colorfulBg: "bg-green-50",
   },
   {
     type: "diamond",
     label: "Diamond",
-    icon: (
-      <div className="w-6 h-6 border-2 border-orange-500 bg-white rotate-45" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-6 h-6 rotate-45",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-orange-500 bg-white"
+        )}
+      />
     ),
-    color: "bg-orange-50",
+    colorfulBg: "bg-orange-50",
   },
   {
     type: "triangle",
     label: "Triangle",
-    icon: (
+    renderIcon: (style) => (
       <svg viewBox="0 0 24 24" className="w-7 h-7">
         <polygon
           points="12,4 22,20 2,20"
           fill="white"
-          stroke="rgb(168 85 247)"
+          stroke={style === "engineering" ? "black" : "rgb(168 85 247)"}
           strokeWidth="2"
         />
       </svg>
     ),
-    color: "bg-purple-50",
+    colorfulBg: "bg-purple-50",
   },
   {
     type: "text",
     label: "Text",
-    icon: <span className="text-sm font-bold text-gray-600">Aa</span>,
-    color: "bg-gray-50",
+    renderIcon: (style) => (
+      <span
+        className={cn(
+          "text-sm font-bold",
+          style === "engineering" ? "text-black" : "text-gray-600"
+        )}
+      >
+        Aa
+      </span>
+    ),
+    colorfulBg: "bg-gray-50",
   },
 ];
 
@@ -60,24 +96,47 @@ const bfdShapes: ShapeItem[] = [
   {
     type: "process_block",
     label: "Process Block",
-    icon: <div className="w-10 h-6 border-2 border-blue-500 bg-blue-100 rounded" />,
-    color: "bg-blue-50",
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-10 h-6",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-blue-500 bg-blue-100 rounded"
+        )}
+      />
+    ),
+    colorfulBg: "bg-blue-50",
   },
   {
     type: "input_output",
     label: "Input/Output",
-    icon: (
-      <div className="w-10 h-5 border-2 border-green-500 bg-green-100 rounded-full" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-10 h-5",
+          style === "engineering"
+            ? "border-2 border-black bg-white rounded-full"
+            : "border-2 border-green-500 bg-green-100 rounded-full"
+        )}
+      />
     ),
-    color: "bg-green-50",
+    colorfulBg: "bg-green-50",
   },
   {
     type: "storage",
     label: "Storage",
-    icon: (
-      <div className="w-8 h-6 border-2 border-amber-500 bg-amber-100 rounded border-b-4" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-8 h-6",
+          style === "engineering"
+            ? "border-2 border-black bg-white border-b-4"
+            : "border-2 border-amber-500 bg-amber-100 rounded border-b-4"
+        )}
+      />
     ),
-    color: "bg-amber-50",
+    colorfulBg: "bg-amber-50",
   },
 ];
 
@@ -85,98 +144,156 @@ const pfdShapes: ShapeItem[] = [
   {
     type: "reactor",
     label: "Reactor",
-    icon: <div className="w-8 h-6 border-2 border-blue-600 bg-blue-100 rounded" />,
-    color: "bg-blue-50",
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-8 h-6",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-blue-600 bg-blue-100 rounded"
+        )}
+      />
+    ),
+    colorfulBg: "bg-blue-50",
   },
   {
     type: "tank",
     label: "Tank",
-    icon: (
-      <div className="w-7 h-7 border-2 border-cyan-600 bg-cyan-100 rounded-xl border-b-4" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-7 h-7",
+          style === "engineering"
+            ? "border-2 border-black bg-white border-b-4"
+            : "border-2 border-cyan-600 bg-cyan-100 rounded-xl border-b-4"
+        )}
+      />
     ),
-    color: "bg-cyan-50",
+    colorfulBg: "bg-cyan-50",
   },
   {
     type: "vessel",
     label: "Vessel",
-    icon: (
-      <div className="w-5 h-8 border-2 border-cyan-500 bg-cyan-50 rounded-xl" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-5 h-8",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-cyan-500 bg-cyan-50 rounded-xl"
+        )}
+      />
     ),
-    color: "bg-cyan-50",
+    colorfulBg: "bg-cyan-50",
   },
   {
     type: "pump",
     label: "Pump",
-    icon: (
-      <div className="w-6 h-6 border-2 border-green-600 bg-green-100 rounded-full" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-6 h-6 rounded-full",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-green-600 bg-green-100"
+        )}
+      />
     ),
-    color: "bg-green-50",
+    colorfulBg: "bg-green-50",
   },
   {
     type: "compressor",
     label: "Compressor",
-    icon: (
+    renderIcon: (style) => (
       <div
-        className="w-8 h-6 border-2 border-yellow-600 bg-yellow-100"
+        className={cn(
+          "w-8 h-6",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-yellow-600 bg-yellow-100"
+        )}
         style={{
           clipPath:
             "polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)",
         }}
       />
     ),
-    color: "bg-yellow-50",
+    colorfulBg: "bg-yellow-50",
   },
   {
     type: "heat_exchanger",
     label: "Heat Exchanger",
-    icon: (
-      <div className="w-6 h-6 border-2 border-orange-600 bg-orange-100 rotate-45" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-6 h-6 rotate-45",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-orange-600 bg-orange-100"
+        )}
+      />
     ),
-    color: "bg-orange-50",
+    colorfulBg: "bg-orange-50",
   },
   {
     type: "column",
     label: "Column",
-    icon: (
-      <div className="w-4 h-8 border-2 border-teal-600 bg-teal-100 rounded-t-full rounded-b" />
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-4 h-8",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-teal-600 bg-teal-100 rounded-t-full rounded-b"
+        )}
+      />
     ),
-    color: "bg-teal-50",
+    colorfulBg: "bg-teal-50",
   },
   {
     type: "valve",
     label: "Valve",
-    icon: <div className="w-4 h-4 border-2 border-gray-600 bg-gray-200 rotate-45" />,
-    color: "bg-gray-50",
+    renderIcon: (style) => (
+      <div
+        className={cn(
+          "w-4 h-4 rotate-45",
+          style === "engineering"
+            ? "border-2 border-black bg-white"
+            : "border-2 border-gray-600 bg-gray-200"
+        )}
+      />
+    ),
+    colorfulBg: "bg-gray-50",
   },
   {
     type: "mixer",
     label: "Mixer",
-    icon: (
+    renderIcon: (style) => (
       <svg viewBox="0 0 24 24" className="w-6 h-6">
         <polygon
           points="0,0 24,12 0,24"
-          fill="rgb(243 232 255)"
-          stroke="rgb(126 34 206)"
+          fill={style === "engineering" ? "white" : "rgb(243 232 255)"}
+          stroke={style === "engineering" ? "black" : "rgb(126 34 206)"}
           strokeWidth="2"
         />
       </svg>
     ),
-    color: "bg-purple-50",
+    colorfulBg: "bg-purple-50",
   },
   {
     type: "splitter",
     label: "Splitter",
-    icon: (
+    renderIcon: (style) => (
       <svg viewBox="0 0 24 24" className="w-6 h-6">
         <polygon
           points="24,0 0,12 24,24"
-          fill="rgb(243 232 255)"
-          stroke="rgb(126 34 206)"
+          fill={style === "engineering" ? "white" : "rgb(243 232 255)"}
+          stroke={style === "engineering" ? "black" : "rgb(126 34 206)"}
           strokeWidth="2"
         />
       </svg>
     ),
-    color: "bg-purple-50",
+    colorfulBg: "bg-purple-50",
   },
 ];
 
@@ -188,9 +305,10 @@ const shapesByMode: Record<DiagramMode, ShapeItem[]> = {
 
 interface DraggableShapeProps {
   item: ShapeItem;
+  style: DiagramStyle;
 }
 
-const DraggableShape = memo(function DraggableShape({ item }: DraggableShapeProps) {
+const DraggableShape = memo(function DraggableShape({ item, style }: DraggableShapeProps) {
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
     event.dataTransfer.setData("application/reactflow/type", nodeType);
     event.dataTransfer.setData("application/reactflow/label", label);
@@ -211,10 +329,10 @@ const DraggableShape = memo(function DraggableShape({ item }: DraggableShapeProp
       <div
         className={cn(
           "w-12 h-12 flex items-center justify-center rounded-md",
-          item.color
+          style === "engineering" ? "bg-gray-50" : item.colorfulBg
         )}
       >
-        {item.icon}
+        {item.renderIcon(style)}
       </div>
       <span className="text-[10px] text-gray-600 text-center leading-tight">
         {item.label}
@@ -224,7 +342,7 @@ const DraggableShape = memo(function DraggableShape({ item }: DraggableShapeProp
 });
 
 export function ShapeToolbar() {
-  const { mode } = useDiagramStore();
+  const { mode, style } = useDiagramStore();
   const shapes = shapesByMode[mode];
   const modeConfig = MODES[mode];
 
@@ -237,7 +355,7 @@ export function ShapeToolbar() {
       <div className="flex-1 overflow-y-auto p-2">
         <div className="grid grid-cols-2 gap-1">
           {shapes.map((item) => (
-            <DraggableShape key={item.type} item={item} />
+            <DraggableShape key={item.type} item={item} style={style} />
           ))}
         </div>
       </div>
