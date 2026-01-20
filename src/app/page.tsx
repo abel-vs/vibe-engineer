@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
+import ReactMarkdown from "react-markdown";
 
 export default function DiagramPage() {
   const flowRef = useRef<HTMLDivElement>(null);
@@ -314,9 +315,9 @@ export default function DiagramPage() {
                         </div>
                       )}
                       {!isProcessing && lastResponse && (
-                        <p className="text-sm text-green-600 mt-1">
-                          {lastResponse}
-                        </p>
+                        <div className="text-sm text-green-600 mt-1 prose prose-sm prose-green max-w-none">
+                          <ReactMarkdown>{lastResponse}</ReactMarkdown>
+                        </div>
                       )}
                       {!isProcessing && error && (
                         <p className="text-sm text-red-500 mt-1">{error}</p>
