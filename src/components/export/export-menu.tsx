@@ -11,8 +11,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Download, FileImage, FileCode, FileText, Loader2 } from "lucide-react";
+import { Download, FileImage, FileCode, FileText, Loader2, FileType } from "lucide-react";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { reactFlowToDexpi, canExportToDexpi, getExportWarnings } from "@/lib/dexpi";
 
 interface ExportMenuProps {
   flowRef: React.RefObject<HTMLDivElement | null>;
@@ -133,6 +134,41 @@ export function ExportMenu({ flowRef }: ExportMenuProps) {
     URL.revokeObjectURL(url);
   }, [mode, nodes, edges]);
 
+  const exportToDexpi = useCallback(() => {
+    if (!canExportToDexpi(mode)) {
+      console.warn("DEXPI export is only available for BFD and PFD modes");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Check for warnings
+      const warnings = getExportWarnings(nodes, mode);
+      if (warnings.length > 0) {
+        console.warn("DEXPI Export Warnings:", warnings);
+      }
+
+      // Generate DEXPI XML
+      const xml = reactFlowToDexpi(nodes, edges, mode, {
+        name: `${mode.toUpperCase()} Diagram`,
+        description: `Exported from Voice Diagram on ${new Date().toLocaleDateString()}`,
+      });
+
+      // Download as file
+      const blob = new Blob([xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, `diagram-${Date.now()}.dexpi.xml`);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to export DEXPI XML:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [mode, nodes, edges]);
+
+  // Check if DEXPI export is available
+  const isDexpiAvailable = canExportToDexpi(mode);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -162,6 +198,15 @@ export function ExportMenu({ flowRef }: ExportMenuProps) {
         <DropdownMenuItem onClick={exportToJson}>
           <FileCode className="w-4 h-4 mr-2" />
           Export as JSON
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={exportToDexpi}
+          disabled={!isDexpiAvailable}
+          title={!isDexpiAvailable ? "DEXPI export is only available for BFD and PFD modes" : undefined}
+        >
+          <FileType className="w-4 h-4 mr-2" />
+          Export as DEXPI XML
+          {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD only)</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

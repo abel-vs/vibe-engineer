@@ -1,0 +1,126 @@
+{
+  "mode": "bfd",
+  "style": "colorful",
+  "nodes": [
+    {
+      "id": "feed_raw_material",
+      "type": "input_output",
+      "position": { "x": 50, "y": 200 },
+      "data": {
+        "label": "Raw Material Feed"
+      }
+    },
+    {
+      "id": "unit_reactor",
+      "type": "process_block",
+      "position": { "x": 250, "y": 150 },
+      "data": {
+        "label": "UNIT-100: Reactor",
+        "description": "Cracking reactor for ethylene production",
+        "properties": {
+          "temperature": "850 °C",
+          "pressure": "1.5 bar"
+        }
+      }
+    },
+    {
+      "id": "unit_separator",
+      "type": "process_block",
+      "position": { "x": 450, "y": 150 },
+      "data": {
+        "label": "UNIT-200: Separator",
+        "description": "Separation unit for product purification"
+      }
+    },
+    {
+      "id": "unit_storage",
+      "type": "storage",
+      "position": { "x": 650, "y": 150 },
+      "data": {
+        "label": "UNIT-300: Product Storage",
+        "description": "Storage tank for ethylene product",
+        "properties": {
+          "capacity": "5000 m³"
+        }
+      }
+    },
+    {
+      "id": "product_ethylene",
+      "type": "input_output",
+      "position": { "x": 850, "y": 200 },
+      "data": {
+        "label": "Ethylene Product"
+      }
+    },
+    {
+      "id": "product_byproduct",
+      "type": "input_output",
+      "position": { "x": 650, "y": 350 },
+      "data": {
+        "label": "Byproduct Stream"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "stream_feed_reactor",
+      "source": "feed_raw_material",
+      "target": "unit_reactor",
+      "type": "stream",
+      "data": {
+        "label": "Feed Stream",
+        "streamType": "material_stream",
+        "flowRate": "1000 kg/h",
+        "temperature": "25 °C"
+      }
+    },
+    {
+      "id": "stream_reactor_separator",
+      "source": "unit_reactor",
+      "target": "unit_separator",
+      "type": "stream",
+      "data": {
+        "label": "Reactor Effluent",
+        "streamType": "material_stream",
+        "flowRate": "950 kg/h",
+        "temperature": "850 °C"
+      }
+    },
+    {
+      "id": "stream_separator_storage",
+      "source": "unit_separator",
+      "target": "unit_storage",
+      "type": "stream",
+      "data": {
+        "label": "Ethylene Stream",
+        "streamType": "material_stream",
+        "flowRate": "600 kg/h",
+        "temperature": "40 °C"
+      }
+    },
+    {
+      "id": "stream_storage_product",
+      "source": "unit_storage",
+      "target": "product_ethylene",
+      "type": "stream",
+      "data": {
+        "label": "Product Stream",
+        "streamType": "material_stream",
+        "flowRate": "600 kg/h",
+        "temperature": "25 °C"
+      }
+    },
+    {
+      "id": "stream_separator_byproduct",
+      "source": "unit_separator",
+      "target": "product_byproduct",
+      "type": "stream",
+      "data": {
+        "label": "Byproduct Stream",
+        "streamType": "material_stream",
+        "flowRate": "350 kg/h",
+        "temperature": "40 °C"
+      }
+    }
+  ]
+}

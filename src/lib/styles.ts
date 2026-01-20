@@ -13,6 +13,8 @@ export interface StyleConfig {
     shadow: string;
     borderRadius: string;
     handleBg: string;
+    width?: number;
+    height?: number;
   };
   edge: {
     stroke: string;
@@ -23,6 +25,8 @@ export interface StyleConfig {
   canvas: {
     background: string;
     gridColor: string;
+    backgroundVariant: "dots" | "lines" | "cross";
+    gridGap: number;
   };
   showPropertiesOnNode: boolean;
   simplifyShapes: boolean;
@@ -51,7 +55,9 @@ export const STYLES: Record<DiagramStyle, StyleConfig> = {
     },
     canvas: {
       background: "#f9fafb",
-      gridColor: "#e5e7eb",
+      gridColor: "#d1d5db",
+      backgroundVariant: "dots",
+      gridGap: 20,
     },
     showPropertiesOnNode: false,
     simplifyShapes: false,
@@ -69,6 +75,7 @@ export const STYLES: Record<DiagramStyle, StyleConfig> = {
       shadow: "none",
       borderRadius: "0",
       handleBg: "#000000",
+      // width/height are auto-snapped to grid in engineering-node.tsx
     },
     edge: {
       stroke: "#000000",
@@ -78,7 +85,9 @@ export const STYLES: Record<DiagramStyle, StyleConfig> = {
     },
     canvas: {
       background: "#ffffff",
-      gridColor: "#d1d5db",
+      gridColor: "#e5e7eb",
+      backgroundVariant: "lines",
+      gridGap: 30,
     },
     showPropertiesOnNode: true,
     simplifyShapes: true,

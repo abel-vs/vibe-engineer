@@ -3,6 +3,7 @@
 import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
 import { DiagramCanvas } from "@/components/diagram-canvas";
 import { ExportMenu } from "@/components/export/export-menu";
+import { ImportMenu } from "@/components/import-menu";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { PropertiesPanel } from "@/components/sidebar/properties-panel";
 import { StyleSwitcher } from "@/components/style-switcher";
@@ -11,16 +12,20 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { VoiceController } from "@/components/voice-controller";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
-import { autoSave, clearAutoSave, loadAutoSave } from "@/lib/storage";
+import { autoSave, clearAutoSave, loadAutoSave, saveDiagram, type SavedDiagram } from "@/lib/storage";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Bug, Code, FolderOpen, MessageSquare, Redo2, Save, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +38,9 @@ export default function DiagramPage() {
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
   const [showJsonView, setShowJsonView] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const { dictionary, dictionaryEnabled } = useSettings();
 
   const handleDebugLog = useCallback((log: DebugLog) => {
@@ -132,6 +140,30 @@ export default function DiagramPage() {
     }
   }, [nodes.length, clearCanvas]);
 
+  const handleSaveDiagram = useCallback(async () => {
+    if (!saveName.trim()) return;
+    
+    setIsSaving(true);
+    try {
+      const diagram: SavedDiagram = {
+        id: `diagram_${Date.now()}`,
+        name: saveName.trim(),
+        mode,
+        nodes,
+        edges,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await saveDiagram(diagram);
+      setSaveDialogOpen(false);
+      setSaveName("");
+    } catch (err) {
+      console.error("Error saving diagram:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveName, mode, nodes, edges]);
+
   return (
     <ReactFlowProvider>
       <div className="h-screen w-screen flex flex-col bg-gray-100">
@@ -168,30 +200,76 @@ export default function DiagramPage() {
               <Trash2 className="w-4 h-4 mr-2" />
               New
             </Button>
-            <Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Open saved designs (⌘K → Saved Designs)"
+              onClick={() => {
+                // Dispatch keyboard event to open command menu
+                document.dispatchEvent(
+                  new KeyboardEvent("keydown", {
+                    key: "k",
+                    metaKey: true,
+                    bubbles: true,
+                  })
+                );
+              }}
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Open
+            </Button>
+            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <FolderOpen className="w-4 h-4 mr-2" />
-                  Open
+                <Button variant="ghost" size="sm" disabled={nodes.length === 0}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Open Diagram</DialogTitle>
+                  <DialogTitle>Save Design</DialogTitle>
+                  <DialogDescription>
+                    Save your diagram to access it later from the command menu (⌘K).
+                  </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 text-center text-gray-500">
-                  <p>Diagram browser coming soon.</p>
-                  <p className="text-sm mt-2">
-                    Diagrams are auto-saved locally.
-                  </p>
+                <div className="py-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="design-name">Design Name</Label>
+                    <Input
+                      id="design-name"
+                      placeholder="My Design"
+                      value={saveName}
+                      onChange={(e) => setSaveName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && saveName.trim()) {
+                          handleSaveDiagram();
+                        }
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {mode.toUpperCase()} • {nodes.length} nodes • {edges.length} edges
+                  </div>
                 </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSaveDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveDiagram}
+                    disabled={!saveName.trim() || isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Design"}
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button variant="ghost" size="sm">
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
             <Separator orientation="vertical" className="h-6" />
+            <ImportMenu />
             <ExportMenu flowRef={flowRef} />
             <Separator orientation="vertical" className="h-6" />
             <Button

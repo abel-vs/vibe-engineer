@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEXPI-Document xmlns="https://dexpi.org/schema/2.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://dexpi.org/schema/2.0 DEXPI_XML_Schema.xsd"
+                version="2.0">
+  <Object type="Process/ProcessModel" id="pm_bfd_example">
+    <Data property="Name">
+      <String>Ethylene Production BFD</String>
+    </Data>
+    <Data property="Description">
+      <String>Block Flow Diagram for ethylene production process</String>
+    </Data>
+    <Data property="DiagramType">
+      <String>BFD</String>
+    </Data>
+    
+    <!-- External Ports (Feed and Product) -->
+    <Components property="ExternalPorts">
+      <Object type="Process/Process.ExternalPort" id="feed_raw_material">
+        <Data property="Name">
+          <String>Raw Material Feed</String>
+        </Data>
+        <Data property="Direction">
+          <String>inlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>50.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>200.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <Object type="Process/Process.ExternalPort" id="product_ethylene">
+        <Data property="Name">
+          <String>Ethylene Product</String>
+        </Data>
+        <Data property="Direction">
+          <String>outlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>850.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>200.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <Object type="Process/Process.ExternalPort" id="product_byproduct">
+        <Data property="Name">
+          <String>Byproduct Stream</String>
+        </Data>
+        <Data property="Direction">
+          <String>outlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>650.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>350.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Process Steps -->
+    <Components property="ProcessSteps">
+      <!-- Reactor Block -->
+      <Object type="Process/Process.GenericProcessStep" id="unit_reactor">
+        <Data property="Name">
+          <String>UNIT-100: Reactor</String>
+        </Data>
+        <Data property="Description">
+          <String>Cracking reactor for ethylene production</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>250.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_reactor_in_1">
+            <Data property="Name">
+              <String>Feed Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_reactor_out_1">
+            <Data property="Name">
+              <String>Reactor Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Parameters">
+          <Object type="Process/Parameter">
+            <Data property="Name">
+              <String>Temperature</String>
+            </Data>
+            <Data property="Value">
+              <String>850</String>
+            </Data>
+            <Data property="Unit">
+              <String>C</String>
+            </Data>
+          </Object>
+          <Object type="Process/Parameter">
+            <Data property="Name">
+              <String>Pressure</String>
+            </Data>
+            <Data property="Value">
+              <String>1.5</String>
+            </Data>
+            <Data property="Unit">
+              <String>bar</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Separation Block -->
+      <Object type="Process/Process.GenericProcessStep" id="unit_separator">
+        <Data property="Name">
+          <String>UNIT-200: Separator</String>
+        </Data>
+        <Data property="Description">
+          <String>Separation unit for product purification</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>450.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_separator_in_1">
+            <Data property="Name">
+              <String>Feed Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_separator_out_1">
+            <Data property="Name">
+              <String>Product Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_separator_out_2">
+            <Data property="Name">
+              <String>Byproduct Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Storage Unit -->
+      <Object type="Process/Process.Storing" id="unit_storage">
+        <Data property="Name">
+          <String>UNIT-300: Product Storage</String>
+        </Data>
+        <Data property="Description">
+          <String>Storage tank for ethylene product</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>650.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_storage_in_1">
+            <Data property="Name">
+              <String>Product Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_storage_out_1">
+            <Data property="Name">
+              <String>Product Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Parameters">
+          <Object type="Process/Parameter">
+            <Data property="Name">
+              <String>Capacity</String>
+            </Data>
+            <Data property="Value">
+              <String>5000</String>
+            </Data>
+            <Data property="Unit">
+              <String>m3</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Process Connections (Streams) -->
+    <Components property="ProcessConnections">
+      <!-- Feed to Reactor -->
+      <Object type="Process/Process.MaterialFlow" id="stream_feed_reactor">
+        <Data property="FromPort">
+          <String>feed_raw_material</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_reactor_in_1</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Feed Stream</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>1000.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+            <Data property="Temperature">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>25.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>C</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Reactor to Separator -->
+      <Object type="Process/Process.MaterialFlow" id="stream_reactor_separator">
+        <Data property="FromPort">
+          <String>unit_reactor_out_1</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_separator_in_1</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Reactor Effluent</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>950.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+            <Data property="Temperature">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>850.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>C</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Separator Product to Storage -->
+      <Object type="Process/Process.MaterialFlow" id="stream_separator_storage">
+        <Data property="FromPort">
+          <String>unit_separator_out_1</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_storage_in_1</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Ethylene Stream</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>600.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+            <Data property="Temperature">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>40.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>C</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Storage to Product -->
+      <Object type="Process/Process.MaterialFlow" id="stream_storage_product">
+        <Data property="FromPort">
+          <String>unit_storage_out_1</String>
+        </Data>
+        <Data property="ToPort">
+          <String>product_ethylene</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Product Stream</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>600.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+            <Data property="Temperature">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>25.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>C</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Separator Byproduct -->
+      <Object type="Process/Process.MaterialFlow" id="stream_separator_byproduct">
+        <Data property="FromPort">
+          <String>unit_separator_out_2</String>
+        </Data>
+        <Data property="ToPort">
+          <String>product_byproduct</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Byproduct Stream</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>350.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+            <Data property="Temperature">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>40.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>C</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Metadata -->
+    <Components property="Metadata">
+      <Object type="Core/Metadata">
+        <Data property="CreatedAt">
+          <String>2024-01-15T10:00:00Z</String>
+        </Data>
+        <Data property="UpdatedAt">
+          <String>2024-01-15T10:00:00Z</String>
+        </Data>
+        <Data property="ApplicationSource">
+          <String>voice-diagram-app</String>
+        </Data>
+      </Object>
+    </Components>
+  </Object>
+</DEXPI-Document>

@@ -14,7 +14,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/contexts/settings-context";
-import { ArrowLeft, Book, BookOpen, BookX, Keyboard, Volume2, VolumeX } from "lucide-react";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { deleteDiagram, listDiagrams, type SavedDiagram } from "@/lib/storage";
+import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Trash2, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 type View = "main" | "dictionary";
@@ -24,20 +26,29 @@ export function CommandMenu() {
   const [view, setView] = useState<View>("main");
   const { ttsEnabled, dictionaryEnabled, dictionary, updateSetting } = useSettings();
   const [dictionaryText, setDictionaryText] = useState("");
+  const [savedDesigns, setSavedDesigns] = useState<SavedDiagram[]>([]);
+  const { loadDiagram } = useDiagramStore();
 
-  // Sync dictionary to textarea when opening
+  // Load saved designs when menu opens
   useEffect(() => {
-    if (open && view === "dictionary") {
-      setDictionaryText(dictionary.join("\n"));
-    }
-  }, [open, view, dictionary]);
-
-  // Reset view when closing
-  useEffect(() => {
-    if (!open) {
-      setView("main");
+    if (open) {
+      listDiagrams().then(setSavedDesigns);
     }
   }, [open]);
+
+  // Handle dialog open/close
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setView("main");
+    }
+  }, []);
+
+  // Navigate to dictionary view
+  const goToDictionary = useCallback(() => {
+    setView("dictionary");
+    setDictionaryText(dictionary.join("\n"));
+  }, [dictionary]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -75,10 +86,30 @@ export function CommandMenu() {
     setView("main");
   };
 
+  const handleLoadDesign = useCallback(
+    (design: SavedDiagram) => {
+      loadDiagram(design.nodes, design.edges, design.mode, "colorful");
+      setOpen(false);
+    },
+    [loadDiagram]
+  );
+
+  const handleDeleteDesign = useCallback(
+    async (e: React.MouseEvent, designId: string) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (window.confirm("Are you sure you want to delete this design?")) {
+        await deleteDiagram(designId);
+        setSavedDesigns((prev) => prev.filter((d) => d.id !== designId));
+      }
+    },
+    []
+  );
+
   // Dictionary editing view
   if (view === "dictionary") {
     return (
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={handleOpenChange}>
         <div className="flex flex-col h-[400px]">
           {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2 border-b">
@@ -123,7 +154,7 @@ export function CommandMenu() {
 
   // Main command menu view
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -166,12 +197,46 @@ export function CommandMenu() {
               onPointerDown={(e) => e.stopPropagation()}
             />
           </CommandItem>
-          <CommandItem onSelect={() => setView("dictionary")}>
+          <CommandItem onSelect={goToDictionary}>
             <Book className="h-4 w-4" />
             <span>Custom Dictionary</span>
             <CommandShortcut>{dictionary.length} words</CommandShortcut>
           </CommandItem>
         </CommandGroup>
+        {savedDesigns.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Saved Designs">
+              {savedDesigns.map((design) => (
+                <CommandItem
+                  key={design.id}
+                  onSelect={() => handleLoadDesign(design)}
+                  className="flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate">{design.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {design.mode.toUpperCase()} • {design.nodes.length} nodes
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDeleteDesign(e, design.id)}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
         <CommandSeparator />
         <CommandGroup heading="Help">
           <CommandItem disabled>

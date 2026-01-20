@@ -1,17 +1,18 @@
 "use client";
 
 import {
-  Background,
-  ConnectionMode,
-  Controls,
-  MarkerType,
-  MiniMap,
-  Panel,
-  ReactFlow,
-  SelectionMode,
-  type Edge,
-  type Node,
-  type ReactFlowInstance,
+    Background,
+    BackgroundVariant,
+    ConnectionMode,
+    Controls,
+    MarkerType,
+    MiniMap,
+    Panel,
+    ReactFlow,
+    SelectionMode,
+    type Edge,
+    type Node,
+    type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo, useRef } from "react";
@@ -127,7 +128,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         snapToGrid
-        snapGrid={[15, 15]}
+        snapGrid={[styleConfig.canvas.gridGap, styleConfig.canvas.gridGap]}
         deleteKeyCode={["Backspace", "Delete"]}
         multiSelectionKeyCode="Shift"
         selectionOnDrag
@@ -136,7 +137,11 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         connectionMode={ConnectionMode.Loose}
         style={{ backgroundColor: styleConfig.canvas.background }}
       >
-        <Background color={styleConfig.canvas.gridColor} gap={15} />
+        <Background 
+          color={styleConfig.canvas.gridColor} 
+          gap={styleConfig.canvas.gridGap} 
+          variant={styleConfig.canvas.backgroundVariant as BackgroundVariant}
+        />
         <Controls position="bottom-right" />
         <MiniMap
           position="bottom-left"
