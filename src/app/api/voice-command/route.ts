@@ -395,12 +395,18 @@ export async function POST(req: NextRequest) {
     console.log("[Voice Command] Using model:", modelName);
 
     // Use maxSteps to allow multi-turn tool calling
+    // Enable parallel tool calls for commands with multiple actions
     const result = await generateText({
       model: cerebras(modelName),
       system: systemPrompt,
       prompt: transcript,
       tools: executableTools,
       maxSteps: 5, // Allow up to 5 tool-calling rounds
+      providerOptions: {
+        cerebras: {
+          parallelToolCalls: true,
+        },
+      },
     });
 
     console.log("[Voice Command] Finished. Steps:", result.steps?.length || 1);
