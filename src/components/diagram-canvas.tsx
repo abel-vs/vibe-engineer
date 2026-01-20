@@ -195,6 +195,12 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
             )}
           </div>
         </Panel>
+        {/* Attribution */}
+        <Panel position="bottom-right" className="!m-2 !mb-14">
+          <div className="text-[10px] text-gray-400 select-none">
+            Made with Voice Diagram
+          </div>
+        </Panel>
       </ReactFlow>
     </div>
   );
