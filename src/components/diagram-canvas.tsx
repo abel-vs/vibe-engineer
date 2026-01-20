@@ -1,0 +1,183 @@
+"use client";
+
+import { useCallback, useRef, useMemo } from "react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  Panel,
+  SelectionMode,
+  type Node,
+  type Edge,
+  type ReactFlowInstance,
+  MarkerType,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { allNodeTypes } from "@/components/nodes";
+import { edgeTypes } from "@/components/edges/stream-edge";
+import { MODES } from "@/lib/modes";
+
+interface DiagramCanvasProps {
+  onNodeSelect?: (nodeIds: string[]) => void;
+  onEdgeSelect?: (edgeIds: string[]) => void;
+}
+
+export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps) {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+
+  const {
+    nodes,
+    edges,
+    mode,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    addNode,
+    selectedNodeIds,
+    selectedEdgeIds,
+  } = useDiagramStore();
+
+  const modeConfig = MODES[mode];
+
+  // Default edge options with arrow marker
+  const defaultEdgeOptions = useMemo(
+    () => ({
+      type: "stream",
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: "#3b82f6",
+      },
+    }),
+    []
+  );
+
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstance.current = instance;
+  }, []);
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow/type");
+      const label = event.dataTransfer.getData("application/reactflow/label");
+
+      if (!type || !reactFlowInstance.current || !reactFlowWrapper.current) {
+        return;
+      }
+
+      const bounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.current.screenToFlowPosition({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+
+      const newNode: Node = {
+        id: `${type}_${Date.now()}`,
+        type,
+        position,
+        data: { label: label || type.toUpperCase() },
+      };
+
+      addNode(newNode);
+    },
+    [addNode]
+  );
+
+  // Notify parent of selection changes
+  const handleSelectionChange = useCallback(
+    ({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
+      const nodeIds = selectedNodes.map((n) => n.id);
+      const edgeIds = selectedEdges.map((e) => e.id);
+      onNodeSelect?.(nodeIds);
+      onEdgeSelect?.(edgeIds);
+    },
+    [onNodeSelect, onEdgeSelect]
+  );
+
+  return (
+    <div ref={reactFlowWrapper} className="w-full h-full">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onInit={onInit}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onSelectionChange={handleSelectionChange}
+        nodeTypes={allNodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        fitView
+        snapToGrid
+        snapGrid={[15, 15]}
+        deleteKeyCode={["Backspace", "Delete"]}
+        multiSelectionKeyCode="Shift"
+        selectionOnDrag
+        panOnScroll
+        selectionMode={SelectionMode.Partial}
+        className="bg-gray-50"
+      >
+        <Background color="#e5e7eb" gap={15} />
+        <Controls position="bottom-right" />
+        <MiniMap
+          position="bottom-left"
+          nodeColor={(node) => {
+            switch (node.type) {
+              case "reactor":
+                return "#3b82f6";
+              case "tank":
+              case "vessel":
+                return "#06b6d4";
+              case "pump":
+                return "#22c55e";
+              case "heat_exchanger":
+                return "#f97316";
+              case "column":
+                return "#14b8a6";
+              case "process_block":
+                return "#3b82f6";
+              case "storage":
+                return "#f59e0b";
+              default:
+                return "#6b7280";
+            }
+          }}
+          maskColor="rgba(0, 0, 0, 0.1)"
+          className="!bg-white/80 !border !border-gray-200 !rounded-lg"
+        />
+        <Panel position="top-left" className="!m-2">
+          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+            <span className="text-xs text-gray-500">Mode:</span>{" "}
+            <span className="text-sm font-medium text-gray-800">
+              {modeConfig.name}
+            </span>
+          </div>
+        </Panel>
+        <Panel position="top-right" className="!m-2">
+          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm text-xs text-gray-600">
+            {nodes.length} nodes · {edges.length} edges
+            {selectedNodeIds.length > 0 && (
+              <span className="ml-2 text-blue-600">
+                ({selectedNodeIds.length} selected)
+              </span>
+            )}
+          </div>
+        </Panel>
+      </ReactFlow>
+    </div>
+  );
+}
