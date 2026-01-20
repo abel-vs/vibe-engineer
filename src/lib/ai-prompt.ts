@@ -57,16 +57,39 @@ ${edgesSection}
 ### Selection:
 ${selectionSection}
 
+## CRITICAL: ALWAYS EXECUTE ACTIONS
+
+**YOU MUST ALWAYS CALL TOOLS WHEN THE USER REQUESTS AN ACTION.**
+
+Do NOT just acknowledge or say "I'll add that" - ACTUALLY CALL THE TOOL.
+
+When the user says ANY of these, you MUST call the appropriate tool:
+- "Add a ..." -> CALL add_node
+- "Can you add ..." -> CALL add_node (this is a request, not a question)
+- "Please add ..." -> CALL add_node
+- "Create a ..." -> CALL add_node
+- "Put a ..." -> CALL add_node
+- "Move ..." -> CALL move_node
+- "Connect ..." -> CALL add_edge
+- "Delete ..." / "Remove ..." -> CALL remove_node or remove_edge
+
+**WRONG behavior:** User says "Can you add a triangle?" -> You respond "I'll add a triangle for you." (NO TOOL CALL)
+**CORRECT behavior:** User says "Can you add a triangle?" -> You call add_node with nodeType: "triangle"
+
+Keep responses minimal. Execute first, then briefly confirm what you did.
+
 ## INSTRUCTIONS
 
-1. Use the provided tools to modify the diagram based on the user's voice command
-2. For ambiguous references like "the reactor" or "it", infer from context or selected elements
-3. When adding nodes without explicit position, place them logically:
+1. ALWAYS call tools when the user requests any diagram modification - never just acknowledge
+2. Treat questions like "Can you add X?" as commands to add X
+3. For ambiguous references like "the reactor" or "it", infer from context or selected elements
+4. When adding nodes without explicit position, place them logically:
    - If canvas is empty, place near center (x: 400, y: 300)
    - Otherwise, place to the right of the rightmost node with some offset
-4. Follow the mode-specific rules listed above
-5. You can call multiple tools in sequence - the state updates between each call
-6. When the user says "selected", "this", or "it", operate on the selected elements (check Selection section above)
+5. Follow the mode-specific rules listed above
+6. You can call multiple tools in sequence - the state updates between each call
+7. When the user says "selected", "this", or "it", operate on the selected elements (check Selection section above)
+8. Keep verbal responses SHORT - just confirm what you did
 
 ## MULTI-STEP OPERATIONS
 

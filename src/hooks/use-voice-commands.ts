@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useDiagramStore } from "./use-diagram-store";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
 import type { Node, Edge } from "@xyflow/react";
+
+// Get fresh state from store at call time (avoids stale closures)
+const getStoreState = () => useDiagramStore.getState();
 
 interface ToolResult {
   toolName: string;
@@ -57,11 +60,6 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
   );
 
   const {
-    nodes,
-    edges,
-    mode,
-    selectedNodeIds,
-    selectedEdgeIds,
     addNode,
     addEdgeAction,
     removeNode,
@@ -91,6 +89,9 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           continue;
         }
 
+        // Get fresh state for each tool (state changes between tools)
+        const currentState = getStoreState();
+
         switch (toolName) {
           case "add_node": {
             const nodeType = (args as Record<string, unknown>).nodeType as string;
@@ -110,12 +111,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             // Calculate position if not provided
             let finalPosition = position;
             if (!finalPosition) {
-              if (nodes.length === 0) {
+              if (currentState.nodes.length === 0) {
                 finalPosition = { x: 400, y: 300 };
               } else {
-                const rightmost = nodes.reduce(
+                const rightmost = currentState.nodes.reduce(
                   (max, n) => (n.position.x > max.position.x ? n : max),
-                  nodes[0]
+                  currentState.nodes[0]
                 );
                 finalPosition = {
                   x: rightmost.position.x + 200,
@@ -198,7 +199,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const updates: Partial<Node> = {};
             if (position) updates.position = position;
             if (label || data) {
-              const existingNode = nodes.find((n) => n.id === nodeId);
+              const existingNode = currentState.nodes.find((n) => n.id === nodeId);
               updates.data = {
                 ...existingNode?.data,
                 ...(label ? { label } : {}),
@@ -265,7 +266,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             // Simple direction-based movement from current position
             if (!finalPosition && direction) {
-              const currentNode = nodes.find((n) => n.id === nodeId);
+              const currentNode = currentState.nodes.find((n) => n.id === nodeId);
               if (currentNode) {
                 switch (direction) {
                   case "left":
@@ -298,7 +299,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             // Relative to another node
             if (!finalPosition && relativeTo) {
-              const refNode = nodes.find((n) => n.id === relativeTo.referenceNodeId);
+              const refNode = currentState.nodes.find((n) => n.id === relativeTo.referenceNodeId);
               if (refNode) {
                 const relOffset = relativeTo.offset || 150;
                 switch (relativeTo.direction) {
@@ -349,7 +350,6 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
       }
     },
     [
-      nodes,
       addNode,
       addEdgeAction,
       removeNode,
@@ -371,15 +371,17 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
       log("command", `Voice command: "${transcript}"`);
 
       try {
+        // Get fresh state at call time to avoid stale closures
+        const freshState = getStoreState();
         const diagramState = serializeDiagramForAI(
-          nodes,
-          edges,
-          mode,
-          selectedNodeIds,
-          selectedEdgeIds
+          freshState.nodes,
+          freshState.edges,
+          freshState.mode,
+          freshState.selectedNodeIds,
+          freshState.selectedEdgeIds
         );
 
-        log("info", `Sending to AI (${nodes.length} nodes, ${edges.length} edges)`);
+        log("info", `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges)`);
 
         const response = await fetch("/api/voice-command", {
           method: "POST",
@@ -419,7 +421,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         setIsProcessing(false);
       }
     },
-    [nodes, edges, mode, selectedNodeIds, selectedEdgeIds, applyToolResults, log]
+    [applyToolResults, log]
   );
 
   return {
