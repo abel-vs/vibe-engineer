@@ -177,12 +177,18 @@ export default function DiagramPage() {
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">You said:</span> {transcript}
                       </p>
-                      {lastResponse && (
+                      {isProcessing && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm text-blue-500">Thinking...</span>
+                        </div>
+                      )}
+                      {!isProcessing && lastResponse && (
                         <p className="text-sm text-green-600 mt-1">
                           {lastResponse}
                         </p>
                       )}
-                      {error && (
+                      {!isProcessing && error && (
                         <p className="text-sm text-red-500 mt-1">{error}</p>
                       )}
                     </div>
