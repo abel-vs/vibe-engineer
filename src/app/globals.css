@@ -124,3 +124,41 @@
   }
 }
 
+/* Engineering node handle styles - show on hover, hide when connected */
+.engineering-node .engineering-handle {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.engineering-node:hover .engineering-handle {
+  opacity: 1;
+}
+
+/* Hide handles that are already connected */
+.engineering-node .engineering-handle.connected-handle {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Always show handles when connecting (React Flow adds .connecting class) */
+.react-flow__node.connecting .engineering-handle,
+.react-flow__handle.connecting {
+  opacity: 1 !important;
+}
+
+/* Show handles when dragging a connection line */
+.react-flow.connecting .engineering-node .engineering-handle:not(.connected-handle) {
+  opacity: 1;
+}
+
+/* Highlight valid connection targets */
+.engineering-handle.connectingto,
+.engineering-handle:hover {
+  background-color: #3b82f6 !important;
+}
+
+/* Make handles more visible when selected */
+.react-flow__node.selected .engineering-handle:not(.connected-handle) {
+  opacity: 1;
+}
+

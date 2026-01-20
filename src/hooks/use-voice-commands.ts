@@ -137,7 +137,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               id: nodeId,
               type: nodeType,
               position: finalPosition,
-              data: { label, description: "", ...data },
+              data: {
+                label,
+                description: "",
+                // Put additional properties under 'properties' for engineering style
+                ...(data && Object.keys(data).length > 0 ? { properties: data } : {}),
+              },
             };
             console.log("[DEBUG] About to call addNode with:", newNode);
             addNode(newNode);
@@ -198,27 +203,59 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           }
 
           case "update_node": {
-            const nodeId = (args as Record<string, unknown>).nodeId as string;
-            const label = (args as Record<string, unknown>).label as string | undefined;
-            const position = (args as Record<string, unknown>).position as { x: number; y: number } | undefined;
-            const data = (args as Record<string, unknown>).data as Record<string, string> | undefined;
+            const rawArgs = args as Record<string, unknown>;
+            const nodeId = rawArgs.nodeId as string;
+            const label = rawArgs.label as string | undefined;
+            const position = rawArgs.position as { x: number; y: number } | undefined;
+            const data = rawArgs.data as Record<string, string> | undefined;
+
+            console.log("=== UPDATE_NODE DEBUG START ===");
+            console.log("[DEBUG update_node] Raw args:", JSON.stringify(rawArgs, null, 2));
+            console.log("[DEBUG update_node] Extracted fields:");
+            console.log("  - nodeId:", nodeId);
+            console.log("  - label:", label);
+            console.log("  - data:", JSON.stringify(data));
+            console.log("  - data type:", typeof data);
+            console.log("  - data keys:", data ? Object.keys(data) : "N/A");
 
             if (!nodeId) {
               log("error", "update_node missing nodeId");
               continue;
             }
 
+            const existingNode = currentState.nodes.find((n) => n.id === nodeId);
+            console.log("[DEBUG update_node] Existing node found:", !!existingNode);
+            console.log("[DEBUG update_node] Existing node data:", JSON.stringify(existingNode?.data, null, 2));
+
             const updates: Partial<Node> = {};
             if (position) updates.position = position;
-            if (label || data) {
-              const existingNode = currentState.nodes.find((n) => n.id === nodeId);
-              updates.data = {
-                ...existingNode?.data,
-                ...(label ? { label } : {}),
-                ...data,
-              };
-            }
+
+            // Always rebuild data to ensure we capture all changes
+            const existingProps = (existingNode?.data?.properties as Record<string, string>) || {};
+            console.log("[DEBUG update_node] Existing properties:", JSON.stringify(existingProps));
+
+            // Build new data object
+            const newData = {
+              ...existingNode?.data,
+              ...(label ? { label } : {}),
+              // Merge new properties into existing properties (not directly onto data)
+              ...(data && Object.keys(data).length > 0
+                ? { properties: { ...existingProps, ...data } }
+                : {}),
+            };
+            updates.data = newData;
+
+            console.log("[DEBUG update_node] New data object:", JSON.stringify(newData, null, 2));
+            console.log("[DEBUG update_node] Final updates to apply:", JSON.stringify(updates, null, 2));
+            console.log("=== UPDATE_NODE DEBUG END - CALLING updateNode ===");
+
             updateNode(nodeId, updates);
+
+            // Verify the update was applied
+            const verifyState = getStoreState();
+            const updatedNode = verifyState.nodes.find((n) => n.id === nodeId);
+            console.log("[DEBUG update_node] VERIFICATION - Node after update:", JSON.stringify(updatedNode?.data, null, 2));
+
             log("result", `Updated node: ${nodeId}`, updates);
             break;
           }

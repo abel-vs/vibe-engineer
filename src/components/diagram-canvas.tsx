@@ -8,6 +8,7 @@ import {
   MiniMap,
   Panel,
   SelectionMode,
+  ConnectionMode,
   type Node,
   type Edge,
   type ReactFlowInstance,
@@ -19,6 +20,7 @@ import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { allNodeTypes } from "@/components/nodes";
 import { edgeTypes } from "@/components/edges/stream-edge";
 import { MODES } from "@/lib/modes";
+import { STYLES } from "@/lib/styles";
 
 interface DiagramCanvasProps {
   onNodeSelect?: (nodeIds: string[]) => void;
@@ -33,6 +35,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     nodes,
     edges,
     mode,
+    style,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -42,8 +45,9 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
   } = useDiagramStore();
 
   const modeConfig = MODES[mode];
+  const styleConfig = STYLES[style];
 
-  // Default edge options with arrow marker
+  // Default edge options with arrow marker - style aware
   const defaultEdgeOptions = useMemo(
     () => ({
       type: "stream",
@@ -51,10 +55,10 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         type: MarkerType.ArrowClosed,
         width: 20,
         height: 20,
-        color: "#3b82f6",
+        color: styleConfig.edge.stroke,
       },
     }),
-    []
+    [styleConfig.edge.stroke]
   );
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
@@ -129,13 +133,19 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         selectionOnDrag
         panOnScroll
         selectionMode={SelectionMode.Partial}
-        className="bg-gray-50"
+        connectionMode={ConnectionMode.Loose}
+        style={{ backgroundColor: styleConfig.canvas.background }}
       >
-        <Background color="#e5e7eb" gap={15} />
+        <Background color={styleConfig.canvas.gridColor} gap={15} />
         <Controls position="bottom-right" />
         <MiniMap
           position="bottom-left"
           nodeColor={(node) => {
+            // In engineering style, all nodes are black/gray
+            if (style === "engineering") {
+              return "#000000";
+            }
+            // Colorful style: type-specific colors
             switch (node.type) {
               case "reactor":
                 return "#3b82f6";
@@ -160,11 +170,19 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
           className="!bg-white/80 !border !border-gray-200 !rounded-lg"
         />
         <Panel position="top-left" className="!m-2">
-          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
-            <span className="text-xs text-gray-500">Mode:</span>{" "}
-            <span className="text-sm font-medium text-gray-800">
-              {modeConfig.name}
-            </span>
+          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm flex gap-3">
+            <div>
+              <span className="text-xs text-gray-500">Mode:</span>{" "}
+              <span className="text-sm font-medium text-gray-800">
+                {modeConfig.name}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs text-gray-500">Style:</span>{" "}
+              <span className="text-sm font-medium text-gray-800">
+                {styleConfig.name}
+              </span>
+            </div>
           </div>
         </Panel>
         <Panel position="top-right" className="!m-2">

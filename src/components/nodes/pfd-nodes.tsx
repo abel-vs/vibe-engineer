@@ -3,6 +3,8 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { EngineeringNodeComponent } from "./engineering-node";
 
 type PFDNodeData = {
   label: string;
@@ -13,10 +15,14 @@ type PFDNodeData = {
 type PFDNode = Node<PFDNodeData>;
 
 // Reactor - Blue rectangle
-export const ReactorNode = memo(function ReactorNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="reactor" />;
+  }
+
   return (
     <div
       className={cn(
@@ -55,10 +61,14 @@ export const ReactorNode = memo(function ReactorNode({
 });
 
 // Tank/Vessel - Rounded cyan rectangle
-export const TankNode = memo(function TankNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="tank" />;
+  }
+
   return (
     <div
       className={cn(
@@ -98,10 +108,14 @@ export const TankNode = memo(function TankNode({
 });
 
 // Vessel - Similar to tank but taller
-export const VesselNode = memo(function VesselNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="vessel" />;
+  }
+
   return (
     <div
       className={cn(
@@ -140,10 +154,14 @@ export const VesselNode = memo(function VesselNode({
 });
 
 // Pump - Green circle
-export const PumpNode = memo(function PumpNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const PumpNode = memo(function PumpNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="pump" />;
+  }
+
   return (
     <div
       className={cn(
@@ -169,10 +187,14 @@ export const PumpNode = memo(function PumpNode({
 });
 
 // Compressor - Yellow pentagon-like shape
-export const CompressorNode = memo(function CompressorNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const CompressorNode = memo(function CompressorNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="compressor" />;
+  }
+
   return (
     <div
       className={cn(
@@ -200,10 +222,14 @@ export const CompressorNode = memo(function CompressorNode({
 });
 
 // Heat Exchanger - Orange diamond
-export const HeatExchangerNode = memo(function HeatExchangerNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="heat_exchanger" />;
+  }
+
   return (
     <div className="relative w-20 h-20">
       <Handle
@@ -244,10 +270,14 @@ export const HeatExchangerNode = memo(function HeatExchangerNode({
 });
 
 // Column - Tall teal rectangle
-export const ColumnNode = memo(function ColumnNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const ColumnNode = memo(function ColumnNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="column" />;
+  }
+
   return (
     <div
       className={cn(
@@ -283,10 +313,14 @@ export const ColumnNode = memo(function ColumnNode({
 });
 
 // Valve - Small gray square
-export const ValveNode = memo(function ValveNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const ValveNode = memo(function ValveNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="valve" />;
+  }
+
   return (
     <div
       className={cn(
@@ -313,10 +347,14 @@ export const ValveNode = memo(function ValveNode({
 });
 
 // Mixer - Purple triangle pointing right
-export const MixerNode = memo(function MixerNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="mixer" />;
+  }
+
   return (
     <div className="relative w-16 h-16">
       <Handle
@@ -353,10 +391,14 @@ export const MixerNode = memo(function MixerNode({
 });
 
 // Splitter - Purple triangle pointing left (inverted mixer)
-export const SplitterNode = memo(function SplitterNode({
-  data,
-  selected,
-}: NodeProps<PFDNode>) {
+export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="splitter" />;
+  }
+
   return (
     <div className="relative w-16 h-16">
       <Handle

@@ -3,19 +3,26 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { EngineeringNodeComponent } from "./engineering-node";
 
 type BFDNodeData = {
   label: string;
   description?: string;
+  properties?: Record<string, string>;
 };
 
 type BFDNode = Node<BFDNodeData>;
 
 // Process Block - Major process unit
-export const ProcessBlockNode = memo(function ProcessBlockNode({
-  data,
-  selected,
-}: NodeProps<BFDNode>) {
+export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<BFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="process_block" />;
+  }
+
   return (
     <div
       className={cn(
@@ -42,10 +49,14 @@ export const ProcessBlockNode = memo(function ProcessBlockNode({
 });
 
 // Input/Output - Feed or product terminal
-export const InputOutputNode = memo(function InputOutputNode({
-  data,
-  selected,
-}: NodeProps<BFDNode>) {
+export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="input_output" />;
+  }
+
   return (
     <div className="relative">
       <Handle
@@ -75,10 +86,14 @@ export const InputOutputNode = memo(function InputOutputNode({
 });
 
 // Storage - Tank or inventory
-export const StorageNode = memo(function StorageNode({
-  data,
-  selected,
-}: NodeProps<BFDNode>) {
+export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="storage" />;
+  }
+
   return (
     <div
       className={cn(

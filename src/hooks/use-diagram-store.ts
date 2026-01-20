@@ -1,4 +1,5 @@
 import type { DiagramMode } from "@/lib/modes";
+import type { DiagramStyle } from "@/lib/styles";
 import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "@xyflow/react";
 import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { create } from "zustand";
@@ -8,6 +9,7 @@ export interface DiagramState {
   nodes: Node[];
   edges: Edge[];
   mode: DiagramMode;
+  style: DiagramStyle;
 
   // Selection state
   selectedNodeIds: string[];
@@ -20,6 +22,7 @@ export interface DiagramState {
 
   // Actions
   setMode: (mode: DiagramMode) => void;
+  setStyle: (style: DiagramStyle) => void;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   addNode: (node: Node) => void;
@@ -33,13 +36,14 @@ export interface DiagramState {
   clearCanvas: () => void;
 
   // Load/save
-  loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode) => void;
+  loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode, style?: DiagramStyle) => void;
 }
 
 export const useDiagramStore = create<DiagramState>((set, get) => ({
   nodes: [],
   edges: [],
   mode: "playground",
+  style: "colorful",
   selectedNodeIds: [],
   selectedEdgeIds: [],
 
@@ -88,6 +92,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   setMode: (mode) => set({ mode }),
+
+  setStyle: (style) => set({ style }),
 
   setNodes: (nodes) => set({ nodes }),
 
@@ -163,11 +169,12 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     });
   },
 
-  loadDiagram: (nodes, edges, mode) => {
+  loadDiagram: (nodes, edges, mode, style) => {
     set({
       nodes,
       edges,
       mode,
+      style: style ?? "colorful",
       selectedNodeIds: [],
       selectedEdgeIds: [],
     });

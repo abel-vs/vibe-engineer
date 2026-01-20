@@ -1,6 +1,7 @@
 import { openDB, IDBPDatabase } from "idb";
 import type { Node, Edge } from "@xyflow/react";
 import type { DiagramMode } from "./modes";
+import type { DiagramStyle } from "./styles";
 
 const DB_NAME = "voice-diagram-db";
 const DB_VERSION = 1;
@@ -67,12 +68,14 @@ const SESSION_SAVE_KEY = "voice-diagram-session";
 export function autoSave(
   nodes: Node[],
   edges: Edge[],
-  mode: DiagramMode
+  mode: DiagramMode,
+  style: DiagramStyle = "colorful"
 ): void {
   const data = {
     nodes,
     edges,
     mode,
+    style,
     timestamp: Date.now(),
   };
   sessionStorage.setItem(SESSION_SAVE_KEY, JSON.stringify(data));
@@ -82,11 +85,17 @@ export function loadAutoSave(): {
   nodes: Node[];
   edges: Edge[];
   mode: DiagramMode;
+  style: DiagramStyle;
 } | null {
   const data = sessionStorage.getItem(SESSION_SAVE_KEY);
   if (!data) return null;
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // Backward compatible: default to "colorful" if style is missing
+    return {
+      ...parsed,
+      style: parsed.style ?? "colorful",
+    };
   } catch {
     return null;
   }

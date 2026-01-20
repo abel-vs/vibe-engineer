@@ -9,6 +9,8 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import type { DiagramStyle } from "@/lib/styles";
 
 export type StreamEdgeData = {
   label?: string;
@@ -20,11 +22,42 @@ export type StreamEdgeData = {
 
 export type StreamEdge = Edge<StreamEdgeData>;
 
-const getEdgeStyle = (streamType?: string, selected?: boolean) => {
+const getEdgeStyle = (streamType?: string, selected?: boolean, diagramStyle?: DiagramStyle) => {
   const baseStyle = {
     strokeWidth: selected ? 3 : 2,
   };
 
+  // Engineering style: all black, differentiate by dash pattern
+  if (diagramStyle === "engineering") {
+    const engineeringBase = {
+      ...baseStyle,
+      stroke: selected ? "#1f2937" : "#000000",
+    };
+
+    switch (streamType) {
+      case "energy":
+        return {
+          ...engineeringBase,
+          strokeDasharray: "8,4",
+        };
+      case "utility":
+        return {
+          ...engineeringBase,
+          strokeDasharray: "2,2",
+        };
+      case "signal":
+        return {
+          ...engineeringBase,
+          strokeDasharray: "12,4,2,4",
+          strokeWidth: 1.5,
+        };
+      case "material":
+      default:
+        return engineeringBase;
+    }
+  }
+
+  // Colorful style: existing colored implementation
   switch (streamType) {
     case "energy":
       return {
@@ -66,6 +99,8 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   selected,
   markerEnd,
 }: EdgeProps<StreamEdge>) {
+  const diagramStyle = useDiagramStore((state) => state.style);
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -75,7 +110,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
     targetPosition,
   });
 
-  const style = getEdgeStyle(data?.streamType, selected);
+  const edgeStyle = getEdgeStyle(data?.streamType, selected, diagramStyle);
   const label = data?.label;
 
   return (
@@ -83,7 +118,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
       <BaseEdge
         id={id}
         path={edgePath}
-        style={style}
+        style={edgeStyle}
         markerEnd={markerEnd}
       />
       {label && (
@@ -95,8 +130,16 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
               pointerEvents: "all",
             }}
             className={cn(
-              "px-2 py-1 rounded text-xs font-medium bg-white border shadow-sm",
-              selected ? "border-blue-500 bg-blue-50" : "border-gray-300"
+              "px-2 py-1 text-xs font-medium bg-white border",
+              diagramStyle === "engineering"
+                ? cn(
+                    "rounded-none border-black",
+                    selected && "border-2"
+                  )
+                : cn(
+                    "rounded shadow-sm",
+                    selected ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                  )
             )}
           >
             {label}

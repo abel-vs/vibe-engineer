@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 
 export function PropertiesPanel() {
   const {
@@ -18,11 +18,14 @@ export function PropertiesPanel() {
     updateEdge,
     removeNode,
     removeEdge,
+    style,
   } = useDiagramStore();
 
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
   const [edgeLabel, setEdgeLabel] = useState("");
+  const [newPropKey, setNewPropKey] = useState("");
+  const [newPropValue, setNewPropValue] = useState("");
 
   const selectedNode = selectedNodeIds.length === 1
     ? nodes.find((n) => n.id === selectedNodeIds[0])
@@ -37,8 +40,11 @@ export function PropertiesPanel() {
     if (selectedNode) {
       setNodeLabel((selectedNode.data?.label as string) || "");
       setNodeDescription((selectedNode.data?.description as string) || "");
+      // Reset new property inputs when selection changes
+      setNewPropKey("");
+      setNewPropValue("");
     }
-  }, [selectedNode]);
+  }, [selectedNode?.id]);
 
   useEffect(() => {
     if (selectedEdge) {
@@ -81,6 +87,45 @@ export function PropertiesPanel() {
     if (selectedEdge) {
       removeEdge(selectedEdge.id);
     }
+  };
+
+  // Get current properties
+  const nodeProperties = (selectedNode?.data?.properties as Record<string, string>) || {};
+
+  const handleAddProperty = () => {
+    if (!selectedNode || !newPropKey.trim()) return;
+    const currentProps = (selectedNode.data?.properties as Record<string, string>) || {};
+    updateNode(selectedNode.id, {
+      data: {
+        ...selectedNode.data,
+        properties: { ...currentProps, [newPropKey.trim()]: newPropValue },
+      },
+    });
+    setNewPropKey("");
+    setNewPropValue("");
+  };
+
+  const handleUpdateProperty = (key: string, value: string) => {
+    if (!selectedNode) return;
+    const currentProps = (selectedNode.data?.properties as Record<string, string>) || {};
+    updateNode(selectedNode.id, {
+      data: {
+        ...selectedNode.data,
+        properties: { ...currentProps, [key]: value },
+      },
+    });
+  };
+
+  const handleRemoveProperty = (key: string) => {
+    if (!selectedNode) return;
+    const currentProps = (selectedNode.data?.properties as Record<string, string>) || {};
+    const { [key]: _, ...rest } = currentProps;
+    updateNode(selectedNode.id, {
+      data: {
+        ...selectedNode.data,
+        properties: rest,
+      },
+    });
   };
 
   // No selection
@@ -152,6 +197,79 @@ export function PropertiesPanel() {
               </div>
             </div>
           </div>
+
+          {/* Custom Properties Section */}
+          <Separator />
+          <div>
+            <h3 className="font-semibold text-sm text-gray-800 mb-3">
+              Custom Properties
+              {style === "engineering" && (
+                <span className="ml-1 text-xs font-normal text-gray-500">
+                  (shown on node)
+                </span>
+              )}
+            </h3>
+
+            {/* Existing properties */}
+            {Object.keys(nodeProperties).length > 0 ? (
+              <div className="space-y-2 mb-3">
+                {Object.entries(nodeProperties).map(([key, value]) => (
+                  <div key={key} className="flex items-center gap-1">
+                    <Input
+                      value={key}
+                      disabled
+                      className="w-20 text-xs h-8"
+                    />
+                    <Input
+                      value={value}
+                      onChange={(e) => handleUpdateProperty(key, e.target.value)}
+                      placeholder="Value"
+                      className="flex-1 text-xs h-8"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleRemoveProperty(key)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 mb-3">No custom properties</p>
+            )}
+
+            {/* Add new property */}
+            <div className="flex items-center gap-1">
+              <Input
+                value={newPropKey}
+                onChange={(e) => setNewPropKey(e.target.value)}
+                placeholder="Key"
+                className="w-20 text-xs h-8"
+              />
+              <Input
+                value={newPropValue}
+                onChange={(e) => setNewPropValue(e.target.value)}
+                placeholder="Value"
+                className="flex-1 text-xs h-8"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddProperty();
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleAddProperty}
+                disabled={!newPropKey.trim()}
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+
           <Separator />
           <Button
             variant="destructive"

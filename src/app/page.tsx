@@ -5,6 +5,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { DiagramCanvas } from "@/components/diagram-canvas";
 import { ShapeToolbar } from "@/components/toolbar/shape-toolbar";
 import { ModeSwitcher } from "@/components/mode-switcher";
+import { StyleSwitcher } from "@/components/style-switcher";
 import { VoiceController } from "@/components/voice-controller";
 import { PropertiesPanel } from "@/components/sidebar/properties-panel";
 import { ExportMenu } from "@/components/export/export-menu";
@@ -13,7 +14,7 @@ import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { autoSave, loadAutoSave, clearAutoSave } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Save, FolderOpen, Trash2, MessageSquare, Bug } from "lucide-react";
+import { Save, FolderOpen, Trash2, MessageSquare, Bug, Code } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export default function DiagramPage() {
   const [transcript, setTranscript] = useState("");
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
+  const [showJsonView, setShowJsonView] = useState(false);
 
   const handleDebugLog = useCallback((log: DebugLog) => {
     setDebugLogs((prev) => [...prev, log]);
@@ -42,20 +44,20 @@ export default function DiagramPage() {
   const { processVoiceCommand, isProcessing, lastResponse, error } = useVoiceCommands({
     onDebugLog: handleDebugLog,
   });
-  const { nodes, edges, mode, loadDiagram, clearCanvas } = useDiagramStore();
+  const { nodes, edges, mode, style, loadDiagram, clearCanvas } = useDiagramStore();
 
   // Auto-save on changes
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
-      autoSave(nodes, edges, mode);
+      autoSave(nodes, edges, mode, style);
     }
-  }, [nodes, edges, mode]);
+  }, [nodes, edges, mode, style]);
 
   // Load auto-save on mount
   useEffect(() => {
     const saved = loadAutoSave();
     if (saved && (saved.nodes.length > 0 || saved.edges.length > 0)) {
-      loadDiagram(saved.nodes, saved.edges, saved.mode);
+      loadDiagram(saved.nodes, saved.edges, saved.mode, saved.style);
     }
   }, [loadDiagram]);
 
@@ -101,6 +103,7 @@ export default function DiagramPage() {
             <h1 className="text-lg font-bold text-gray-800">Voice Diagram</h1>
             <Separator orientation="vertical" className="h-6" />
             <ModeSwitcher />
+            <StyleSwitcher />
           </div>
 
           <div className="flex items-center gap-2">
@@ -143,6 +146,15 @@ export default function DiagramPage() {
               <Bug className="w-4 h-4 mr-2" />
               {debugMode ? "Debug ON" : "Debug"}
             </Button>
+            <Button
+              variant={showJsonView ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setShowJsonView(!showJsonView)}
+              title="Toggle JSON view - shows raw diagram state"
+            >
+              <Code className="w-4 h-4 mr-2" />
+              {showJsonView ? "JSON ON" : "JSON"}
+            </Button>
           </div>
         </header>
 
@@ -155,18 +167,74 @@ export default function DiagramPage() {
 
           {/* Canvas Area */}
           <main className="flex-1 relative" ref={flowRef}>
-            <DiagramCanvas />
+            {showJsonView ? (
+              <div className="w-full h-full overflow-auto bg-gray-900 p-4">
+                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
+                  {JSON.stringify(
+                    {
+                      mode,
+                      style,
+                      nodes: nodes.map((n) => ({
+                        id: n.id,
+                        type: n.type,
+                        position: n.position,
+                        data: n.data,
+                      })),
+                      edges: edges.map((e) => ({
+                        id: e.id,
+                        source: e.source,
+                        target: e.target,
+                        type: e.type,
+                        label: e.label,
+                        data: e.data,
+                      })),
+                    },
+                    null,
+                    2
+                  )}
+                </pre>
+              </div>
+            ) : (
+              <DiagramCanvas />
+            )}
 
             {/* Voice Controller Overlay */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-              {/* Test Button */}
-              <button
-                onClick={() => handleTranscript("Add a rectangle and a circle and connect them")}
-                disabled={isProcessing}
-                className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                Test: Add shapes & connect
-              </button>
+              {/* Test Buttons */}
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex gap-2">
+                <button
+                  onClick={() => handleTranscript("Add a rectangle and a circle and connect them")}
+                  disabled={isProcessing}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  Test: Add shapes
+                </button>
+                <button
+                  onClick={() => {
+                    const firstNode = nodes[0];
+                    if (firstNode) {
+                      console.log("[Test] Setting property on node:", firstNode.id);
+                      const { updateNode } = useDiagramStore.getState();
+                      const existingProps = (firstNode.data?.properties as Record<string, string>) || {};
+                      updateNode(firstNode.id, {
+                        data: {
+                          ...firstNode.data,
+                          properties: { ...existingProps, testProp: "testValue" },
+                        },
+                      });
+                      console.log("[Test] Property set, verifying...");
+                      const verifyNode = useDiagramStore.getState().nodes.find(n => n.id === firstNode.id);
+                      console.log("[Test] Node after update:", JSON.stringify(verifyNode?.data, null, 2));
+                    } else {
+                      console.log("[Test] No nodes to update");
+                    }
+                  }}
+                  disabled={nodes.length === 0}
+                  className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-600 rounded border border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  Test: Set Property
+                </button>
+              </div>
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
                 <VoiceController
                   onTranscript={handleTranscript}

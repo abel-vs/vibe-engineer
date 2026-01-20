@@ -3,18 +3,26 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { EngineeringNodeComponent } from "./engineering-node";
 
 type PlaygroundNodeData = {
   label: string;
+  description?: string;
+  properties?: Record<string, string>;
 };
 
 type PlaygroundNode = Node<PlaygroundNodeData>;
 
 // Rectangle Node
-export const RectangleNode = memo(function RectangleNode({
-  data,
-  selected,
-}: NodeProps<PlaygroundNode>) {
+export const RectangleNode = memo(function RectangleNode(props: NodeProps<PlaygroundNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="rectangle" />;
+  }
+
   return (
     <div
       className={cn(
@@ -38,10 +46,14 @@ export const RectangleNode = memo(function RectangleNode({
 });
 
 // Circle Node
-export const CircleNode = memo(function CircleNode({
-  data,
-  selected,
-}: NodeProps<PlaygroundNode>) {
+export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="circle" />;
+  }
+
   return (
     <div
       className={cn(
@@ -67,10 +79,14 @@ export const CircleNode = memo(function CircleNode({
 });
 
 // Diamond Node
-export const DiamondNode = memo(function DiamondNode({
-  data,
-  selected,
-}: NodeProps<PlaygroundNode>) {
+export const DiamondNode = memo(function DiamondNode(props: NodeProps<PlaygroundNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="diamond" />;
+  }
+
   return (
     <div className="relative w-24 h-24">
       <Handle
@@ -99,10 +115,14 @@ export const DiamondNode = memo(function DiamondNode({
 });
 
 // Triangle Node
-export const TriangleNode = memo(function TriangleNode({
-  data,
-  selected,
-}: NodeProps<PlaygroundNode>) {
+export const TriangleNode = memo(function TriangleNode(props: NodeProps<PlaygroundNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="triangle" />;
+  }
+
   return (
     <div className="relative w-24 h-20">
       <Handle
@@ -133,10 +153,14 @@ export const TriangleNode = memo(function TriangleNode({
 });
 
 // Text Node
-export const TextNode = memo(function TextNode({
-  data,
-  selected,
-}: NodeProps<PlaygroundNode>) {
+export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>) {
+  const { data, selected } = props;
+  const style = useDiagramStore((state) => state.style);
+
+  if (style === "engineering") {
+    return <EngineeringNodeComponent {...props} originalType="text" />;
+  }
+
   return (
     <div
       className={cn(
