@@ -330,7 +330,7 @@ export async function POST(req: NextRequest) {
         },
       }),
       select_elements: tool({
-        description: "Select one or more elements on the canvas",
+        description: "Select/highlight one or more elements on the canvas. Use this to visually highlight nodes when answering questions about the diagram (e.g., 'where is the pump?', 'show me the reactors').",
         inputSchema: selectElementsSchema,
         execute: async (args) => {
           console.log("[Tool] select_elements:", args);

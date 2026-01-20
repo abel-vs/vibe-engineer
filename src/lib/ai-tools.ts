@@ -75,12 +75,13 @@ export const updateEdgeSchema = z.object({
 });
 
 export const selectElementsSchema = z.object({
-  nodeIds: z.array(z.string()).optional().describe("Node IDs to select"),
-  edgeIds: z.array(z.string()).optional().describe("Edge IDs to select"),
+  nodeIds: z.array(z.string()).optional().describe("Node IDs to select/highlight"),
+  edgeIds: z.array(z.string()).optional().describe("Edge IDs to select/highlight"),
   clearPrevious: z
     .boolean()
     .default(true)
     .describe("Clear previous selection first"),
+  reason: z.string().optional().describe("Brief explanation of why these elements are being highlighted"),
 });
 
 export const moveNodeSchema = z.object({

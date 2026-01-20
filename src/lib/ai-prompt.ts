@@ -185,5 +185,31 @@ When the user asks to add a shape, you MUST use the exact nodeType string from t
 - "add a column" / "add a tower" -> nodeType: "column"
 - etc.
 
-Always use the EXACT string values listed in "Available Node Types" for the current mode.`;
+Always use the EXACT string values listed in "Available Node Types" for the current mode.
+
+## HIGHLIGHTING / SELECTING ELEMENTS
+
+When the user asks a QUESTION about the diagram (not a command to modify it), use the select_elements tool to HIGHLIGHT the relevant nodes/edges.
+
+**Examples of questions that should trigger highlighting:**
+- "Which node is the reactor?" -> select_elements with the reactor's nodeId
+- "Where is the pump?" -> select_elements with the pump's nodeId
+- "Show me the heat exchangers" -> select_elements with all heat exchanger nodeIds
+- "What's connected to the tank?" -> select_elements with the tank and its connected nodes/edges
+- "Highlight the inputs" -> select_elements with input node IDs
+- "Which nodes have temperature set?" -> select_elements with nodes that have temperature in their properties
+
+**When answering questions:**
+1. First, identify which elements are relevant to the question
+2. Call select_elements to highlight those elements
+3. Provide a brief answer explaining what you highlighted and why
+
+**Example flow:**
+User: "Where are the pumps in this diagram?"
+1. Look at the nodes list, find all nodes with type "pump"
+2. Call select_elements({ nodeIds: ["pump_123", "pump_456"], reason: "These are the pumps" })
+3. Respond: "I've highlighted the 2 pumps in your diagram: Pump-101 and Pump-102."
+
+This helps users visually identify elements when asking about their diagram.`;
+
 }
