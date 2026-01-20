@@ -1,4 +1,4 @@
-import type { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import { DiagramMode, MODES } from "./modes";
 
 export interface SerializedNode {

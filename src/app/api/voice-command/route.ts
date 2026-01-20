@@ -280,7 +280,19 @@ export async function POST(req: NextRequest) {
         parameters: addEdgeSchema,
         execute: async (args: z.infer<typeof addEdgeSchema>) => {
           console.log("[Tool] add_edge:", args);
-          return tracker.addEdge(args);
+          // Handle alternate field names (AI sometimes uses fromNodeId/toNodeId)
+          const rawArgs = args as Record<string, unknown>;
+          const normalizedArgs = {
+            ...args,
+            sourceNodeId: args.sourceNodeId || (rawArgs.fromNodeId as string) || (rawArgs.from as string),
+            targetNodeId: args.targetNodeId || (rawArgs.toNodeId as string) || (rawArgs.to as string),
+          };
+          // Validate required fields
+          if (!normalizedArgs.sourceNodeId || !normalizedArgs.targetNodeId) {
+            console.error("[Tool] add_edge: Missing required fields", args, normalizedArgs);
+            return { success: false, error: "Missing sourceNodeId or targetNodeId" };
+          }
+          return tracker.addEdge(normalizedArgs);
         },
       }),
       // @ts-ignore - AI SDK type inference

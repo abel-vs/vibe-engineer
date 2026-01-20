@@ -94,15 +94,23 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
         switch (toolName) {
           case "add_node": {
-            const nodeType = (args as Record<string, unknown>).nodeType as string;
-            const position = (args as Record<string, unknown>).position as { x: number; y: number } | undefined;
-            const data = (args as Record<string, unknown>).data as Record<string, string> | undefined;
+            const rawArgs = args as Record<string, unknown>;
+            const nodeType = rawArgs.nodeType as string;
+            // Handle position as nested object OR top-level x/y fields
+            let position = rawArgs.position as { x: number; y: number } | undefined;
+            if (!position && (rawArgs.x !== undefined || rawArgs.y !== undefined)) {
+              position = {
+                x: (rawArgs.x as number) ?? 400,
+                y: (rawArgs.y as number) ?? 300,
+              };
+            }
+            const data = rawArgs.data as Record<string, string> | undefined;
             // Generate default label if not provided (capitalize nodeType)
-            const label = ((args as Record<string, unknown>).label as string) ||
+            const label = (rawArgs.label as string) ||
               nodeType.charAt(0).toUpperCase() + nodeType.slice(1).replace(/_/g, ' ');
 
             if (!nodeType) {
-              console.error("[applyToolResults] add_node missing nodeType:", { nodeType });
+              console.error("[applyToolResults] add_node missing nodeType:", rawArgs);
               continue;
             }
 
@@ -131,20 +139,24 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               position: finalPosition,
               data: { label, description: "", ...data },
             };
+            console.log("[DEBUG] About to call addNode with:", newNode);
             addNode(newNode);
+            console.log("[DEBUG] addNode called, checking store:", getStoreState().nodes.length, "nodes");
             log("result", `Added node: "${label}" (${nodeType})`, { id: nodeId, position: finalPosition });
             break;
           }
 
           case "add_edge": {
-            const sourceNodeId = (args as Record<string, unknown>).sourceNodeId as string;
-            const targetNodeId = (args as Record<string, unknown>).targetNodeId as string;
-            const edgeType = (args as Record<string, unknown>).edgeType as string | undefined;
-            const label = (args as Record<string, unknown>).label as string | undefined;
-            const data = (args as Record<string, unknown>).data as Record<string, string> | undefined;
+            const rawArgs = args as Record<string, unknown>;
+            // Handle alternate field names (AI sometimes uses fromNodeId/toNodeId)
+            const sourceNodeId = (rawArgs.sourceNodeId || rawArgs.fromNodeId || rawArgs.from) as string;
+            const targetNodeId = (rawArgs.targetNodeId || rawArgs.toNodeId || rawArgs.to) as string;
+            const edgeType = rawArgs.edgeType as string | undefined;
+            const label = rawArgs.label as string | undefined;
+            const data = rawArgs.data as Record<string, string> | undefined;
 
             if (!sourceNodeId || !targetNodeId) {
-              console.error("[applyToolResults] add_edge missing sourceNodeId or targetNodeId:", { sourceNodeId, targetNodeId });
+              console.error("[applyToolResults] add_edge missing sourceNodeId or targetNodeId:", rawArgs);
               continue;
             }
 
@@ -401,6 +413,8 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
         // Apply tool results to the diagram
         if (data.toolResults && data.toolResults.length > 0) {
+          log("info", `Received ${data.toolResults.length} tool result(s) from API`);
+          console.log("[DEBUG] toolResults from API:", JSON.stringify(data.toolResults, null, 2));
           applyToolResults(data.toolResults);
         } else {
           log("info", "No tool calls from AI");

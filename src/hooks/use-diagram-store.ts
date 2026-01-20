@@ -1,7 +1,7 @@
-import { create } from "zustand";
-import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect } from "@xyflow/react";
-import { applyNodeChanges, applyEdgeChanges, addEdge } from "@xyflow/react";
 import type { DiagramMode } from "@/lib/modes";
+import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "@xyflow/react";
+import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
+import { create } from "zustand";
 
 export interface DiagramState {
   // Diagram data
