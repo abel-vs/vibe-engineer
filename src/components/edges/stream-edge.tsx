@@ -5,6 +5,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
+  getSmoothStepPath,
   type EdgeProps,
   type Edge,
 } from "@xyflow/react";
@@ -101,14 +102,26 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
 }: EdgeProps<StreamEdge>) {
   const diagramStyle = useDiagramStore((state) => state.style);
 
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  // Engineering style: use step path with hard corners (borderRadius: 0)
+  // Colorful style: use smooth bezier curves
+  const [edgePath, labelX, labelY] = diagramStyle === "engineering"
+    ? getSmoothStepPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+        borderRadius: 0, // Hard 90-degree corners
+      })
+    : getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+      });
 
   const edgeStyle = getEdgeStyle(data?.streamType, selected, diagramStyle);
   const label = data?.label;
