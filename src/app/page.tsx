@@ -14,7 +14,7 @@ import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { autoSave, loadAutoSave, clearAutoSave } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Save, FolderOpen, Trash2, MessageSquare, Bug, Code } from "lucide-react";
+import { Save, FolderOpen, Trash2, MessageSquare, Bug, Code, Undo2, Redo2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,7 @@ export default function DiagramPage() {
   const { processVoiceCommand, isProcessing, lastResponse, error } = useVoiceCommands({
     onDebugLog: handleDebugLog,
   });
-  const { nodes, edges, mode, style, loadDiagram, clearCanvas } = useDiagramStore();
+  const { nodes, edges, mode, style, loadDiagram, clearCanvas, undo, redo, canUndo, canRedo } = useDiagramStore();
 
   // Auto-save on changes
   useEffect(() => {
@@ -60,6 +60,41 @@ export default function DiagramPage() {
       loadDiagram(saved.nodes, saved.edges, saved.mode, saved.style);
     }
   }, [loadDiagram]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd+Z (Mac) or Ctrl+Z (Windows/Linux)
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+      // Ignore if typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        return;
+      }
+
+      if (modifierKey && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Cmd/Ctrl + Shift + Z = Redo
+          redo();
+        } else {
+          // Cmd/Ctrl + Z = Undo
+          undo();
+        }
+      }
+
+      // Also support Cmd/Ctrl + Y for redo (Windows convention)
+      if (modifierKey && e.key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
 
   const handleTranscript = useCallback(
     async (text: string) => {
@@ -107,6 +142,25 @@ export default function DiagramPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={undo}
+              disabled={!canUndo()}
+              title="Undo (⌘Z)"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={redo}
+              disabled={!canRedo()}
+              title="Redo (⌘⇧Z)"
+            >
+              <Redo2 className="w-4 h-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
             <Button variant="ghost" size="sm" onClick={handleNewDiagram}>
               <Trash2 className="w-4 h-4 mr-2" />
               New

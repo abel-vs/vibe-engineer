@@ -4,6 +4,15 @@ import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "@xyflo
 import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { create } from "zustand";
 
+// History snapshot - only track the data that changes with user actions
+interface HistorySnapshot {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+// Maximum history size to prevent memory issues
+const MAX_HISTORY_SIZE = 50;
+
 export interface DiagramState {
   // Diagram data
   nodes: Node[];
@@ -14,6 +23,10 @@ export interface DiagramState {
   // Selection state
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
+
+  // History for undo/redo
+  past: HistorySnapshot[];
+  future: HistorySnapshot[];
 
   // React Flow handlers
   onNodesChange: OnNodesChange;
@@ -35,9 +48,21 @@ export interface DiagramState {
   setSelectedEdges: (edgeIds: string[]) => void;
   clearCanvas: () => void;
 
+  // Undo/Redo
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+
   // Load/save
   loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode, style?: DiagramStyle) => void;
 }
+
+// Helper to create a deep clone of nodes/edges for history
+const cloneSnapshot = (nodes: Node[], edges: Edge[]): HistorySnapshot => ({
+  nodes: JSON.parse(JSON.stringify(nodes)),
+  edges: JSON.parse(JSON.stringify(edges)),
+});
 
 export const useDiagramStore = create<DiagramState>((set, get) => ({
   nodes: [],
@@ -46,8 +71,22 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   style: "colorful",
   selectedNodeIds: [],
   selectedEdgeIds: [],
+  past: [],
+  future: [],
 
   onNodesChange: (changes) => {
+    // Check if this is a meaningful change (not just selection)
+    const hasMeaningfulChange = changes.some(
+      (c) => c.type === "remove" || c.type === "position" || c.type === "dimensions"
+    );
+
+    if (hasMeaningfulChange) {
+      // Save to history before applying changes
+      const { nodes, edges, past } = get();
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      set({ past: newPast, future: [] });
+    }
+
     set({ nodes: applyNodeChanges(changes, get().nodes) });
 
     // Update selection from changes
@@ -64,6 +103,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   onEdgesChange: (changes) => {
+    // Check if this is a meaningful change (not just selection)
+    const hasMeaningfulChange = changes.some((c) => c.type === "remove");
+
+    if (hasMeaningfulChange) {
+      // Save to history before applying changes
+      const { nodes, edges, past } = get();
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      set({ past: newPast, future: [] });
+    }
+
     set({ edges: applyEdgeChanges(changes, get().edges) });
 
     // Update selection from changes
@@ -80,6 +129,10 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   onConnect: (connection) => {
+    // Save to history before adding edge
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+
     const newEdge: Edge = {
       id: `edge_${Date.now()}`,
       source: connection.source,
@@ -88,59 +141,82 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       targetHandle: connection.targetHandle ?? null,
       type: "stream",
     };
-    set({ edges: addEdge(newEdge, get().edges) });
+    set({ edges: addEdge(newEdge, get().edges), past: newPast, future: [] });
   },
 
   setMode: (mode) => set({ mode }),
 
   setStyle: (style) => set({ style }),
 
-  setNodes: (nodes) => set({ nodes }),
+  setNodes: (nodes) => {
+    const { nodes: currentNodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(currentNodes, edges)].slice(-MAX_HISTORY_SIZE);
+    set({ nodes, past: newPast, future: [] });
+  },
 
-  setEdges: (edges) => set({ edges }),
+  setEdges: (edges) => {
+    const { nodes, edges: currentEdges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, currentEdges)].slice(-MAX_HISTORY_SIZE);
+    set({ edges, past: newPast, future: [] });
+  },
 
   addNode: (node) => {
-    set({ nodes: [...get().nodes, node] });
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    set({ nodes: [...nodes, node], past: newPast, future: [] });
   },
 
   addEdgeAction: (edge) => {
-    set({ edges: [...get().edges, edge] });
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    set({ edges: [...edges, edge], past: newPast, future: [] });
   },
 
   removeNode: (nodeId) => {
+    const { nodes, edges, past, selectedNodeIds } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
     set({
-      nodes: get().nodes.filter((n) => n.id !== nodeId),
-      edges: get().edges.filter(
-        (e) => e.source !== nodeId && e.target !== nodeId
-      ),
-      selectedNodeIds: get().selectedNodeIds.filter((id) => id !== nodeId),
+      nodes: nodes.filter((n) => n.id !== nodeId),
+      edges: edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      selectedNodeIds: selectedNodeIds.filter((id) => id !== nodeId),
+      past: newPast,
+      future: [],
     });
   },
 
   removeEdge: (edgeId) => {
+    const { nodes, edges, past, selectedEdgeIds } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
     set({
-      edges: get().edges.filter((e) => e.id !== edgeId),
-      selectedEdgeIds: get().selectedEdgeIds.filter((id) => id !== edgeId),
+      edges: edges.filter((e) => e.id !== edgeId),
+      selectedEdgeIds: selectedEdgeIds.filter((id) => id !== edgeId),
+      past: newPast,
+      future: [],
     });
   },
 
   updateNode: (nodeId, updates) => {
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
     set({
-      nodes: get().nodes.map((n) =>
-        n.id === nodeId ? { ...n, ...updates } : n
-      ),
+      nodes: nodes.map((n) => (n.id === nodeId ? { ...n, ...updates } : n)),
+      past: newPast,
+      future: [],
     });
   },
 
   updateEdge: (edgeId, updates) => {
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
     set({
-      edges: get().edges.map((e) =>
-        e.id === edgeId ? { ...e, ...updates } : e
-      ),
+      edges: edges.map((e) => (e.id === edgeId ? { ...e, ...updates } : e)),
+      past: newPast,
+      future: [],
     });
   },
 
   setSelectedNodes: (nodeIds) => {
+    // Selection changes don't affect history
     set({
       nodes: get().nodes.map((n) => ({
         ...n,
@@ -151,6 +227,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   setSelectedEdges: (edgeIds) => {
+    // Selection changes don't affect history
     set({
       edges: get().edges.map((e) => ({
         ...e,
@@ -161,13 +238,60 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   clearCanvas: () => {
+    const { nodes, edges, past } = get();
+    // Only save to history if there's something to clear
+    if (nodes.length > 0 || edges.length > 0) {
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      set({
+        nodes: [],
+        edges: [],
+        selectedNodeIds: [],
+        selectedEdgeIds: [],
+        past: newPast,
+        future: [],
+      });
+    }
+  },
+
+  undo: () => {
+    const { nodes, edges, past, future } = get();
+    if (past.length === 0) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, -1);
+    const newFuture = [cloneSnapshot(nodes, edges), ...future].slice(0, MAX_HISTORY_SIZE);
+
     set({
-      nodes: [],
-      edges: [],
+      nodes: previous.nodes,
+      edges: previous.edges,
+      past: newPast,
+      future: newFuture,
       selectedNodeIds: [],
       selectedEdgeIds: [],
     });
   },
+
+  redo: () => {
+    const { nodes, edges, past, future } = get();
+    if (future.length === 0) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+
+    set({
+      nodes: next.nodes,
+      edges: next.edges,
+      past: newPast,
+      future: newFuture,
+      selectedNodeIds: [],
+      selectedEdgeIds: [],
+    });
+  },
+
+  canUndo: () => get().past.length > 0,
+
+  canRedo: () => get().future.length > 0,
 
   loadDiagram: (nodes, edges, mode, style) => {
     set({
@@ -177,6 +301,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       style: style ?? "colorful",
       selectedNodeIds: [],
       selectedEdgeIds: [],
+      past: [],
+      future: [],
     });
   },
 }));
