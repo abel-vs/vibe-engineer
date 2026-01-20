@@ -159,6 +159,14 @@ export default function DiagramPage() {
 
             {/* Voice Controller Overlay */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+              {/* Test Button */}
+              <button
+                onClick={() => handleTranscript("Add a rectangle and a circle and connect them")}
+                disabled={isProcessing}
+                className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                Test: Add shapes & connect
+              </button>
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
                 <VoiceController
                   onTranscript={handleTranscript}

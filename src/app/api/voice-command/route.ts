@@ -402,6 +402,7 @@ export async function POST(req: NextRequest) {
     console.log("[Voice Command] Using provider:", provider, "model:", modelName);
 
     // Use maxSteps to allow multi-turn tool calling
+    // Use Responses API for OpenAI (default for gpt-5)
     const model = provider === "openai" ? openai(modelName) : cerebras(modelName);
 
     const result = await generateText({
