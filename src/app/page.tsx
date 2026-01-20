@@ -1,20 +1,13 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
+import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
 import { DiagramCanvas } from "@/components/diagram-canvas";
-import { ShapeToolbar } from "@/components/toolbar/shape-toolbar";
-import { ModeSwitcher } from "@/components/mode-switcher";
-import { StyleSwitcher } from "@/components/style-switcher";
-import { VoiceController } from "@/components/voice-controller";
-import { PropertiesPanel } from "@/components/sidebar/properties-panel";
 import { ExportMenu } from "@/components/export/export-menu";
-import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
-import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { autoSave, loadAutoSave, clearAutoSave } from "@/lib/storage";
+import { ModeSwitcher } from "@/components/mode-switcher";
+import { PropertiesPanel } from "@/components/sidebar/properties-panel";
+import { StyleSwitcher } from "@/components/style-switcher";
+import { ShapeToolbar } from "@/components/toolbar/shape-toolbar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Save, FolderOpen, Trash2, MessageSquare, Bug, Code, Undo2, Redo2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +15,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
+import { Separator } from "@/components/ui/separator";
+import { VoiceController } from "@/components/voice-controller";
+import { useSettings } from "@/contexts/settings-context";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
+import { autoSave, clearAutoSave, loadAutoSave } from "@/lib/storage";
+import { ReactFlowProvider } from "@xyflow/react";
+import { Bug, Code, FolderOpen, MessageSquare, Redo2, Save, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 export default function DiagramPage() {
@@ -32,6 +33,7 @@ export default function DiagramPage() {
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
   const [showJsonView, setShowJsonView] = useState(false);
+  const { dictionary, dictionaryEnabled } = useSettings();
 
   const handleDebugLog = useCallback((log: DebugLog) => {
     setDebugLogs((prev) => [...prev, log]);
@@ -294,6 +296,7 @@ export default function DiagramPage() {
                 <VoiceController
                   onTranscript={handleTranscript}
                   disabled={isProcessing}
+                  dictionary={dictionaryEnabled ? dictionary : []}
                 />
               </div>
             </div>

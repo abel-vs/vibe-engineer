@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { zodSchema } from "ai";
+import { z } from "zod";
 
 // Define the schemas for each tool
 export const addNodeSchema = z.object({
@@ -115,6 +115,14 @@ export const clearCanvasSchema = z.object({
   confirm: z.boolean().describe("Must be true to confirm clearing"),
 });
 
+export const speakResponseSchema = z.object({
+  message: z
+    .string()
+    .describe(
+      "A short, friendly voice message to speak to the user (max ~100 characters). Use this to acknowledge commands, provide feedback, or add personality. Examples: 'Done! Added a reactor and pump.', 'Sure, connecting those nodes now.', 'All clear!'"
+    ),
+});
+
 // Export types inferred from schemas
 export type AddNodeInput = z.infer<typeof addNodeSchema>;
 export type AddEdgeInput = z.infer<typeof addEdgeSchema>;
@@ -125,6 +133,7 @@ export type UpdateEdgeInput = z.infer<typeof updateEdgeSchema>;
 export type SelectElementsInput = z.infer<typeof selectElementsSchema>;
 export type MoveNodeInput = z.infer<typeof moveNodeSchema>;
 export type ClearCanvasInput = z.infer<typeof clearCanvasSchema>;
+export type SpeakResponseInput = z.infer<typeof speakResponseSchema>;
 
 // Tool definitions for use with generateText - using AI SDK 6.x format with inputSchema
 export const diagramTools = {

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useDiagramStore } from "./use-diagram-store";
+import { useSettings } from "@/contexts/settings-context";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
 import type { Node, Edge } from "@xyflow/react";
 
@@ -22,6 +23,7 @@ interface VoiceCommandResponse {
     args: Record<string, unknown>;
   }>;
   toolResults?: ToolResult[];
+  speechMessage?: string | null; // Text to convert to speech
   error?: string;
   details?: string;
 }
@@ -39,11 +41,92 @@ interface UseVoiceCommandsOptions {
   onDebugLog?: (log: DebugLog) => void;
 }
 
+// Helper to play audio from base64
+function playAudioFromBase64(base64Audio: string, mimeType: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      console.log("[Audio] Starting decode, base64 length:", base64Audio.length);
+      
+      // Decode base64 to binary
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      console.log("[Audio] Decoded to bytes:", bytes.length);
+
+      // Create blob and URL
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      console.log("[Audio] Created blob URL:", url);
+
+      // Create and play audio
+      const audio = new Audio(url);
+      
+      audio.onloadeddata = () => {
+        console.log("[Audio] Audio loaded, duration:", audio.duration);
+      };
+      
+      audio.onended = () => {
+        console.log("[Audio] Playback ended");
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      
+      audio.onerror = (e) => {
+        console.error("[Audio] Error event:", e, audio.error);
+        URL.revokeObjectURL(url);
+        reject(new Error(`Audio error: ${audio.error?.message || "unknown"}`));
+      };
+      
+      console.log("[Audio] Attempting to play...");
+      audio.play()
+        .then(() => console.log("[Audio] Play started successfully"))
+        .catch((err) => {
+          console.error("[Audio] Play failed:", err);
+          reject(err);
+        });
+    } catch (err) {
+      console.error("[Audio] Exception:", err);
+      reject(err);
+    }
+  });
+}
+
 export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
   const { onDebugLog } = options;
+  const { ttsEnabled } = useSettings();
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Helper to generate TTS and play it (fire and forget)
+  const generateAndPlayTTS = useCallback(async (text: string) => {
+    console.log("[TTS] Calling /api/tts...");
+    setIsSpeaking(true);
+    
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || "TTS failed");
+      }
+
+      const { audio, mimeType } = await response.json();
+      console.log("[TTS] Received audio, length:", audio?.length);
+      
+      await playAudioFromBase64(audio, mimeType);
+      console.log("[TTS] Playback complete");
+    } finally {
+      setIsSpeaking(false);
+    }
+  }, []);
 
   // Helper to log debug messages
   const log = useCallback(
@@ -430,12 +513,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           freshState.selectedEdgeIds
         );
 
-        log("info", `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges)`);
+        log("info", `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges, TTS: ${ttsEnabled})`);
 
         const response = await fetch("/api/voice-command", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, diagramState }),
+          body: JSON.stringify({ transcript, diagramState, ttsEnabled }),
         });
 
         const data: VoiceCommandResponse = await response.json();
@@ -448,7 +531,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
         log("info", `AI response received`, { toolCalls: data.toolResults?.length || 0 });
 
-        // Apply tool results to the diagram
+        // Apply tool results to the diagram IMMEDIATELY
         if (data.toolResults && data.toolResults.length > 0) {
           log("info", `Received ${data.toolResults.length} tool result(s) from API`);
           console.log("[DEBUG] toolResults from API:", JSON.stringify(data.toolResults, null, 2));
@@ -462,6 +545,18 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         }
 
         setLastResponse(data.response || "Command executed");
+
+        // Generate and play TTS in parallel (don't block) - only if TTS is enabled
+        if (data.speechMessage && ttsEnabled) {
+          console.log("[VoiceCommands] Generating TTS for:", data.speechMessage);
+          log("info", "Generating voice response...");
+          
+          // Fire and forget - don't await
+          generateAndPlayTTS(data.speechMessage).catch((err) => {
+            console.error("[VoiceCommands] TTS failed:", err);
+          });
+        }
+
         return data;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
@@ -472,12 +567,13 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         setIsProcessing(false);
       }
     },
-    [applyToolResults, log]
+    [applyToolResults, log, ttsEnabled, generateAndPlayTTS]
   );
 
   return {
     processVoiceCommand,
     isProcessing,
+    isSpeaking,
     lastResponse,
     error,
   };

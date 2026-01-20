@@ -1,8 +1,8 @@
 "use client";
 
-import { memo, useMemo } from "react";
-import { Handle, Position, useEdges, type NodeProps, type Node } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { Handle, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
+import { memo, useMemo } from "react";
 
 export type EngineeringNodeData = {
   label: string;

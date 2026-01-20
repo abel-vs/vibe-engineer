@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, MicOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Loader2, Mic, MicOff, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface VoiceControllerProps {
   onTranscript: (transcript: string) => void;
   onRecordingChange?: (isRecording: boolean) => void;
   disabled?: boolean;
+  dictionary?: string[];
 }
 
 export function VoiceController({
   onTranscript,
   onRecordingChange,
   disabled = false,
+  dictionary = [],
 }: VoiceControllerProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,6 +68,20 @@ export function VoiceController({
     }
   }, [isRecording, onRecordingChange]);
 
+  const cancelRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      // Stop the media recorder
+      mediaRecorderRef.current.stop();
+      // Stop all tracks to release the microphone
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      // Clear audio chunks so it won't be processed
+      audioChunksRef.current = [];
+      setIsRecording(false);
+      onRecordingChange?.(false);
+      setError(null);
+    }
+  }, [isRecording, onRecordingChange]);
+
   const processAudio = async (audioBlob: Blob) => {
     setIsProcessing(true);
     console.log("[VoiceController] Processing audio blob:", {
@@ -76,6 +92,11 @@ export function VoiceController({
     try {
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
+      
+      // Pass dictionary for STT correction
+      if (dictionary.length > 0) {
+        formData.append("dictionary", JSON.stringify(dictionary));
+      }
 
       console.log("[VoiceController] Sending to /api/transcribe...");
       const response = await fetch("/api/transcribe", {
@@ -108,7 +129,7 @@ export function VoiceController({
     }
   };
 
-  // Keyboard shortcut - hold space to record
+  // Keyboard shortcut - hold space to record, Escape to cancel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !e.repeat && !disabled && !isRecording && !isProcessing) {
@@ -119,10 +140,21 @@ export function VoiceController({
           startRecording();
         }
       }
+      
+      // Escape key to cancel recording
+      if (e.key === "Escape" && isRecording) {
+        e.preventDefault();
+        cancelRecording();
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space" && isRecording) {
+        // Don't intercept if in an input field
+        const target = e.target as HTMLElement;
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+          return;
+        }
         e.preventDefault();
         stopRecording();
       }
@@ -135,7 +167,7 @@ export function VoiceController({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [disabled, isRecording, isProcessing, startRecording, stopRecording]);
+  }, [disabled, isRecording, isProcessing, startRecording, stopRecording, cancelRecording]);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -170,9 +202,21 @@ export function VoiceController({
             ? "Recording... Release to stop"
             : "Hold to speak"}
         </p>
-        <p className="text-xs text-gray-400 mt-1">
-          or hold <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Space</kbd>
-        </p>
+        {isRecording ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cancelRecording}
+            className="mt-2 h-8 text-xs"
+          >
+            <X className="w-3 h-3 mr-1" />
+            Cancel
+          </Button>
+        ) : (
+          <p className="text-xs text-gray-400 mt-1">
+            or hold <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Space</kbd>
+          </p>
+        )}
       </div>
       {error && (
         <p className="text-sm text-red-500 mt-2">{error}</p>

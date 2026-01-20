@@ -7,6 +7,7 @@ import {
   removeEdgeSchema,
   removeNodeSchema,
   selectElementsSchema,
+  speakResponseSchema,
   updateEdgeSchema,
   updateNodeSchema,
 } from "@/lib/ai-tools";
@@ -241,9 +242,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { transcript, diagramState } = (await req.json()) as {
+    const { transcript, diagramState, ttsEnabled = true } = (await req.json()) as {
       transcript: string;
       diagramState: DiagramStateForAI;
+      ttsEnabled?: boolean;
     };
 
     if (!transcript) {
@@ -257,13 +259,17 @@ export async function POST(req: NextRequest) {
     console.log("[Voice Command] Initial state:", {
       nodes: diagramState.nodes.length,
       edges: diagramState.edges.length,
+      ttsEnabled,
     });
 
     // Create state tracker for multi-turn execution
     const tracker = createStateTracker(diagramState);
 
-    // Build tools with execute functions that update tracked state
-    const executableTools = {
+    // Track speech message for TTS
+    let speechMessage: string | null = null;
+
+    // Build base tools with execute functions that update tracked state
+    const baseTools = {
       add_node: tool({
         description: "Add a new node/equipment to the diagram. REQUIRED: nodeType must be specified.",
         inputSchema: addNodeSchema,
@@ -379,6 +385,22 @@ export async function POST(req: NextRequest) {
       }),
     };
 
+    // Conditionally add speak_response tool only if TTS is enabled
+    const executableTools = ttsEnabled
+      ? {
+          ...baseTools,
+          speak_response: tool({
+            description: "Speak a short voice response to the user. Use this to acknowledge commands with a friendly voice message. Keep messages under 100 characters. Call this ONCE at the end of processing to provide audio feedback.",
+            inputSchema: speakResponseSchema,
+            execute: async (args) => {
+              console.log("[Tool] speak_response:", args.message);
+              speechMessage = args.message;
+              return { success: true, message: args.message };
+            },
+          }),
+        }
+      : baseTools;
+
     const systemPrompt = buildSystemPrompt(diagramState);
 
     // Create the agent with Cerebras provider
@@ -414,11 +436,13 @@ export async function POST(req: NextRequest) {
     const toolResults = tracker.getToolResults();
     console.log("[Voice Command] Tool results:", toolResults.length);
 
+    // Return immediately with speech message - client will call TTS endpoint separately
     return NextResponse.json({
       transcript,
       response: result.text,
       toolResults,
       steps: result.steps?.length || 1,
+      speechMessage, // Client will generate TTS from this
     });
   } catch (error) {
     console.error("Voice command error:", error);
