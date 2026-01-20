@@ -1,21 +1,20 @@
-import { generateText, tool } from "ai";
+import { buildSystemPrompt } from "@/lib/ai-prompt";
+import {
+  addEdgeSchema,
+  addNodeSchema,
+  clearCanvasSchema,
+  moveNodeSchema,
+  removeEdgeSchema,
+  removeNodeSchema,
+  selectElementsSchema,
+  updateEdgeSchema,
+  updateNodeSchema,
+} from "@/lib/ai-tools";
+import type { DiagramStateForAI } from "@/lib/diagram-state";
 import { cerebras } from "@ai-sdk/cerebras";
-import { openai } from "@ai-sdk/openai";
+import { ToolLoopAgent, stepCountIs, tool } from "ai";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { buildSystemPrompt } from "@/lib/ai-prompt";
-import type { DiagramStateForAI } from "@/lib/diagram-state";
-import {
-  addNodeSchema,
-  addEdgeSchema,
-  removeNodeSchema,
-  removeEdgeSchema,
-  updateNodeSchema,
-  updateEdgeSchema,
-  selectElementsSchema,
-  moveNodeSchema,
-  clearCanvasSchema,
-} from "@/lib/ai-tools";
 
 interface ToolResult {
   toolName: string;
@@ -264,13 +263,11 @@ export async function POST(req: NextRequest) {
     const tracker = createStateTracker(diagramState);
 
     // Build tools with execute functions that update tracked state
-    // Using type assertion due to AI SDK v6 type inference issues with Cerebras provider
     const executableTools = {
-      // @ts-ignore - AI SDK type inference
       add_node: tool({
         description: "Add a new node/equipment to the diagram. REQUIRED: nodeType must be specified.",
-        parameters: addNodeSchema,
-        execute: async (args: z.infer<typeof addNodeSchema>) => {
+        inputSchema: addNodeSchema,
+        execute: async (args) => {
           console.log("[Tool] add_node:", args);
           // Validate required field
           if (!args.nodeType) {
@@ -280,11 +277,10 @@ export async function POST(req: NextRequest) {
           return tracker.addNode(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       add_edge: tool({
         description: "Add a connection/stream between two nodes. Use the node IDs returned from add_node.",
-        parameters: addEdgeSchema,
-        execute: async (args: z.infer<typeof addEdgeSchema>) => {
+        inputSchema: addEdgeSchema,
+        execute: async (args) => {
           console.log("[Tool] add_edge:", args);
           // Handle alternate field names (AI sometimes uses fromNodeId/toNodeId)
           const rawArgs = args as Record<string, unknown>;
@@ -301,73 +297,65 @@ export async function POST(req: NextRequest) {
           return tracker.addEdge(normalizedArgs);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       remove_node: tool({
         description: "Remove a node from the diagram. Also removes all connected edges.",
-        parameters: removeNodeSchema,
-        execute: async (args: z.infer<typeof removeNodeSchema>) => {
+        inputSchema: removeNodeSchema,
+        execute: async (args) => {
           console.log("[Tool] remove_node:", args);
           return tracker.removeNode(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       remove_edge: tool({
         description: "Remove a connection/stream from the diagram",
-        parameters: removeEdgeSchema,
-        execute: async (args: z.infer<typeof removeEdgeSchema>) => {
+        inputSchema: removeEdgeSchema,
+        execute: async (args) => {
           console.log("[Tool] remove_edge:", args);
           return tracker.removeEdge(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       update_node: tool({
         description: "Update properties of an existing node",
-        parameters: updateNodeSchema,
-        execute: async (args: z.infer<typeof updateNodeSchema>) => {
+        inputSchema: updateNodeSchema,
+        execute: async (args) => {
           console.log("[Tool] update_node:", args);
           return tracker.updateNode(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       update_edge: tool({
         description: "Update properties of an existing edge/stream",
-        parameters: updateEdgeSchema,
-        execute: async (args: z.infer<typeof updateEdgeSchema>) => {
+        inputSchema: updateEdgeSchema,
+        execute: async (args) => {
           console.log("[Tool] update_edge:", args);
           return tracker.updateEdge(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       select_elements: tool({
         description: "Select one or more elements on the canvas",
-        parameters: selectElementsSchema,
-        execute: async (args: z.infer<typeof selectElementsSchema>) => {
+        inputSchema: selectElementsSchema,
+        execute: async (args) => {
           console.log("[Tool] select_elements:", args);
           return tracker.selectElements(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       move_node: tool({
         description: "Move a node to a new position or relative to another node",
-        parameters: moveNodeSchema,
-        execute: async (args: z.infer<typeof moveNodeSchema>) => {
+        inputSchema: moveNodeSchema,
+        execute: async (args) => {
           console.log("[Tool] move_node:", args);
           return tracker.moveNode(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       clear_canvas: tool({
         description: "Clear all nodes and edges from the canvas",
-        parameters: clearCanvasSchema,
-        execute: async (args: z.infer<typeof clearCanvasSchema>) => {
+        inputSchema: clearCanvasSchema,
+        execute: async (args) => {
           console.log("[Tool] clear_canvas:", args);
           return tracker.clearCanvas(args);
         },
       }),
-      // @ts-ignore - AI SDK type inference
       get_current_state: tool({
         description: "Get the current diagram state including all nodes and edges. Use this to see what's on the canvas before making changes.",
-        parameters: z.object({}),
+        inputSchema: z.object({}),
         execute: async () => {
           const state = tracker.getState();
           console.log("[Tool] get_current_state:", state);
@@ -393,35 +381,20 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(diagramState);
 
-    // Choose provider: "openai" or "cerebras"
-    const provider = process.env.AI_PROVIDER || "openai";
-    const modelName = provider === "openai"
-      ? (process.env.OPENAI_MODEL || "gpt-5")
-      : (process.env.CEREBRAS_MODEL || "zai-glm-4.7");
+    // Create the agent with Cerebras provider
+    const modelName = process.env.CEREBRAS_MODEL || "zai-glm-4.7";
+    console.log("[Voice Command] Using ToolLoopAgent with Cerebras model:", modelName);
 
-    console.log("[Voice Command] Using provider:", provider, "model:", modelName);
-
-    // Use maxSteps to allow multi-turn tool calling
-    // Use Responses API for OpenAI (default for gpt-5)
-    const model = provider === "openai" ? openai(modelName) : cerebras(modelName);
-
-    const result = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: transcript,
+    const agent = new ToolLoopAgent({
+      model: cerebras(modelName),
+      instructions: systemPrompt,
       tools: executableTools,
-      maxSteps: 10, // Allow up to 10 tool-calling rounds
-      providerOptions: provider === "openai"
-        ? {
-            openai: {
-              strictJsonSchema: false, // Allow optional fields in schemas
-            },
-          }
-        : {
-            cerebras: {
-              parallel_tool_calls: true,
-            },
-          },
+      stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-turn
+    });
+
+    // Run the agent to process the voice command
+    const result = await agent.generate({
+      prompt: transcript,
     });
 
     console.log("[Voice Command] Finished. Steps:", result.steps?.length || 1);
