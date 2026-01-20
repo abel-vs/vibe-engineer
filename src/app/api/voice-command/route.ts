@@ -374,7 +374,7 @@ export async function POST(req: NextRequest) {
     };
 
     const systemPrompt = buildSystemPrompt(diagramState);
-    const modelName = process.env.CEREBRAS_MODEL || "llama-3.3-70b";
+    const modelName = process.env.CEREBRAS_MODEL || "zai-glm-4.7";
     console.log("[Voice Command] Using model:", modelName);
 
     // Use maxSteps to allow multi-turn tool calling
