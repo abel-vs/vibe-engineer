@@ -1,5 +1,6 @@
 import { generateText, tool } from "ai";
 import { cerebras } from "@ai-sdk/cerebras";
+import { openai } from "@ai-sdk/openai";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { buildSystemPrompt } from "@/lib/ai-prompt";
@@ -391,22 +392,31 @@ export async function POST(req: NextRequest) {
     };
 
     const systemPrompt = buildSystemPrompt(diagramState);
-    const modelName = process.env.CEREBRAS_MODEL || "zai-glm-4.7";
-    console.log("[Voice Command] Using model:", modelName);
+
+    // Choose provider: "openai" or "cerebras"
+    const provider = process.env.AI_PROVIDER || "openai";
+    const modelName = provider === "openai"
+      ? (process.env.OPENAI_MODEL || "gpt-4o-mini")
+      : (process.env.CEREBRAS_MODEL || "zai-glm-4.7");
+
+    console.log("[Voice Command] Using provider:", provider, "model:", modelName);
 
     // Use maxSteps to allow multi-turn tool calling
-    // Enable parallel tool calls for commands with multiple actions
+    const model = provider === "openai" ? openai(modelName) : cerebras(modelName);
+
     const result = await generateText({
-      model: cerebras(modelName),
+      model,
       system: systemPrompt,
       prompt: transcript,
       tools: executableTools,
       maxSteps: 5, // Allow up to 5 tool-calling rounds
-      providerOptions: {
-        cerebras: {
-          parallel_tool_calls: true,
+      ...(provider === "cerebras" && {
+        providerOptions: {
+          cerebras: {
+            parallel_tool_calls: true,
+          },
         },
-      },
+      }),
     });
 
     console.log("[Voice Command] Finished. Steps:", result.steps?.length || 1);
