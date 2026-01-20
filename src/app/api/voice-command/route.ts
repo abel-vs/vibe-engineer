@@ -267,10 +267,15 @@ export async function POST(req: NextRequest) {
     const executableTools = {
       // @ts-ignore - AI SDK type inference
       add_node: tool({
-        description: "Add a new node/equipment to the diagram",
+        description: "Add a new node/equipment to the diagram. REQUIRED: nodeType must be specified.",
         parameters: addNodeSchema,
         execute: async (args: z.infer<typeof addNodeSchema>) => {
           console.log("[Tool] add_node:", args);
+          // Validate required field
+          if (!args.nodeType) {
+            console.error("[Tool] add_node: Missing required nodeType", args);
+            return { success: false, error: "Missing nodeType" };
+          }
           return tracker.addNode(args);
         },
       }),
