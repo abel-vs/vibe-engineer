@@ -404,13 +404,24 @@ export async function POST(req: NextRequest) {
       maxSteps: 5, // Allow up to 5 tool-calling rounds
       providerOptions: {
         cerebras: {
-          parallelToolCalls: true,
+          parallel_tool_calls: true,
         },
       },
     });
 
     console.log("[Voice Command] Finished. Steps:", result.steps?.length || 1);
     console.log("[Voice Command] Final text:", result.text);
+
+    // Log each step for debugging multi-turn
+    if (result.steps && result.steps.length > 0) {
+      result.steps.forEach((step, i) => {
+        console.log(`[Voice Command] Step ${i + 1}:`, {
+          toolCalls: step.toolCalls?.length || 0,
+          toolResults: step.toolResults?.length || 0,
+          finishReason: step.finishReason,
+        });
+      });
+    }
 
     const toolResults = tracker.getToolResults();
     console.log("[Voice Command] Tool results:", toolResults.length);
