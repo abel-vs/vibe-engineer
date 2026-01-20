@@ -68,7 +68,7 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent({
           position={position}
           id={handleId}
           className={cn(
-            "engineering-handle !w-2.5 !h-2.5 !bg-black !border-0 !rounded-none",
+            "engineering-handle !w-1.5 !h-1.5 !bg-black !border-0 !rounded-none",
             connectedHandles.has(handleId) && "connected-handle"
           )}
         />
