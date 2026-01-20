@@ -1,24 +1,24 @@
 "use client";
 
-import { useCallback, useRef, useMemo } from "react";
 import {
-  ReactFlow,
   Background,
+  ConnectionMode,
   Controls,
+  MarkerType,
   MiniMap,
   Panel,
+  ReactFlow,
   SelectionMode,
-  ConnectionMode,
-  type Node,
   type Edge,
+  type Node,
   type ReactFlowInstance,
-  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useCallback, useMemo, useRef } from "react";
 
-import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { allNodeTypes } from "@/components/nodes";
 import { edgeTypes } from "@/components/edges/stream-edge";
+import { allNodeTypes } from "@/components/nodes";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { MODES } from "@/lib/modes";
 import { STYLES } from "@/lib/styles";
 
@@ -193,12 +193,6 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
                 ({selectedNodeIds.length} selected)
               </span>
             )}
-          </div>
-        </Panel>
-        {/* Attribution */}
-        <Panel position="bottom-right" className="!m-2 !mb-14">
-          <div className="text-[10px] text-gray-400 select-none">
-            Made with Voice Diagram
           </div>
         </Panel>
       </ReactFlow>
