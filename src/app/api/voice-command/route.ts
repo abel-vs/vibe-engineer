@@ -396,7 +396,7 @@ export async function POST(req: NextRequest) {
     // Choose provider: "openai" or "cerebras"
     const provider = process.env.AI_PROVIDER || "openai";
     const modelName = provider === "openai"
-      ? (process.env.OPENAI_MODEL || "gpt-4o")
+      ? (process.env.OPENAI_MODEL || "gpt-5")
       : (process.env.CEREBRAS_MODEL || "zai-glm-4.7");
 
     console.log("[Voice Command] Using provider:", provider, "model:", modelName);
@@ -410,13 +410,17 @@ export async function POST(req: NextRequest) {
       prompt: transcript,
       tools: executableTools,
       maxSteps: 10, // Allow up to 10 tool-calling rounds
-      ...(provider === "cerebras" && {
-        providerOptions: {
-          cerebras: {
-            parallel_tool_calls: true,
+      providerOptions: provider === "openai"
+        ? {
+            openai: {
+              strictJsonSchema: false, // Allow optional fields in schemas
+            },
+          }
+        : {
+            cerebras: {
+              parallel_tool_calls: true,
+            },
           },
-        },
-      }),
     });
 
     console.log("[Voice Command] Finished. Steps:", result.steps?.length || 1);
