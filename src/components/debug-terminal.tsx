@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { X, Terminal, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Terminal, Trash2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface DebugLogEntry {
@@ -19,6 +19,7 @@ interface DebugTerminalProps {
 
 export function DebugTerminal({ logs, onClear, onClose }: DebugTerminalProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
@@ -26,6 +27,27 @@ export function DebugTerminal({ logs, onClear, onClose }: DebugTerminalProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs]);
+
+  const handleCopy = async () => {
+    if (logs.length === 0) return;
+
+    const text = logs
+      .map((log) => {
+        const time = formatTime(log.timestamp);
+        const prefix = getTypePrefix(log.type);
+        const data = log.data
+          ? ` ${typeof log.data === "string" ? log.data : JSON.stringify(log.data)}`
+          : "";
+        return `${time} ${prefix} ${log.message}${data}`;
+      })
+      .join("\n");
+
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const hasLogs = logs.length > 0;
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -84,8 +106,23 @@ export function DebugTerminal({ logs, onClear, onClose }: DebugTerminalProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+            className="h-6 w-6 p-0 text-gray-400 hover:text-gray-200 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            onClick={handleCopy}
+            disabled={!hasLogs}
+            title={copied ? "Copied!" : "Copy logs"}
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-green-400" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-gray-400 hover:text-gray-200 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
             onClick={onClear}
+            disabled={!hasLogs}
             title="Clear logs"
           >
             <Trash2 className="w-3.5 h-3.5" />

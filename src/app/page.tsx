@@ -38,8 +38,9 @@ export default function DiagramPage() {
     setDebugLogs([]);
   }, []);
 
+  // Always pass the debug log handler - filter happens inside based on debugMode
   const { processVoiceCommand, isProcessing, lastResponse, error } = useVoiceCommands({
-    onDebugLog: debugMode ? handleDebugLog : undefined,
+    onDebugLog: handleDebugLog,
   });
   const { nodes, edges, mode, loadDiagram, clearCanvas } = useDiagramStore();
 
