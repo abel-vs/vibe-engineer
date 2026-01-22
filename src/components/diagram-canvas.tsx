@@ -15,7 +15,7 @@ import {
     type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { edgeTypes } from "@/components/edges/stream-edge";
 import { allNodeTypes } from "@/components/nodes";
@@ -110,6 +110,45 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     },
     [onNodeSelect, onEdgeSelect]
   );
+
+  // Zoom to selected nodes/edges when they're highlighted
+  useEffect(() => {
+    if (!reactFlowInstance.current) return;
+
+    const nodesToZoom: Node[] = [];
+
+    // Add selected nodes
+    if (selectedNodeIds.length > 0) {
+      const selectedNodes = nodes.filter((node) => selectedNodeIds.includes(node.id));
+      nodesToZoom.push(...selectedNodes);
+    }
+
+    // If edges are selected, add their connected nodes
+    if (selectedEdgeIds.length > 0) {
+      const selectedEdges = edges.filter((edge) => selectedEdgeIds.includes(edge.id));
+      const connectedNodeIds = new Set<string>();
+      selectedEdges.forEach((edge) => {
+        connectedNodeIds.add(edge.source);
+        connectedNodeIds.add(edge.target);
+      });
+      const connectedNodes = nodes.filter((node) => connectedNodeIds.has(node.id));
+      nodesToZoom.push(...connectedNodes);
+    }
+
+    // Remove duplicates
+    const uniqueNodes = Array.from(new Map(nodesToZoom.map((node) => [node.id, node])).values());
+
+    if (uniqueNodes.length > 0) {
+      // Use setTimeout to ensure React Flow has updated the DOM
+      setTimeout(() => {
+        reactFlowInstance.current?.fitView({
+          nodes: uniqueNodes,
+          padding: 0.2,
+          duration: 300,
+        });
+      }, 100);
+    }
+  }, [selectedNodeIds, selectedEdgeIds, nodes, edges]);
 
   return (
     <div ref={reactFlowWrapper} className="w-full h-full">

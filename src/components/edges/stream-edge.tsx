@@ -1,17 +1,17 @@
 "use client";
 
-import { memo } from "react";
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath,
-  getSmoothStepPath,
-  type EdgeProps,
-  type Edge,
-} from "@xyflow/react";
-import { cn } from "@/lib/utils";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import type { DiagramStyle } from "@/lib/styles";
+import { cn } from "@/lib/utils";
+import {
+    BaseEdge,
+    EdgeLabelRenderer,
+    getBezierPath,
+    getSmoothStepPath,
+    type Edge,
+    type EdgeProps,
+} from "@xyflow/react";
+import { memo } from "react";
 
 export type StreamEdgeData = {
   label?: string;

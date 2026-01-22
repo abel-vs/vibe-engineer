@@ -18,6 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -25,9 +31,10 @@ import { VoiceController } from "@/components/voice-controller";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
+import { LAYOUT_DIRECTIONS, type LayoutOptions } from "@/lib/auto-layout";
 import { autoSave, clearAutoSave, loadAutoSave, saveDiagram, type SavedDiagram } from "@/lib/storage";
 import { ReactFlowProvider } from "@xyflow/react";
-import { Bug, Code, FolderOpen, MessageSquare, Redo2, Save, Trash2, Undo2 } from "lucide-react";
+import { Bug, Code, FolderOpen, LayoutGrid, MessageSquare, Redo2, Save, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -55,7 +62,7 @@ export default function DiagramPage() {
   const { processVoiceCommand, isProcessing, lastResponse, error } = useVoiceCommands({
     onDebugLog: handleDebugLog,
   });
-  const { nodes, edges, mode, style, loadDiagram, clearCanvas, undo, redo, canUndo, canRedo } = useDiagramStore();
+  const { nodes, edges, mode, style, loadDiagram, clearCanvas, undo, redo, canUndo, canRedo, organizeLayout } = useDiagramStore();
 
   // Auto-save on changes
   useEffect(() => {
@@ -195,6 +202,30 @@ export default function DiagramPage() {
             >
               <Redo2 className="w-4 h-4" />
             </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={nodes.length === 0}
+                  title="Auto-organize layout"
+                >
+                  <LayoutGrid className="w-4 h-4 mr-2" />
+                  Organize
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {LAYOUT_DIRECTIONS.map((dir) => (
+                  <DropdownMenuItem
+                    key={dir.value}
+                    onClick={() => organizeLayout(dir.value as LayoutOptions["direction"])}
+                  >
+                    {dir.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Separator orientation="vertical" className="h-6" />
             <Button variant="ghost" size="sm" onClick={handleNewDiagram}>
               <Trash2 className="w-4 h-4 mr-2" />

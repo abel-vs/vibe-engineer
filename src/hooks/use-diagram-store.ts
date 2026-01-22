@@ -1,3 +1,4 @@
+import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
 import type { DiagramMode } from "@/lib/modes";
 import type { DiagramStyle } from "@/lib/styles";
 import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "@xyflow/react";
@@ -56,6 +57,9 @@ export interface DiagramState {
 
   // Load/save
   loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode, style?: DiagramStyle) => void;
+
+  // Layout
+  organizeLayout: (direction?: LayoutOptions["direction"]) => void;
 }
 
 // Helper to create a deep clone of nodes/edges for history
@@ -302,6 +306,23 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       selectedNodeIds: [],
       selectedEdgeIds: [],
       past: [],
+      future: [],
+    });
+  },
+
+  organizeLayout: (direction = "TB") => {
+    const { nodes, edges, past } = get();
+    if (nodes.length === 0) return;
+
+    // Save to history before organizing
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+
+    // Apply auto-layout
+    const layoutedNodes = getLayoutedNodes(nodes, edges, { direction });
+
+    set({
+      nodes: layoutedNodes,
+      past: newPast,
       future: [],
     });
   },

@@ -1,0 +1,145 @@
+{
+  "mode": "bfd",
+  "style": "colorful",
+  "nodes": [
+    {
+      "id": "feed_toluene",
+      "type": "input_output",
+      "position": { "x": 50, "y": 200 },
+      "data": {
+        "label": "Toluene Feed"
+      }
+    },
+    {
+      "id": "feed_hydrogen",
+      "type": "input_output",
+      "position": { "x": 50, "y": 300 },
+      "data": {
+        "label": "Hydrogen Feed"
+      }
+    },
+    {
+      "id": "unit_reactor",
+      "type": "process_block",
+      "position": { "x": 250, "y": 150 },
+      "data": {
+        "label": "Reactor",
+        "description": "Hydrodealkylation reactor: C7H8 + H2 → C6H6 + CH4",
+        "properties": {
+          "Reaction": "C7H8 + H2 → C6H6 + CH4",
+          "Conversion": "75% Conversion of Toluene"
+        }
+      }
+    },
+    {
+      "id": "unit_gas_separator",
+      "type": "process_block",
+      "position": { "x": 450, "y": 150 },
+      "data": {
+        "label": "Gas Separator",
+        "description": "Separates gas phase from liquid phase"
+      }
+    },
+    {
+      "id": "unit_still",
+      "type": "process_block",
+      "position": { "x": 650, "y": 150 },
+      "data": {
+        "label": "Still",
+        "description": "Distillation column for separating benzene from unreacted toluene"
+      }
+    },
+    {
+      "id": "product_benzene",
+      "type": "input_output",
+      "position": { "x": 850, "y": 200 },
+      "data": {
+        "label": "Benzene Product"
+      }
+    },
+    {
+      "id": "product_mixed_gas",
+      "type": "input_output",
+      "position": { "x": 650, "y": 100 },
+      "data": {
+        "label": "Mixed Gas"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "stream_toluene_feed",
+      "source": "feed_toluene",
+      "target": "unit_reactor",
+      "type": "stream",
+      "data": {
+        "label": "Toluene",
+        "streamType": "material_stream",
+        "flowRate": "10000 kg/h"
+      }
+    },
+    {
+      "id": "stream_hydrogen_feed",
+      "source": "feed_hydrogen",
+      "target": "unit_reactor",
+      "type": "stream",
+      "data": {
+        "label": "Hydrogen",
+        "streamType": "material_stream",
+        "flowRate": "820 kg/h"
+      }
+    },
+    {
+      "id": "stream_toluene_recycle",
+      "source": "unit_still",
+      "target": "unit_reactor",
+      "type": "stream",
+      "data": {
+        "label": "Toluene Recycle",
+        "streamType": "material_stream"
+      }
+    },
+    {
+      "id": "stream_effluent",
+      "source": "unit_reactor",
+      "target": "unit_gas_separator",
+      "type": "stream",
+      "data": {
+        "label": "Effluent",
+        "streamType": "material_stream"
+      }
+    },
+    {
+      "id": "stream_mixed_gas",
+      "source": "unit_gas_separator",
+      "target": "product_mixed_gas",
+      "type": "stream",
+      "data": {
+        "label": "Mixed Gas",
+        "streamType": "material_stream",
+        "flowRate": "2610 kg/h"
+      }
+    },
+    {
+      "id": "stream_mixed_liquids",
+      "source": "unit_gas_separator",
+      "target": "unit_still",
+      "type": "stream",
+      "data": {
+        "label": "Mixed Liquids",
+        "streamType": "material_stream"
+      }
+    },
+    {
+      "id": "stream_benzene_product",
+      "source": "unit_still",
+      "target": "product_benzene",
+      "type": "stream",
+      "data": {
+        "label": "Benzene",
+        "streamType": "material_stream",
+        "flowRate": "8210 kg/h"
+      }
+    }
+  ]
+}

@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEXPI-Document xmlns="https://dexpi.org/schema/2.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://dexpi.org/schema/2.0 DEXPI_XML_Schema.xsd"
+                version="2.0">
+  <Object type="Process/ProcessModel" id="pm_bfd_benzene">
+    <Data property="Name">
+      <String>Benzene Production from Toluene BFD</String>
+    </Data>
+    <Data property="Description">
+      <String>Block Flow Diagram for benzene production via toluene hydrodealkylation</String>
+    </Data>
+    <Data property="DiagramType">
+      <String>BFD</String>
+    </Data>
+    
+    <!-- External Ports (Feed and Product) -->
+    <Components property="ExternalPorts">
+      <Object type="Process/Process.ExternalPort" id="feed_toluene">
+        <Data property="Name">
+          <String>Toluene Feed</String>
+        </Data>
+        <Data property="Direction">
+          <String>inlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>50.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>200.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <Object type="Process/Process.ExternalPort" id="feed_hydrogen">
+        <Data property="Name">
+          <String>Hydrogen Feed</String>
+        </Data>
+        <Data property="Direction">
+          <String>inlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>50.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>300.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <Object type="Process/Process.ExternalPort" id="product_benzene">
+        <Data property="Name">
+          <String>Benzene Product</String>
+        </Data>
+        <Data property="Direction">
+          <String>outlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>850.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>200.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <Object type="Process/Process.ExternalPort" id="product_mixed_gas">
+        <Data property="Name">
+          <String>Mixed Gas</String>
+        </Data>
+        <Data property="Direction">
+          <String>outlet</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>650.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Process Steps -->
+    <Components property="ProcessSteps">
+      <!-- Reactor Block -->
+      <Object type="Process/Process.GenericProcessStep" id="unit_reactor">
+        <Data property="Name">
+          <String>Reactor</String>
+        </Data>
+        <Data property="Description">
+          <String>Hydrodealkylation reactor: C7H8 + H2 → C6H6 + CH4</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>250.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_reactor_in_toluene">
+            <Data property="Name">
+              <String>Toluene Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_reactor_in_hydrogen">
+            <Data property="Name">
+              <String>Hydrogen Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_reactor_in_recycle">
+            <Data property="Name">
+              <String>Toluene Recycle Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_reactor_out_effluent">
+            <Data property="Name">
+              <String>Effluent</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Parameters">
+          <Object type="Process/Parameter">
+            <Data property="Name">
+              <String>Reaction</String>
+            </Data>
+            <Data property="Value">
+              <String>C7H8 + H2 → C6H6 + CH4</String>
+            </Data>
+          </Object>
+          <Object type="Process/Parameter">
+            <Data property="Name">
+              <String>Conversion</String>
+            </Data>
+            <Data property="Value">
+              <String>75% Conversion of Toluene</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Gas Separator Block -->
+      <Object type="Process/Process.GenericProcessStep" id="unit_gas_separator">
+        <Data property="Name">
+          <String>Gas Separator</String>
+        </Data>
+        <Data property="Description">
+          <String>Separates gas phase from liquid phase</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>450.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_gas_separator_in_effluent">
+            <Data property="Name">
+              <String>Effluent Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_gas_separator_out_gas">
+            <Data property="Name">
+              <String>Mixed Gas Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_gas_separator_out_liquids">
+            <Data property="Name">
+              <String>Mixed Liquids Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Still Block -->
+      <Object type="Process/Process.GenericProcessStep" id="unit_still">
+        <Data property="Name">
+          <String>Still</String>
+        </Data>
+        <Data property="Description">
+          <String>Distillation column for separating benzene from unreacted toluene</String>
+        </Data>
+        <Components property="Layout">
+          <Object type="Extension/Layout">
+            <Data property="X">
+              <Double>650.0</Double>
+            </Data>
+            <Data property="Y">
+              <Double>150.0</Double>
+            </Data>
+            <Data property="Width">
+              <Double>120.0</Double>
+            </Data>
+            <Data property="Height">
+              <Double>100.0</Double>
+            </Data>
+          </Object>
+        </Components>
+        <Components property="Ports">
+          <Object type="Process/MaterialPort" id="unit_still_in_liquids">
+            <Data property="Name">
+              <String>Mixed Liquids Inlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>inlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_still_out_benzene">
+            <Data property="Name">
+              <String>Benzene Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+          <Object type="Process/MaterialPort" id="unit_still_out_recycle">
+            <Data property="Name">
+              <String>Toluene Recycle Outlet</String>
+            </Data>
+            <Data property="Direction">
+              <String>outlet</String>
+            </Data>
+            <Data property="FlowType">
+              <String>material</String>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Process Connections (Streams) -->
+    <Components property="ProcessConnections">
+      <!-- Toluene Feed to Reactor -->
+      <Object type="Process/Process.MaterialFlow" id="stream_toluene_feed">
+        <Data property="FromPort">
+          <String>feed_toluene</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_reactor_in_toluene</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Toluene</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>10000.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Hydrogen Feed to Reactor -->
+      <Object type="Process/Process.MaterialFlow" id="stream_hydrogen_feed">
+        <Data property="FromPort">
+          <String>feed_hydrogen</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_reactor_in_hydrogen</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Hydrogen</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>820.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Toluene Recycle to Reactor -->
+      <Object type="Process/Process.MaterialFlow" id="stream_toluene_recycle">
+        <Data property="FromPort">
+          <String>unit_still_out_recycle</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_reactor_in_recycle</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Toluene Recycle</String>
+        </Data>
+      </Object>
+      
+      <!-- Reactor Effluent to Gas Separator -->
+      <Object type="Process/Process.MaterialFlow" id="stream_effluent">
+        <Data property="FromPort">
+          <String>unit_reactor_out_effluent</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_gas_separator_in_effluent</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Effluent</String>
+        </Data>
+      </Object>
+      
+      <!-- Gas Separator to Mixed Gas Product -->
+      <Object type="Process/Process.MaterialFlow" id="stream_mixed_gas">
+        <Data property="FromPort">
+          <String>unit_gas_separator_out_gas</String>
+        </Data>
+        <Data property="ToPort">
+          <String>product_mixed_gas</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Mixed Gas</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>2610.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+      
+      <!-- Gas Separator Mixed Liquids to Still -->
+      <Object type="Process/Process.MaterialFlow" id="stream_mixed_liquids">
+        <Data property="FromPort">
+          <String>unit_gas_separator_out_liquids</String>
+        </Data>
+        <Data property="ToPort">
+          <String>unit_still_in_liquids</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Mixed Liquids</String>
+        </Data>
+      </Object>
+      
+      <!-- Still Benzene to Product -->
+      <Object type="Process/Process.MaterialFlow" id="stream_benzene_product">
+        <Data property="FromPort">
+          <String>unit_still_out_benzene</String>
+        </Data>
+        <Data property="ToPort">
+          <String>product_benzene</String>
+        </Data>
+        <Data property="FlowType">
+          <String>material</String>
+        </Data>
+        <Data property="Label">
+          <String>Benzene</String>
+        </Data>
+        <Components property="StreamProperties">
+          <Object type="Process/StreamProperties">
+            <Data property="FlowRate">
+              <Object type="Core/PhysicalQuantity">
+                <Data property="Value">
+                  <Double>8210.0</Double>
+                </Data>
+                <Data property="Unit">
+                  <String>kg/h</String>
+                </Data>
+              </Object>
+            </Data>
+          </Object>
+        </Components>
+      </Object>
+    </Components>
+    
+    <!-- Metadata -->
+    <Components property="Metadata">
+      <Object type="Core/Metadata">
+        <Data property="CreatedAt">
+          <String>2024-01-15T10:00:00Z</String>
+        </Data>
+        <Data property="UpdatedAt">
+          <String>2024-01-15T10:00:00Z</String>
+        </Data>
+        <Data property="ApplicationSource">
+          <String>voice-diagram-app</String>
+        </Data>
+      </Object>
+    </Components>
+  </Object>
+</DEXPI-Document>
