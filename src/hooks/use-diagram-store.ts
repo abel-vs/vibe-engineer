@@ -1,4 +1,5 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
+import { selectTargetHandle, recalculateEdgeHandles } from "@/lib/edge-routing";
 import type { DiagramMode } from "@/lib/modes";
 import type { DiagramStyle } from "@/lib/styles";
 import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange, ReactFlowInstance } from "@xyflow/react";
@@ -24,6 +25,9 @@ export interface DiagramState {
   // Selection state
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
+
+  // Pinned nodes (manually positioned, preserved during auto-layout)
+  pinnedNodeIds: Set<string>;
 
   // History for undo/redo
   past: HistorySnapshot[];
@@ -63,10 +67,16 @@ export interface DiagramState {
   loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode, style?: DiagramStyle) => void;
 
   // Layout
-  organizeLayout: (direction?: LayoutOptions["direction"]) => void;
+  organizeLayout: (direction?: LayoutOptions["direction"], pinnedNodeIds?: Set<string>) => void;
 
   // Viewport control
   zoomToNode: (nodeId: string) => void;
+
+  // Edge routing
+  updateEdgeHandles: () => void;
+
+  // Pinning
+  clearPinnedNodes: () => void;
 }
 
 // Helper to create a deep clone of nodes/edges for history
@@ -82,6 +92,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   style: "engineering",
   selectedNodeIds: [],
   selectedEdgeIds: [],
+  pinnedNodeIds: new Set<string>(),
   past: [],
   future: [],
   reactFlowInstance: null,
@@ -102,6 +113,18 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     }
 
     set({ nodes: applyNodeChanges(changes, get().nodes) });
+
+    // Track nodes that were manually dragged (pin them for auto-layout)
+    const dragEndChanges = changes.filter(
+      (c) => c.type === "position" && c.dragging === false
+    ) as Array<{ id: string; type: "position"; dragging: boolean }>;
+
+    if (dragEndChanges.length > 0) {
+      const { pinnedNodeIds } = get();
+      const newPinnedIds = new Set(pinnedNodeIds);
+      dragEndChanges.forEach((c) => newPinnedIds.add(c.id));
+      set({ pinnedNodeIds: newPinnedIds });
+    }
 
     // Update selection from changes
     const selectionChanges = changes.filter(
@@ -144,15 +167,28 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   onConnect: (connection) => {
     // Save to history before adding edge
-    const { nodes, edges, past } = get();
+    const { nodes, edges, past, mode } = get();
     const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+
+    // For BFD/PFD: enforce routing rules (exit right, enter based on geometry)
+    let sourceHandle = connection.sourceHandle ?? null;
+    let targetHandle = connection.targetHandle ?? null;
+
+    if ((mode === "bfd" || mode === "pfd") && connection.source && connection.target) {
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      if (sourceNode && targetNode) {
+        sourceHandle = "right";
+        targetHandle = selectTargetHandle(sourceNode, targetNode);
+      }
+    }
 
     const newEdge: Edge = {
       id: `edge_${Date.now()}`,
       source: connection.source,
       target: connection.target,
-      sourceHandle: connection.sourceHandle ?? null,
-      targetHandle: connection.targetHandle ?? null,
+      sourceHandle,
+      targetHandle,
       type: "stream",
     };
     set({ edges: addEdge(newEdge, get().edges), past: newPast, future: [] });
@@ -315,20 +351,24 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       style: style ?? "engineering",
       selectedNodeIds: [],
       selectedEdgeIds: [],
+      pinnedNodeIds: new Set<string>(),
       past: [],
       future: [],
     });
   },
 
-  organizeLayout: (direction = "TB") => {
-    const { nodes, edges, past } = get();
+  organizeLayout: (direction = "TB", pinnedNodeIds) => {
+    const { nodes, edges, past, pinnedNodeIds: storePinnedIds } = get();
     if (nodes.length === 0) return;
 
     // Save to history before organizing
     const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
 
-    // Apply auto-layout
-    const layoutedNodes = getLayoutedNodes(nodes, edges, { direction });
+    // Use provided pinnedNodeIds or fall back to store's pinned nodes
+    const effectivePinnedIds = pinnedNodeIds ?? storePinnedIds;
+
+    // Apply auto-layout respecting pinned nodes
+    const layoutedNodes = getLayoutedNodes(nodes, edges, { direction }, effectivePinnedIds);
 
     set({
       nodes: layoutedNodes,
@@ -354,5 +394,18 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
     // Zoom to the node with some padding (zoom level 1.5)
     reactFlowInstance.setCenter(x, y, { zoom: 1.5, duration: 500 });
+  },
+
+  updateEdgeHandles: () => {
+    const { nodes, edges, mode } = get();
+    if (mode !== "bfd" && mode !== "pfd") return;
+    if (edges.length === 0) return;
+
+    const updatedEdges = recalculateEdgeHandles(edges, nodes);
+    set({ edges: updatedEdges });
+  },
+
+  clearPinnedNodes: () => {
+    set({ pinnedNodeIds: new Set<string>() });
   },
 }));

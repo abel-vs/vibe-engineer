@@ -30,9 +30,11 @@ export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) 
         selected ? "border-blue-700 shadow-lg ring-2 ring-blue-300" : "border-blue-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-blue-700 !border-2 !border-white"
       />
       <Handle
@@ -41,13 +43,21 @@ export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) 
         id="top"
         className="!w-3 !h-3 !bg-blue-700 !border-2 !border-white"
       />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-blue-700 !border-2 !border-white"
+      />
       <div className="font-bold text-blue-900 text-sm">{data.label}</div>
       {data.description && (
         <div className="text-xs text-blue-700">{data.description}</div>
       )}
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-blue-700 !border-2 !border-white"
       />
       <Handle
@@ -77,9 +87,11 @@ export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
         selected ? "border-cyan-700 shadow-lg ring-2 ring-cyan-300" : "border-cyan-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <Handle
@@ -88,13 +100,21 @@ export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
         id="top"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
+      />
       <div className="font-bold text-cyan-900 text-sm">{data.label}</div>
       {data.description && (
         <div className="text-xs text-cyan-700">{data.description}</div>
       )}
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <Handle
@@ -123,9 +143,11 @@ export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
         selected ? "border-cyan-700 shadow-lg ring-2 ring-cyan-300" : "border-cyan-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <Handle
@@ -134,13 +156,21 @@ export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
         id="top"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
+      />
       <div className="font-bold text-cyan-900 text-sm">{data.label}</div>
       {data.description && (
         <div className="text-xs text-cyan-700">{data.description}</div>
       )}
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <Handle
@@ -169,17 +199,33 @@ export const PumpNode = memo(function PumpNode(props: NodeProps<PFDNode>) {
         selected ? "border-green-700 shadow-lg ring-2 ring-green-300" : "border-green-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-green-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-green-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-green-700 !border-2 !border-white"
       />
       <div className="font-bold text-green-900 text-xs text-center">
         {data.label}
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-green-700 !border-2 !border-white"
       />
     </div>
@@ -206,15 +252,31 @@ export const CompressorNode = memo(function CompressorNode(props: NodeProps<PFDN
         clipPath: "polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%)",
       }}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-yellow-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-yellow-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-yellow-700 !border-2 !border-white"
       />
       <div className="font-bold text-yellow-900 text-xs">{data.label}</div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-yellow-700 !border-2 !border-white"
       />
     </div>
@@ -232,9 +294,11 @@ export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProp
 
   return (
     <div className="relative w-20 h-20">
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-orange-700 !border-2 !border-white !left-0 !top-1/2"
       />
       <Handle
@@ -242,6 +306,12 @@ export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProp
         position={Position.Top}
         id="top"
         className="!w-3 !h-3 !bg-orange-700 !border-2 !border-white !top-0 !left-1/2"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-orange-700 !border-2 !border-white !bottom-0 !left-1/2"
       />
       <div
         className={cn(
@@ -254,9 +324,11 @@ export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProp
           {data.label}
         </span>
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-orange-700 !border-2 !border-white !right-0 !top-1/2"
       />
       <Handle
@@ -285,9 +357,11 @@ export const ColumnNode = memo(function ColumnNode(props: NodeProps<PFDNode>) {
         selected ? "border-teal-700 shadow-lg ring-2 ring-teal-300" : "border-teal-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-teal-700 !border-2 !border-white"
       />
       <Handle
@@ -296,10 +370,18 @@ export const ColumnNode = memo(function ColumnNode(props: NodeProps<PFDNode>) {
         id="top"
         className="!w-3 !h-3 !bg-teal-700 !border-2 !border-white"
       />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-teal-700 !border-2 !border-white"
+      />
       <div className="font-bold text-teal-900 text-xs">{data.label}</div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-teal-700 !border-2 !border-white"
       />
       <Handle
@@ -329,17 +411,33 @@ export const ValveNode = memo(function ValveNode(props: NodeProps<PFDNode>) {
         selected ? "border-gray-700 shadow-lg ring-2 ring-gray-300" : "border-gray-500"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-2 !h-2 !bg-gray-700 !border-2 !border-white !-rotate-45"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-2 !h-2 !bg-gray-700 !border-2 !border-white !-rotate-45"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-2 !h-2 !bg-gray-700 !border-2 !border-white !-rotate-45"
       />
       <div className="font-bold text-gray-900 text-[10px] -rotate-45">
         {data.label}
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-2 !h-2 !bg-gray-700 !border-2 !border-white !-rotate-45"
       />
     </div>
@@ -357,15 +455,23 @@ export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
 
   return (
     <div className="relative w-16 h-16">
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
       />
       <Handle
         type="target"
         position={Position.Top}
         id="top"
+        className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
       />
       <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -381,9 +487,11 @@ export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
       <div className="absolute inset-0 flex items-center justify-center pr-2">
         <span className="font-bold text-purple-900 text-[10px]">{data.label}</span>
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
       />
     </div>
@@ -401,9 +509,23 @@ export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>
 
   return (
     <div className="relative w-16 h-16">
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
       />
       <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -419,9 +541,11 @@ export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>
       <div className="absolute inset-0 flex items-center justify-center pl-2">
         <span className="font-bold text-purple-900 text-[10px]">{data.label}</span>
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-purple-700 !border-2 !border-white"
       />
       <Handle

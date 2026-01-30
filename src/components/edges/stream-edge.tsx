@@ -11,7 +11,7 @@ import {
     type Edge,
     type EdgeProps,
 } from "@xyflow/react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 export type StreamEdgeData = {
   label?: string;
@@ -22,6 +22,34 @@ export type StreamEdgeData = {
 };
 
 export type StreamEdge = Edge<StreamEdgeData>;
+
+// Calculate Y offset for edges to prevent overlapping when multiple edges share a source or target
+function calculateEdgeOffset(
+  edgeId: string,
+  sourceId: string,
+  targetId: string,
+  allEdges: Edge[]
+): { sourceOffset: number; targetOffset: number } {
+  const offsetStep = 15;
+
+  // Find all edges from the same source
+  const sourceEdges = allEdges.filter((e) => e.source === sourceId);
+  const sourceIndex = sourceEdges.findIndex((e) => e.id === edgeId);
+  const sourceOffset =
+    sourceEdges.length > 1
+      ? (sourceIndex - (sourceEdges.length - 1) / 2) * offsetStep
+      : 0;
+
+  // Find all edges to the same target
+  const targetEdges = allEdges.filter((e) => e.target === targetId);
+  const targetIndex = targetEdges.findIndex((e) => e.id === edgeId);
+  const targetOffset =
+    targetEdges.length > 1
+      ? (targetIndex - (targetEdges.length - 1) / 2) * offsetStep
+      : 0;
+
+  return { sourceOffset, targetOffset };
+}
 
 const getEdgeStyle = (streamType?: string, selected?: boolean, diagramStyle?: DiagramStyle) => {
   const baseStyle = {
@@ -90,6 +118,8 @@ const getEdgeStyle = (streamType?: string, selected?: boolean, diagramStyle?: Di
 
 export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -102,25 +132,40 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   label: propLabel,
 }: EdgeProps<StreamEdge>) {
   const diagramStyle = useDiagramStore((state) => state.style);
+  const allEdges = useDiagramStore((state) => state.edges);
+
+  // Calculate offsets to prevent overlapping edges
+  const { sourceOffset, targetOffset } = useMemo(
+    () => calculateEdgeOffset(id, source, target, allEdges),
+    [id, source, target, allEdges]
+  );
+
+  // Apply offsets perpendicular to the edge direction
+  // For horizontal edges (LR layout), offset Y; for vertical edges (TB layout), offset X
+  const isHorizontal = sourcePosition === "right" || sourcePosition === "left";
+  const adjustedSourceX = isHorizontal ? sourceX : sourceX + sourceOffset;
+  const adjustedSourceY = isHorizontal ? sourceY + sourceOffset : sourceY;
+  const adjustedTargetX = isHorizontal ? targetX : targetX + targetOffset;
+  const adjustedTargetY = isHorizontal ? targetY + targetOffset : targetY;
 
   // Engineering style: use step path with hard corners (borderRadius: 0)
   // Colorful style: use smooth bezier curves
   const [edgePath, labelX, labelY] = diagramStyle === "engineering"
     ? getSmoothStepPath({
-        sourceX,
-        sourceY,
+        sourceX: adjustedSourceX,
+        sourceY: adjustedSourceY,
         sourcePosition,
-        targetX,
-        targetY,
+        targetX: adjustedTargetX,
+        targetY: adjustedTargetY,
         targetPosition,
         borderRadius: 0, // Hard 90-degree corners
       })
     : getBezierPath({
-        sourceX,
-        sourceY,
+        sourceX: adjustedSourceX,
+        sourceY: adjustedSourceY,
         sourcePosition,
-        targetX,
-        targetY,
+        targetX: adjustedTargetX,
+        targetY: adjustedTargetY,
         targetPosition,
       });
 

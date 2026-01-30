@@ -2,7 +2,9 @@
 
 import { useSettings } from "@/contexts/settings-context";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
-import type { Edge, Node } from "@xyflow/react";
+import { getDefaultDirection } from "@/lib/auto-layout";
+import { selectTargetHandle } from "@/lib/edge-routing";
+import type { Node, Edge } from "@xyflow/react";
 import { useCallback, useState } from "react";
 import { useDiagramStore } from "./use-diagram-store";
 
@@ -285,10 +287,24 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const edgeId =
               (result as { edgeId: string }).edgeId || `edge_${Date.now()}`;
 
+            // For BFD/PFD: always exit right, enter based on geometry
+            let sourceHandle: string | undefined;
+            let targetHandle: string | undefined;
+
+            const sourceNode = currentState.nodes.find((n) => n.id === sourceNodeId);
+            const targetNode = currentState.nodes.find((n) => n.id === targetNodeId);
+
+            if ((currentState.mode === "bfd" || currentState.mode === "pfd") && sourceNode && targetNode) {
+              sourceHandle = "right";
+              targetHandle = selectTargetHandle(sourceNode, targetNode);
+            }
+
             const newEdge: Edge = {
               id: edgeId,
               source: sourceNodeId,
               target: targetNodeId,
+              sourceHandle,
+              targetHandle,
               type: edgeType || "stream",
               label,
               data: data,
@@ -296,6 +312,8 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             addEdgeAction(newEdge);
             log("result", `Added edge: ${sourceNodeId} -> ${targetNodeId}`, {
               id: edgeId,
+              sourceHandle,
+              targetHandle,
             });
             break;
           }
@@ -639,6 +657,24 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             JSON.stringify(data.toolResults, null, 2),
           );
           applyToolResults(data.toolResults);
+
+          // Auto-layout for BFD/PFD modes after structural changes
+          const currentMode = getStoreState().mode;
+          const hasStructuralChanges = data.toolResults.some((r) =>
+            ["add_node", "add_edge", "remove_node", "remove_edge"].includes(r.toolName)
+          );
+
+          if ((currentMode === "bfd" || currentMode === "pfd") && hasStructuralChanges) {
+            // Small delay to let React Flow measure nodes before layout
+            setTimeout(() => {
+              const { pinnedNodeIds, organizeLayout, updateEdgeHandles } = getStoreState();
+              const direction = getDefaultDirection(currentMode);
+              log("info", `Auto-organizing layout (${direction}) with ${pinnedNodeIds.size} pinned nodes`);
+              organizeLayout(direction, pinnedNodeIds);
+              // Recalculate edge handles based on new node positions
+              updateEdgeHandles();
+            }, 100);
+          }
         } else {
           log("info", "No tool calls from AI");
         }

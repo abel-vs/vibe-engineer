@@ -1,3 +1,4 @@
+import type { DiagramMode } from "@/lib/modes";
 import type { Edge, Node } from "@xyflow/react";
 import dagre from "dagre";
 
@@ -18,13 +19,23 @@ const DEFAULT_OPTIONS: LayoutOptions = {
 };
 
 /**
+ * Get the default layout direction based on diagram mode.
+ * BFD and PFD use left-to-right flow, playground uses top-to-bottom.
+ */
+export function getDefaultDirection(mode: DiagramMode): LayoutOptions["direction"] {
+  return mode === "playground" ? "TB" : "LR";
+}
+
+/**
  * Auto-layout nodes using the dagre graph layout algorithm.
  * Returns a new array of nodes with updated positions.
+ * Pinned nodes (manually positioned by user) retain their positions.
  */
 export function getLayoutedNodes(
   nodes: Node[],
   edges: Edge[],
-  options: Partial<LayoutOptions> = {}
+  options: Partial<LayoutOptions> = {},
+  pinnedNodeIds: Set<string> = new Set()
 ): Node[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -61,8 +72,13 @@ export function getLayoutedNodes(
   // Run the layout algorithm
   dagre.layout(dagreGraph);
 
-  // Map the new positions back to nodes
+  // Map the new positions back to nodes (respecting pinned nodes)
   return nodes.map((node) => {
+    // If node is pinned, keep its current position
+    if (pinnedNodeIds.has(node.id)) {
+      return node;
+    }
+
     const nodeWithPosition = dagreGraph.node(node.id);
     const width = node.measured?.width ?? node.width ?? opts.nodeWidth!;
     const height = node.measured?.height ?? node.height ?? opts.nodeHeight!;
