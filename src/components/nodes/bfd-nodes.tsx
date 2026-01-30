@@ -30,18 +30,34 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         selected ? "border-blue-600 shadow-lg ring-2 ring-blue-300" : "border-blue-400"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
       <div className="font-bold text-blue-900">{data.label}</div>
       {data.description && (
         <div className="text-xs text-blue-700 mt-1">{data.description}</div>
       )}
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
     </div>
@@ -59,9 +75,23 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
 
   return (
     <div className="relative">
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-green-600 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-green-600 !border-2 !border-white"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
         className="!w-3 !h-3 !bg-green-600 !border-2 !border-white"
       />
       <div
@@ -76,9 +106,11 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
           <div className="text-xs text-green-700">{data.description}</div>
         )}
       </div>
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-green-600 !border-2 !border-white"
       />
     </div>
@@ -102,9 +134,11 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         selected ? "border-amber-600 shadow-lg ring-2 ring-amber-300" : "border-amber-400"
       )}
     >
+      {/* Target handles (incoming) */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
       <Handle
@@ -113,13 +147,21 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         id="top"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-in"
+        className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
+      />
       <div className="font-semibold text-amber-900">{data.label}</div>
       {data.description && (
         <div className="text-xs text-amber-700 mt-1">{data.description}</div>
       )}
+      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
       <Handle
