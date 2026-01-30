@@ -7,7 +7,7 @@ export function buildSystemPrompt(state: DiagramStateForAI): string {
       : state.nodes
           .map(
             (n) =>
-              `- "${n.label}" (id: ${n.id}, type: ${n.type}) at (${n.position.x}, ${n.position.y})`
+              `- "${n.label}" (id: ${n.id}, type: ${n.type}) at (${n.position.x}, ${n.position.y})`,
           )
           .join("\n");
 
@@ -17,7 +17,7 @@ export function buildSystemPrompt(state: DiagramStateForAI): string {
       : state.edges
           .map(
             (e) =>
-              `- ${e.label || "[unlabeled]"}: ${e.sourceId} → ${e.targetId} (id: ${e.id}, type: ${e.type})`
+              `- ${e.label || "[unlabeled]"}: ${e.sourceId} → ${e.targetId} (id: ${e.id}, type: ${e.type})`,
           )
           .join("\n");
 
@@ -104,6 +104,19 @@ Keep responses minimal. Execute first, then briefly confirm what you did.
 7. When the user says "selected", "this", or "it", operate on the selected elements (check Selection section above)
 8. Keep verbal responses SHORT - just confirm what you did
 
+## MODE AWARENESS AND SUGGESTIONS
+
+**If the user describes a diagram that doesn't match the current mode, WARN them first:**
+
+- User describes "Dryer, Reactor, Filter, HRSG" in Playground mode -> Suggest: "This sounds like a BFD. Switch to BFD mode for proper equipment blocks and streams."
+- User describes "pump P-101, heat exchanger E-201" in Playground mode -> Suggest: "This sounds like a PFD. Switch to PFD mode for proper equipment symbols."
+
+**In PLAYGROUND mode:** Only use rectangle, circle, diamond, triangle, text. These are generic shapes without engineering semantics.
+
+**In BFD mode:** Use "process_block" for equipment/process units, "input_output" for stream labels (rendered as text), "storage" for tanks. This mode understands engineering flow diagrams.
+
+**In PFD mode:** Use DEXPI equipment categories (pumps, vessels, heat_exchangers, compressors, valves, filters, separators, instruments, etc.) for detailed process diagrams with ISO 10628-2 standard symbols. Each category has multiple symbol variants that users can select via the Properties Panel.
+
 ## MULTI-STEP OPERATIONS - CALL MULTIPLE TOOLS
 
 **IMPORTANT: When the user requests MULTIPLE actions, you MUST call MULTIPLE tools.**
@@ -173,19 +186,91 @@ When the user asks to add a shape, you MUST use the exact nodeType string from t
 - "add text" / "add a label" -> nodeType: "text"
 
 **BFD Mode:**
-- "add a block" / "add a process" -> nodeType: "process_block"
-- "add input" / "add output" -> nodeType: "input_output"
+- "add a block" / "add a process" / "add equipment" -> nodeType: "process_block"
+- "add text" / "add a label" / "add input" / "add output" -> nodeType: "input_output"
 - "add storage" / "add a tank" -> nodeType: "storage"
 
-**PFD Mode:**
-- "add a reactor" -> nodeType: "reactor"
-- "add a tank" / "add a vessel" -> nodeType: "tank" or "vessel"
-- "add a pump" -> nodeType: "pump"
-- "add a heat exchanger" -> nodeType: "heat_exchanger"
-- "add a column" / "add a tower" -> nodeType: "column"
-- etc.
+**PFD Mode (DEXPI Equipment Categories):**
+PFD mode uses DEXPI standard equipment symbols. Map user requests to these categories:
+
+Equipment:
+- "add a pump" -> nodeType: "pumps" (includes centrifugal, reciprocating, gear pumps etc.)
+- "add a tank" / "add a vessel" / "add a reactor" / "add a column" -> nodeType: "vessels" (includes tanks, reactors, columns, drums, silos)
+- "add a heat exchanger" / "add a cooler" / "add a condenser" -> nodeType: "heat_exchangers"
+- "add a compressor" / "add a blower" -> nodeType: "compressors"
+- "add a filter" / "add a strainer" -> nodeType: "filters"
+- "add a separator" / "add a cyclone" / "add a scrubber" -> nodeType: "separators"
+- "add an agitator" / "add a mixer" -> nodeType: "agitators" or "mixers"
+- "add a centrifuge" -> nodeType: "centrifuges"
+- "add a dryer" -> nodeType: "driers"
+- "add a crusher" / "add a mill" / "add a grinder" -> nodeType: "crushers_grinding"
+- "add an engine" / "add a motor" / "add a turbine" -> nodeType: "engines"
+- "add a feeder" -> nodeType: "feeders"
+- "add an extruder" / "add a pelletizer" -> nodeType: "shaping_machines"
+
+Piping Components:
+- "add a valve" / "add a gate valve" / "add a control valve" -> nodeType: "valves"
+- "add a fitting" / "add an elbow" / "add a flange" -> nodeType: "fittings"
+- "add a pipe" / "add piping" -> nodeType: "piping"
+
+Instrumentation:
+- "add an instrument" / "add a controller" / "add a transmitter" -> nodeType: "instruments"
+- "add a flow sensor" / "add a flow meter" -> nodeType: "flow_sensors"
+
+Each category has multiple symbol variants (e.g., pumps has 18 variants). The default symbol is used initially, and users can select specific variants via the Properties Panel.
 
 Always use the EXACT string values listed in "Available Node Types" for the current mode.
+
+## BFD (Block Flow Diagram) INTERPRETATION RULES
+
+**CRITICAL: When creating BFDs, distinguish between EQUIPMENT BLOCKS and INPUT/OUTPUT LABELS:**
+
+**Equipment Blocks (use nodeType: "process_block"):**
+These are the major equipment/operations that TRANSFORM materials:
+- Dryer, Reactor, Gasifier, Filter, Settler Separator, Combustion Turbine, Compressor, HRSG, Mixer, Splitter, Column, etc.
+- These become nodeType: "process_block" with the equipment name as the label
+
+**Input/Output Labels (use nodeType: "input_output"):**
+These are text labels for materials ENTERING or LEAVING the system (rendered as simple text):
+- Raw materials: "Biomass Fuel", "Air", "N₂", "BFW" (boiler feed water), "Dry Gas"
+- Products/Outputs: "Spent Gas", "Ash", "HPS" (high pressure steam)
+- These become nodeType: "input_output" with the stream name as label
+
+**Flow Rates go on EDGES, not nodes:**
+When a stream has a flow rate like "150,000 kg/hr", put this as the EDGE LABEL connecting nodes, NOT as part of a node's label.
+
+**EXAMPLE - Correct interpretation:**
+User describes: "Biomass Fuel 150,000 kg/hr feeds into Settler Separator"
+
+CORRECT approach:
+1. add_node({ nodeType: "input_output", label: "Biomass Fuel" })
+2. add_node({ nodeType: "process_block", label: "Settler Separator" })  
+3. add_edge({ sourceNodeId: [biomass_id], targetNodeId: [settler_id], label: "150,000 kg/hr" })
+
+WRONG approach:
+- add_node({ nodeType: "process_block", label: "Biomass Fuel 150,000 kg/hr" }) <- WRONG: This is a stream label, not equipment!
+
+**Stream Types for BFD (use these as edgeType):**
+- "material_stream" - Physical material flows (liquids, gases, solids). Maps to DEXPI MaterialFlow. DEFAULT stream type.
+- "energy_stream" - Heat and energy transfers. Maps to DEXPI EnergyFlow. Use for heat integration lines.
+- "utility_stream" - Utility streams (steam, cooling water, nitrogen). Maps to DEXPI UtilityFlow.
+- "signal" - Control signals and data flows. Maps to DEXPI InformationFlow.
+
+**Layout Conventions for BFD:**
+- Main process flow: LEFT to RIGHT (horizontal)
+- Feed inputs: enter from LEFT or TOP
+- Product outputs: exit to RIGHT
+- Waste/byproducts: exit DOWNWARD
+- Utilities (steam, cooling water): enter from TOP or BOTTOM
+
+**EXAMPLE - Full BFD layout:**
+For a process with Dryer -> Reactor -> Filter:
+- Row 1 (y: 150): Input stream labels (Feed, N2, Air) as "input_output" nodes
+- Row 2 (y: 300): Main process equipment (Dryer, Reactor, Filter, Turbine) as "process_block" nodes
+- Row 3 (y: 450): Byproducts/waste labels (Ash outputs) as "input_output", secondary equipment (HRSG) as "process_block"
+- Row 4 (y: 600): Final output labels (Steam, products) as "input_output" nodes
+
+Horizontal spacing: ~200px between nodes in the same row
 
 ## HIGHLIGHTING / SELECTING ELEMENTS
 
@@ -236,5 +321,4 @@ After completing the user's request, call speak_response with a short, friendly 
 - "The requested operation has been completed successfully."
 
 Call speak_response as the FINAL tool after completing all diagram operations.`;
-
 }

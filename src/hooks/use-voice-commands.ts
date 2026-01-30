@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useDiagramStore } from "./use-diagram-store";
 import { useSettings } from "@/contexts/settings-context";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
-import type { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
+import { useCallback, useState } from "react";
+import { useDiagramStore } from "./use-diagram-store";
 
 // Get fresh state from store at call time (avoids stale closures)
 const getStoreState = () => useDiagramStore.getState();
@@ -42,11 +42,17 @@ interface UseVoiceCommandsOptions {
 }
 
 // Helper to play audio from base64
-function playAudioFromBase64(base64Audio: string, mimeType: string): Promise<void> {
+function playAudioFromBase64(
+  base64Audio: string,
+  mimeType: string,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      console.log("[Audio] Starting decode, base64 length:", base64Audio.length);
-      
+      console.log(
+        "[Audio] Starting decode, base64 length:",
+        base64Audio.length,
+      );
+
       // Decode base64 to binary
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
@@ -62,25 +68,26 @@ function playAudioFromBase64(base64Audio: string, mimeType: string): Promise<voi
 
       // Create and play audio
       const audio = new Audio(url);
-      
+
       audio.onloadeddata = () => {
         console.log("[Audio] Audio loaded, duration:", audio.duration);
       };
-      
+
       audio.onended = () => {
         console.log("[Audio] Playback ended");
         URL.revokeObjectURL(url);
         resolve();
       };
-      
+
       audio.onerror = (e) => {
         console.error("[Audio] Error event:", e, audio.error);
         URL.revokeObjectURL(url);
         reject(new Error(`Audio error: ${audio.error?.message || "unknown"}`));
       };
-      
+
       console.log("[Audio] Attempting to play...");
-      audio.play()
+      audio
+        .play()
         .then(() => console.log("[Audio] Play started successfully"))
         .catch((err) => {
           console.error("[Audio] Play failed:", err);
@@ -105,7 +112,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
   const generateAndPlayTTS = useCallback(async (text: string) => {
     console.log("[TTS] Calling /api/tts...");
     setIsSpeaking(true);
-    
+
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
@@ -120,7 +127,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
       const { audio, mimeType } = await response.json();
       console.log("[TTS] Received audio, length:", audio?.length);
-      
+
       await playAudioFromBase64(audio, mimeType);
       console.log("[TTS] Playback complete");
     } finally {
@@ -139,7 +146,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         data,
       });
     },
-    [onDebugLog]
+    [onDebugLog],
   );
 
   const {
@@ -180,8 +187,13 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const rawArgs = args as Record<string, unknown>;
             const nodeType = rawArgs.nodeType as string;
             // Handle position as nested object OR top-level x/y fields
-            let position = rawArgs.position as { x: number; y: number } | undefined;
-            if (!position && (rawArgs.x !== undefined || rawArgs.y !== undefined)) {
+            let position = rawArgs.position as
+              | { x: number; y: number }
+              | undefined;
+            if (
+              !position &&
+              (rawArgs.x !== undefined || rawArgs.y !== undefined)
+            ) {
               position = {
                 x: (rawArgs.x as number) ?? 400,
                 y: (rawArgs.y as number) ?? 300,
@@ -189,15 +201,21 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             }
             const data = rawArgs.data as Record<string, string> | undefined;
             // Generate default label if not provided (capitalize nodeType)
-            const label = (rawArgs.label as string) ||
-              nodeType.charAt(0).toUpperCase() + nodeType.slice(1).replace(/_/g, ' ');
+            const label =
+              (rawArgs.label as string) ||
+              nodeType.charAt(0).toUpperCase() +
+                nodeType.slice(1).replace(/_/g, " ");
 
             if (!nodeType) {
-              console.error("[applyToolResults] add_node missing nodeType:", rawArgs);
+              console.error(
+                "[applyToolResults] add_node missing nodeType:",
+                rawArgs,
+              );
               continue;
             }
 
-            const nodeId = (result as { nodeId: string }).nodeId || `node_${Date.now()}`;
+            const nodeId =
+              (result as { nodeId: string }).nodeId || `node_${Date.now()}`;
 
             // Calculate position if not provided
             let finalPosition = position;
@@ -207,7 +225,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               } else {
                 const rightmost = currentState.nodes.reduce(
                   (max, n) => (n.position.x > max.position.x ? n : max),
-                  currentState.nodes[0]
+                  currentState.nodes[0],
                 );
                 finalPosition = {
                   x: rightmost.position.x + 200,
@@ -224,31 +242,48 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
                 label,
                 description: "",
                 // Put additional properties under 'properties' for engineering style
-                ...(data && Object.keys(data).length > 0 ? { properties: data } : {}),
+                ...(data && Object.keys(data).length > 0
+                  ? { properties: data }
+                  : {}),
               },
             };
             console.log("[DEBUG] About to call addNode with:", newNode);
             addNode(newNode);
-            console.log("[DEBUG] addNode called, checking store:", getStoreState().nodes.length, "nodes");
-            log("result", `Added node: "${label}" (${nodeType})`, { id: nodeId, position: finalPosition });
+            console.log(
+              "[DEBUG] addNode called, checking store:",
+              getStoreState().nodes.length,
+              "nodes",
+            );
+            log("result", `Added node: "${label}" (${nodeType})`, {
+              id: nodeId,
+              position: finalPosition,
+            });
             break;
           }
 
           case "add_edge": {
             const rawArgs = args as Record<string, unknown>;
             // Handle alternate field names (AI sometimes uses fromNodeId/toNodeId)
-            const sourceNodeId = (rawArgs.sourceNodeId || rawArgs.fromNodeId || rawArgs.from) as string;
-            const targetNodeId = (rawArgs.targetNodeId || rawArgs.toNodeId || rawArgs.to) as string;
+            const sourceNodeId = (rawArgs.sourceNodeId ||
+              rawArgs.fromNodeId ||
+              rawArgs.from) as string;
+            const targetNodeId = (rawArgs.targetNodeId ||
+              rawArgs.toNodeId ||
+              rawArgs.to) as string;
             const edgeType = rawArgs.edgeType as string | undefined;
             const label = rawArgs.label as string | undefined;
             const data = rawArgs.data as Record<string, string> | undefined;
 
             if (!sourceNodeId || !targetNodeId) {
-              console.error("[applyToolResults] add_edge missing sourceNodeId or targetNodeId:", rawArgs);
+              console.error(
+                "[applyToolResults] add_edge missing sourceNodeId or targetNodeId:",
+                rawArgs,
+              );
               continue;
             }
 
-            const edgeId = (result as { edgeId: string }).edgeId || `edge_${Date.now()}`;
+            const edgeId =
+              (result as { edgeId: string }).edgeId || `edge_${Date.now()}`;
 
             const newEdge: Edge = {
               id: edgeId,
@@ -259,7 +294,9 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               data: data,
             };
             addEdgeAction(newEdge);
-            log("result", `Added edge: ${sourceNodeId} -> ${targetNodeId}`, { id: edgeId });
+            log("result", `Added edge: ${sourceNodeId} -> ${targetNodeId}`, {
+              id: edgeId,
+            });
             break;
           }
 
@@ -289,11 +326,16 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const rawArgs = args as Record<string, unknown>;
             const nodeId = rawArgs.nodeId as string;
             const label = rawArgs.label as string | undefined;
-            const position = rawArgs.position as { x: number; y: number } | undefined;
+            const position = rawArgs.position as
+              | { x: number; y: number }
+              | undefined;
             const data = rawArgs.data as Record<string, string> | undefined;
 
             console.log("=== UPDATE_NODE DEBUG START ===");
-            console.log("[DEBUG update_node] Raw args:", JSON.stringify(rawArgs, null, 2));
+            console.log(
+              "[DEBUG update_node] Raw args:",
+              JSON.stringify(rawArgs, null, 2),
+            );
             console.log("[DEBUG update_node] Extracted fields:");
             console.log("  - nodeId:", nodeId);
             console.log("  - label:", label);
@@ -306,16 +348,28 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               continue;
             }
 
-            const existingNode = currentState.nodes.find((n) => n.id === nodeId);
-            console.log("[DEBUG update_node] Existing node found:", !!existingNode);
-            console.log("[DEBUG update_node] Existing node data:", JSON.stringify(existingNode?.data, null, 2));
+            const existingNode = currentState.nodes.find(
+              (n) => n.id === nodeId,
+            );
+            console.log(
+              "[DEBUG update_node] Existing node found:",
+              !!existingNode,
+            );
+            console.log(
+              "[DEBUG update_node] Existing node data:",
+              JSON.stringify(existingNode?.data, null, 2),
+            );
 
             const updates: Partial<Node> = {};
             if (position) updates.position = position;
 
             // Always rebuild data to ensure we capture all changes
-            const existingProps = (existingNode?.data?.properties as Record<string, string>) || {};
-            console.log("[DEBUG update_node] Existing properties:", JSON.stringify(existingProps));
+            const existingProps =
+              (existingNode?.data?.properties as Record<string, string>) || {};
+            console.log(
+              "[DEBUG update_node] Existing properties:",
+              JSON.stringify(existingProps),
+            );
 
             // Build new data object
             const newData = {
@@ -328,8 +382,14 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             };
             updates.data = newData;
 
-            console.log("[DEBUG update_node] New data object:", JSON.stringify(newData, null, 2));
-            console.log("[DEBUG update_node] Final updates to apply:", JSON.stringify(updates, null, 2));
+            console.log(
+              "[DEBUG update_node] New data object:",
+              JSON.stringify(newData, null, 2),
+            );
+            console.log(
+              "[DEBUG update_node] Final updates to apply:",
+              JSON.stringify(updates, null, 2),
+            );
             console.log("=== UPDATE_NODE DEBUG END - CALLING updateNode ===");
 
             updateNode(nodeId, updates);
@@ -337,7 +397,10 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             // Verify the update was applied
             const verifyState = getStoreState();
             const updatedNode = verifyState.nodes.find((n) => n.id === nodeId);
-            console.log("[DEBUG update_node] VERIFICATION - Node after update:", JSON.stringify(updatedNode?.data, null, 2));
+            console.log(
+              "[DEBUG update_node] VERIFICATION - Node after update:",
+              JSON.stringify(updatedNode?.data, null, 2),
+            );
 
             log("result", `Updated node: ${nodeId}`, updates);
             break;
@@ -345,9 +408,15 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
           case "update_edge": {
             const edgeId = (args as Record<string, unknown>).edgeId as string;
-            const label = (args as Record<string, unknown>).label as string | undefined;
-            const edgeType = (args as Record<string, unknown>).edgeType as string | undefined;
-            const data = (args as Record<string, unknown>).data as Record<string, string> | undefined;
+            const label = (args as Record<string, unknown>).label as
+              | string
+              | undefined;
+            const edgeType = (args as Record<string, unknown>).edgeType as
+              | string
+              | undefined;
+            const data = (args as Record<string, unknown>).data as
+              | Record<string, string>
+              | undefined;
 
             if (!edgeId) {
               log("error", "update_edge missing edgeId");
@@ -364,9 +433,14 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           }
 
           case "select_elements": {
-            const nodeIds = (args as Record<string, unknown>).nodeIds as string[] | undefined;
-            const edgeIds = (args as Record<string, unknown>).edgeIds as string[] | undefined;
-            const clearPrevious = (args as Record<string, unknown>).clearPrevious as boolean | undefined;
+            const nodeIds = (args as Record<string, unknown>).nodeIds as
+              | string[]
+              | undefined;
+            const edgeIds = (args as Record<string, unknown>).edgeIds as
+              | string[]
+              | undefined;
+            const clearPrevious = (args as Record<string, unknown>)
+              .clearPrevious as boolean | undefined;
 
             if (clearPrevious !== false) {
               setSelectedNodes([]);
@@ -380,14 +454,24 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
           case "move_node": {
             const nodeId = (args as Record<string, unknown>).nodeId as string;
-            const position = (args as Record<string, unknown>).position as { x: number; y: number } | undefined;
-            const direction = (args as Record<string, unknown>).direction as "left" | "right" | "up" | "down" | undefined;
-            const offset = ((args as Record<string, unknown>).offset as number) || 100;
-            const relativeTo = (args as Record<string, unknown>).relativeTo as {
-              referenceNodeId: string;
-              direction: "left" | "right" | "above" | "below";
-              offset: number;
-            } | undefined;
+            const position = (args as Record<string, unknown>).position as
+              | { x: number; y: number }
+              | undefined;
+            const direction = (args as Record<string, unknown>).direction as
+              | "left"
+              | "right"
+              | "up"
+              | "down"
+              | undefined;
+            const offset =
+              ((args as Record<string, unknown>).offset as number) || 100;
+            const relativeTo = (args as Record<string, unknown>).relativeTo as
+              | {
+                  referenceNodeId: string;
+                  direction: "left" | "right" | "above" | "below";
+                  offset: number;
+                }
+              | undefined;
 
             if (!nodeId) {
               log("error", "move_node missing nodeId");
@@ -398,7 +482,9 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             // Simple direction-based movement from current position
             if (!finalPosition && direction) {
-              const currentNode = currentState.nodes.find((n) => n.id === nodeId);
+              const currentNode = currentState.nodes.find(
+                (n) => n.id === nodeId,
+              );
               if (currentNode) {
                 switch (direction) {
                   case "left":
@@ -431,7 +517,9 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             // Relative to another node
             if (!finalPosition && relativeTo) {
-              const refNode = currentState.nodes.find((n) => n.id === relativeTo.referenceNodeId);
+              const refNode = currentState.nodes.find(
+                (n) => n.id === relativeTo.referenceNodeId,
+              );
               if (refNode) {
                 const relOffset = relativeTo.offset || 150;
                 switch (relativeTo.direction) {
@@ -465,7 +553,10 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             if (finalPosition) {
               updateNode(nodeId, { position: finalPosition });
-              log("result", `Moved node: ${nodeId}`, { direction, position: finalPosition });
+              log("result", `Moved node: ${nodeId}`, {
+                direction,
+                position: finalPosition,
+              });
             }
             break;
           }
@@ -492,7 +583,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
       setSelectedEdges,
       clearCanvas,
       log,
-    ]
+    ],
   );
 
   const processVoiceCommand = useCallback(
@@ -510,10 +601,13 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           freshState.edges,
           freshState.mode,
           freshState.selectedNodeIds,
-          freshState.selectedEdgeIds
+          freshState.selectedEdgeIds,
         );
 
-        log("info", `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges, TTS: ${ttsEnabled})`);
+        log(
+          "info",
+          `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges, TTS: ${ttsEnabled})`,
+        );
 
         const response = await fetch("/api/voice-command", {
           method: "POST",
@@ -524,17 +618,26 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         const data: VoiceCommandResponse = await response.json();
 
         if (!response.ok) {
-          const errorMsg = data.details || data.error || "Failed to process voice command";
+          const errorMsg =
+            data.details || data.error || "Failed to process voice command";
           log("error", `API error: ${errorMsg}`);
           throw new Error(errorMsg);
         }
 
-        log("info", `AI response received`, { toolCalls: data.toolResults?.length || 0 });
+        log("info", `AI response received`, {
+          toolCalls: data.toolResults?.length || 0,
+        });
 
         // Apply tool results to the diagram IMMEDIATELY
         if (data.toolResults && data.toolResults.length > 0) {
-          log("info", `Received ${data.toolResults.length} tool result(s) from API`);
-          console.log("[DEBUG] toolResults from API:", JSON.stringify(data.toolResults, null, 2));
+          log(
+            "info",
+            `Received ${data.toolResults.length} tool result(s) from API`,
+          );
+          console.log(
+            "[DEBUG] toolResults from API:",
+            JSON.stringify(data.toolResults, null, 2),
+          );
           applyToolResults(data.toolResults);
         } else {
           log("info", "No tool calls from AI");
@@ -548,9 +651,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
         // Generate and play TTS in parallel (don't block) - only if TTS is enabled
         if (data.speechMessage && ttsEnabled) {
-          console.log("[VoiceCommands] Generating TTS for:", data.speechMessage);
+          console.log(
+            "[VoiceCommands] Generating TTS for:",
+            data.speechMessage,
+          );
           log("info", "Generating voice response...");
-          
+
           // Fire and forget - don't await
           generateAndPlayTTS(data.speechMessage).catch((err) => {
             console.error("[VoiceCommands] TTS failed:", err);
@@ -567,7 +673,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         setIsProcessing(false);
       }
     },
-    [applyToolResults, log, ttsEnabled, generateAndPlayTTS]
+    [applyToolResults, log, ttsEnabled, generateAndPlayTTS],
   );
 
   return {

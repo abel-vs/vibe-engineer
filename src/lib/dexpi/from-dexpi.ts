@@ -211,7 +211,7 @@ function convertProcessStepToNode(step: ProcessStep, mode: DiagramMode, warnings
 }
 
 /**
- * Convert an ExternalPort to a React Flow node (input_output type)
+ * Convert an ExternalPort to a React Flow node (input_output type, rendered as text)
  */
 function convertExternalPortToNode(port: ExternalPort, warnings: string[]): Node {
   const position = port.layout

@@ -15,11 +15,49 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
+import {
+  getCategoryDisplayName,
+  getCategorySymbols,
+  getOrderedCategories,
+  categoryToNodeType,
+  getSymbolPath,
+  nodeTypeToCategory,
+} from "@/lib/dexpi-config";
+import { MODES } from "@/lib/modes";
 import { deleteDiagram, listDiagrams, type SavedDiagram } from "@/lib/storage";
-import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Trash2, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Plus, Trash2, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-type View = "main" | "dictionary";
+type View = "main" | "dictionary" | "addNode";
+
+// Simple SVG preview component for command menu
+function SymbolPreview({ path }: { path: string }) {
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!path) return;
+    fetch(path)
+      .then((res) => res.ok ? res.text() : null)
+      .then((text) => {
+        if (text) {
+          const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+          if (svgMatch) setSvgContent(svgMatch[0]);
+        }
+      })
+      .catch(() => setSvgContent(null));
+  }, [path]);
+
+  if (!svgContent) {
+    return <div className="w-5 h-5 bg-gray-100 rounded animate-pulse" />;
+  }
+
+  return (
+    <div
+      className="w-5 h-5 flex items-center justify-center symbol-preview-svg"
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
+  );
+}
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
@@ -27,7 +65,7 @@ export function CommandMenu() {
   const { ttsEnabled, dictionaryEnabled, dictionary, updateSetting } = useSettings();
   const [dictionaryText, setDictionaryText] = useState("");
   const [savedDesigns, setSavedDesigns] = useState<SavedDiagram[]>([]);
-  const { loadDiagram } = useDiagramStore();
+  const { mode, loadDiagram, addNode, zoomToNode } = useDiagramStore();
 
   // Load saved designs when menu opens
   useEffect(() => {
@@ -50,11 +88,56 @@ export function CommandMenu() {
     setDictionaryText(dictionary.join("\n"));
   }, [dictionary]);
 
+  // Navigate to add node view
+  const goToAddNode = useCallback(() => {
+    setView("addNode");
+  }, []);
+
+  // Handle adding a node to the canvas
+  const handleAddNode = useCallback((nodeType: string, symbolIndex?: number, dexpiSubclass?: string) => {
+    // Generate unique ID
+    const nodeId = `${nodeType}_${Date.now()}`;
+    
+    // Get category name for DEXPI nodes
+    const categoryName = nodeTypeToCategory(nodeType);
+    
+    // Add node at center of viewport (approximate)
+    const newNode = {
+      id: nodeId,
+      type: nodeType,
+      position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 200 },
+      data: { 
+        label: "",
+        ...(categoryName && {
+          dexpiCategory: categoryName,
+          symbolIndex: symbolIndex ?? 0,
+          dexpiSubclass: dexpiSubclass,
+        }),
+      },
+    };
+    
+    addNode(newNode);
+    setOpen(false);
+    setView("main");
+    
+    // Zoom to the newly added node after a short delay (to allow rendering)
+    setTimeout(() => {
+      zoomToNode(nodeId);
+    }, 100);
+  }, [addNode, zoomToNode]);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      // Cmd+K for main menu
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((open) => !open);
+      }
+      // Cmd+I for add node
+      if (e.key === "i" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setOpen(true);
+        setView("addNode");
       }
     };
 
@@ -88,7 +171,7 @@ export function CommandMenu() {
 
   const handleLoadDesign = useCallback(
     (design: SavedDiagram) => {
-      loadDiagram(design.nodes, design.edges, design.mode, "colorful");
+      loadDiagram(design.nodes, design.edges, design.mode, "engineering");
       setOpen(false);
     },
     [loadDiagram]
@@ -152,12 +235,109 @@ export function CommandMenu() {
     );
   }
 
+  // Add Node - select equipment type view
+  if (view === "addNode") {
+    const availableNodeTypes = MODES[mode].availableNodeTypes;
+    const isPfdMode = mode === "pfd";
+    
+    // Get ordered categories for PFD mode
+    const orderedCategories = isPfdMode 
+      ? getOrderedCategories().filter((cat) => availableNodeTypes.includes(categoryToNodeType(cat)))
+      : [];
+    
+    // Format node type for display (non-PFD modes)
+    const formatNodeType = (nodeType: string): string => {
+      return nodeType
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    };
+
+    // Custom filter for exact substring matching (case-insensitive)
+    const substringFilter = (value: string, search: string): number => {
+      if (!search) return 1;
+      const normalizedValue = value.toLowerCase();
+      const normalizedSearch = search.toLowerCase();
+      return normalizedValue.includes(normalizedSearch) ? 1 : 0;
+    };
+
+    return (
+      <CommandDialog open={open} onOpenChange={handleOpenChange} filter={substringFilter}>
+        <CommandInput placeholder="Search equipment to add..." />
+        <CommandList className="max-h-[400px]">
+          <CommandEmpty>No equipment found.</CommandEmpty>
+          {isPfdMode ? (
+            // PFD mode: show each category with its symbol variants
+            orderedCategories.map((category) => {
+              const nodeType = categoryToNodeType(category);
+              const symbols = getCategorySymbols(category);
+              
+              if (symbols.length === 0) return null;
+              
+              return (
+                <CommandGroup key={category} heading={getCategoryDisplayName(category)}>
+                  {symbols.map((symbol, index) => (
+                    <CommandItem
+                      key={`${nodeType}-${index}`}
+                      value={`${category} ${symbol.description} ${symbol.dexpi_subclass}`}
+                      onSelect={() => handleAddNode(nodeType, index, symbol.dexpi_subclass)}
+                      className="flex items-center gap-3"
+                    >
+                      <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                        <SymbolPreview path={getSymbolPath(category, index)} />
+                      </div>
+                      <span className="truncate">{symbol.description}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              );
+            })
+          ) : (
+            // Other modes: flat list
+            <CommandGroup heading="Shapes">
+              {availableNodeTypes.map((nodeType) => (
+                <CommandItem
+                  key={nodeType}
+                  value={nodeType}
+                  onSelect={() => handleAddNode(nodeType)}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{formatNodeType(nodeType)}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+        </CommandList>
+        <div className="border-t px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMain}
+            className="h-8 px-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+        </div>
+      </CommandDialog>
+    );
+  }
+
   // Main command menu view
   return (
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Actions">
+          <CommandItem onSelect={goToAddNode}>
+            <Plus className="h-4 w-4" />
+            <span>Add Node</span>
+            <CommandShortcut>⌘I</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+        <CommandSeparator />
         <CommandGroup heading="Settings">
           <CommandItem
             onSelect={toggleTTS}

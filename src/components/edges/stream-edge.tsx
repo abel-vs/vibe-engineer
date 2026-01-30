@@ -99,6 +99,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   data,
   selected,
   markerEnd,
+  label: propLabel,
 }: EdgeProps<StreamEdge>) {
   const diagramStyle = useDiagramStore((state) => state.style);
 
@@ -124,7 +125,8 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
       });
 
   const edgeStyle = getEdgeStyle(data?.streamType, selected, diagramStyle);
-  const label = data?.label;
+  // Support both React Flow's standard label prop and data.label for backwards compatibility
+  const label = propLabel || data?.label;
 
   return (
     <>

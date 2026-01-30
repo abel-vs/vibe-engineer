@@ -1,12 +1,211 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus, X } from "lucide-react";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { MODES } from "@/lib/modes";
+import {
+  isDexpiNodeType,
+  nodeTypeToCategory,
+  getCategorySymbols,
+  getSymbolPath,
+  getCategoryDisplayName,
+} from "@/lib/dexpi-config";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+// Format node type for display (e.g., "process_block" -> "Process Block")
+function formatNodeType(nodeType: string): string {
+  return nodeType
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+// DEXPI Symbol Variant Selector Component
+interface DexpiSymbolSelectorProps {
+  selectedNode: {
+    id: string;
+    type?: string;
+    data?: Record<string, unknown>;
+  };
+  updateNode: (nodeId: string, updates: { data: Record<string, unknown> }) => void;
+}
+
+// Component to render SVG preview for a symbol
+function SymbolPreview({ path, size = "sm" }: { path: string; size?: "sm" | "md" | "lg" }) {
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!path) return;
+    fetch(path)
+      .then((res) => res.ok ? res.text() : null)
+      .then((text) => {
+        if (text) {
+          const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+          if (svgMatch) setSvgContent(svgMatch[0]);
+        }
+      })
+      .catch(() => setSvgContent(null));
+  }, [path]);
+
+  const sizeClasses = {
+    sm: "w-6 h-6",
+    md: "w-10 h-10",
+    lg: "w-14 h-14",
+  };
+
+  if (!svgContent) {
+    return <div className={`${sizeClasses[size]} bg-gray-100 rounded animate-pulse`} />;
+  }
+
+  return (
+    <div
+      className={`${sizeClasses[size]} flex items-center justify-center symbol-preview-svg`}
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
+  );
+}
+
+function DexpiSymbolSelector({ selectedNode, updateNode }: DexpiSymbolSelectorProps) {
+  const nodeType = selectedNode.type || "";
+  const [previewSvg, setPreviewSvg] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  
+  const categoryName = (selectedNode.data?.dexpiCategory as string) || nodeTypeToCategory(nodeType) || "";
+  const currentIndex = (selectedNode.data?.symbolIndex as number) ?? 0;
+  const symbols = getCategorySymbols(categoryName);
+
+  // Load preview SVG for current selection
+  useEffect(() => {
+    const path = getSymbolPath(categoryName, currentIndex);
+    if (path) {
+      fetch(path)
+        .then((res) => res.ok ? res.text() : null)
+        .then((text) => {
+          if (text) {
+            const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+            if (svgMatch) setPreviewSvg(svgMatch[0]);
+          }
+        })
+        .catch(() => setPreviewSvg(null));
+    }
+  }, [categoryName, currentIndex]);
+
+  // Check if this is a DEXPI node
+  if (!isDexpiNodeType(nodeType)) {
+    return null;
+  }
+
+  if (symbols.length === 0) {
+    return null;
+  }
+
+  const handleSymbolChange = (index: number) => {
+    const symbol = symbols[index];
+    updateNode(selectedNode.id, {
+      data: {
+        ...selectedNode.data,
+        symbolIndex: index,
+        dexpiSubclass: symbol?.dexpi_subclass,
+        // Don't auto-update label - keep user's label or empty
+      },
+    });
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Label htmlFor="symbol-variant" className="text-xs">
+        Symbol Variant
+        <span className="ml-1 text-gray-400">({symbols.length} available)</span>
+      </Label>
+      
+      {/* Current symbol preview */}
+      {previewSvg && (
+        <div className="mt-2 mb-2 p-3 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center">
+          <div
+            className="w-14 h-14 flex items-center justify-center symbol-preview-svg"
+            dangerouslySetInnerHTML={{ __html: previewSvg }}
+          />
+        </div>
+      )}
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="mt-1 w-full justify-between font-normal"
+          >
+            {symbols[currentIndex]?.description || "Select variant..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search symbols..." />
+            <CommandList>
+              <CommandEmpty>No symbol found.</CommandEmpty>
+              <CommandGroup>
+                {symbols.map((symbol, index) => (
+                  <CommandItem
+                    key={index}
+                    value={symbol.description}
+                    onSelect={() => handleSymbolChange(index)}
+                    className="py-2"
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      {/* SVG preview in dropdown */}
+                      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                        <SymbolPreview path={getSymbolPath(categoryName, index)} size="sm" />
+                      </div>
+                      <span className="text-sm truncate flex-1">{symbol.description}</span>
+                      <Check
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          currentIndex === index ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      
+      <p className="text-[10px] text-gray-400 mt-1">
+        Category: {getCategoryDisplayName(categoryName)}
+      </p>
+    </div>
+  );
+}
 
 export function PropertiesPanel() {
   const {
@@ -19,7 +218,11 @@ export function PropertiesPanel() {
     removeNode,
     removeEdge,
     style,
+    mode,
   } = useDiagramStore();
+
+  // Get available node types for current mode
+  const availableNodeTypes = MODES[mode].availableNodeTypes;
 
   const [nodeLabel, setNodeLabel] = useState("");
   const [nodeDescription, setNodeDescription] = useState("");
@@ -83,11 +286,26 @@ export function PropertiesPanel() {
     }
   };
 
+  const handleNodeTypeChange = (newType: string) => {
+    if (selectedNode) {
+      updateNode(selectedNode.id, { type: newType });
+    }
+  };
+
   const handleDeleteEdge = () => {
     if (selectedEdge) {
       removeEdge(selectedEdge.id);
     }
   };
+
+  const handleEdgeTypeChange = (newType: string) => {
+    if (selectedEdge) {
+      updateEdge(selectedEdge.id, { type: newType });
+    }
+  };
+
+  // Get available edge types for current mode
+  const availableEdgeTypes = MODES[mode].availableEdgeTypes;
 
   // Get current properties
   const nodeProperties = (selectedNode?.data?.properties as Record<string, string>) || {};
@@ -187,10 +405,32 @@ export function PropertiesPanel() {
                   className="mt-1"
                 />
               </div>
+              <div>
+                <Label htmlFor="node-type" className="text-xs">Type</Label>
+                <Select
+                  value={selectedNode.type || ""}
+                  onValueChange={handleNodeTypeChange}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableNodeTypes.map((nodeType) => (
+                      <SelectItem key={nodeType} value={nodeType}>
+                        {formatNodeType(nodeType)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* DEXPI Symbol Variant Selector */}
+              <DexpiSymbolSelector
+                selectedNode={selectedNode}
+                updateNode={updateNode}
+              />
+
               <div className="pt-2">
-                <p className="text-xs text-gray-500">
-                  Type: <span className="font-medium">{selectedNode.type}</span>
-                </p>
                 <p className="text-xs text-gray-500">
                   Position: ({Math.round(selectedNode.position.x)}, {Math.round(selectedNode.position.y)})
                 </p>
@@ -298,10 +538,25 @@ export function PropertiesPanel() {
                   className="mt-1"
                 />
               </div>
+              <div>
+                <Label htmlFor="edge-type" className="text-xs">Type</Label>
+                <Select
+                  value={selectedEdge.type || ""}
+                  onValueChange={handleEdgeTypeChange}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableEdgeTypes.map((edgeType) => (
+                      <SelectItem key={edgeType} value={edgeType}>
+                        {formatNodeType(edgeType)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="pt-2">
-                <p className="text-xs text-gray-500">
-                  Type: <span className="font-medium">{selectedEdge.type}</span>
-                </p>
                 <p className="text-xs text-gray-500">
                   From: <span className="font-medium">{selectedEdge.source}</span>
                 </p>

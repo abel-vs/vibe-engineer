@@ -1,17 +1,21 @@
 import { zodSchema } from "ai";
 import { z } from "zod";
+import { DEXPI_CATEGORIES, categoryToNodeType } from "./dexpi-config";
+
+// Generate DEXPI equipment type names for documentation
+const dexpiEquipmentTypes = DEXPI_CATEGORIES.map(categoryToNodeType);
 
 // Define the schemas for each tool
 export const addNodeSchema = z.object({
   nodeType: z
     .string()
     .describe(
-      "Type/shape of node. For Playground mode use: 'rectangle', 'circle', 'diamond', 'triangle', or 'text'. For BFD mode use: 'process_block', 'input_output', 'storage'. For PFD mode use: 'reactor', 'tank', 'vessel', 'pump', 'compressor', 'heat_exchanger', 'column', 'valve', 'mixer', 'splitter'. IMPORTANT: Use the exact string values listed."
+      `Type/shape of node. For Playground mode use: 'rectangle', 'circle', 'diamond', 'triangle', or 'text'. For BFD mode use: 'process_block' (for equipment like Dryer, Reactor, Filter, Turbine, HRSG, Compressor, Settler Separator), 'input_output' (for boundary stream labels like Biomass Fuel, Air, Steam, Ash, Spent Gas - materials entering/leaving the system), 'storage' (for tanks). For PFD mode use DEXPI equipment categories: ${dexpiEquipmentTypes.join(", ")}. Common mappings: pump=pumps, vessel/tank=vessels, heat exchanger=heat_exchangers, compressor=compressors, valve=valves, filter=filters, separator=separators, column=vessels, reactor=vessels, mixer=mixers, agitator=agitators, centrifuge=centrifuges. IMPORTANT: In BFD, equipment names become 'process_block', stream/material labels become 'input_output'.`
     ),
   label: z
     .string()
     .optional()
-    .describe("Display label for the node (e.g., 'My Triangle', 'R-101'). If omitted, defaults to the node type."),
+    .describe("Display label for the node. Use SHORT equipment/stream names (e.g., 'Dryer', 'Reactor', 'Biomass Fuel', 'HRSG'). Do NOT include flow rates in labels - those go on edges."),
   position: z
     .object({
       x: z.number().describe("X coordinate on canvas"),
@@ -22,7 +26,7 @@ export const addNodeSchema = z.object({
   data: z
     .record(z.string(), z.string())
     .optional()
-    .describe("Additional properties: capacity, temperature, pressure"),
+    .describe("Additional properties: capacity, temperature, pressure. For DEXPI nodes, can include dexpiCategory and symbolIndex to specify exact symbol variant."),
 });
 
 export const addEdgeSchema = z.object({
@@ -39,7 +43,7 @@ export const addEdgeSchema = z.object({
   label: z
     .string()
     .optional()
-    .describe("Stream label (e.g., '500 kg/hr, 25C')"),
+    .describe("Stream label - PUT FLOW RATES HERE (e.g., '150,000 kg/hr', '500 kg/hr, 25°C'). This is where stream quantity information belongs, NOT on node labels."),
   data: z
     .record(z.string(), z.string())
     .optional()

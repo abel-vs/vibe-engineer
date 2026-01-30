@@ -1,7 +1,7 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
 import type { DiagramMode } from "@/lib/modes";
 import type { DiagramStyle } from "@/lib/styles";
-import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "@xyflow/react";
+import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange, ReactFlowInstance } from "@xyflow/react";
 import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { create } from "zustand";
 
@@ -28,6 +28,10 @@ export interface DiagramState {
   // History for undo/redo
   past: HistorySnapshot[];
   future: HistorySnapshot[];
+
+  // React Flow instance for viewport control
+  reactFlowInstance: ReactFlowInstance | null;
+  setReactFlowInstance: (instance: ReactFlowInstance) => void;
 
   // React Flow handlers
   onNodesChange: OnNodesChange;
@@ -60,6 +64,9 @@ export interface DiagramState {
 
   // Layout
   organizeLayout: (direction?: LayoutOptions["direction"]) => void;
+
+  // Viewport control
+  zoomToNode: (nodeId: string) => void;
 }
 
 // Helper to create a deep clone of nodes/edges for history
@@ -72,11 +79,14 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   nodes: [],
   edges: [],
   mode: "playground",
-  style: "colorful",
+  style: "engineering",
   selectedNodeIds: [],
   selectedEdgeIds: [],
   past: [],
   future: [],
+  reactFlowInstance: null,
+
+  setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
 
   onNodesChange: (changes) => {
     // Check if this is a meaningful change (not just selection)
@@ -302,7 +312,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       nodes,
       edges,
       mode,
-      style: style ?? "colorful",
+      style: style ?? "engineering",
       selectedNodeIds: [],
       selectedEdgeIds: [],
       past: [],
@@ -325,5 +335,24 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       past: newPast,
       future: [],
     });
+  },
+
+  zoomToNode: (nodeId) => {
+    const { reactFlowInstance, nodes } = get();
+    if (!reactFlowInstance) return;
+
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    // Get node dimensions (default to 100x100 if not set)
+    const nodeWidth = node.measured?.width ?? 100;
+    const nodeHeight = node.measured?.height ?? 100;
+
+    // Calculate center of the node
+    const x = node.position.x + nodeWidth / 2;
+    const y = node.position.y + nodeHeight / 2;
+
+    // Zoom to the node with some padding (zoom level 1.5)
+    reactFlowInstance.setCenter(x, y, { zoom: 1.5, duration: 500 });
   },
 }));

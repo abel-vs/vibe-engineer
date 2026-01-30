@@ -43,6 +43,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     addNode,
     selectedNodeIds,
     selectedEdgeIds,
+    setReactFlowInstance,
   } = useDiagramStore();
 
   const modeConfig = MODES[mode];
@@ -64,7 +65,8 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
 
   const onInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstance.current = instance;
-  }, []);
+    setReactFlowInstance(instance);
+  }, [setReactFlowInstance]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -77,6 +79,9 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
 
       const type = event.dataTransfer.getData("application/reactflow/type");
       const label = event.dataTransfer.getData("application/reactflow/label");
+      const dexpiCategory = event.dataTransfer.getData("application/reactflow/dexpiCategory");
+      const symbolIndexStr = event.dataTransfer.getData("application/reactflow/symbolIndex");
+      const dexpiSubclass = event.dataTransfer.getData("application/reactflow/dexpiSubclass");
 
       if (!type || !reactFlowInstance.current || !reactFlowWrapper.current) {
         return;
@@ -88,11 +93,29 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         y: event.clientY - bounds.top,
       });
 
+      // Build node data, including DEXPI-specific fields if present
+      const nodeData: Record<string, unknown> = {};
+
+      // For DEXPI nodes, don't set a default label - show nothing unless user provides one
+      if (dexpiCategory) {
+        nodeData.dexpiCategory = dexpiCategory;
+        // Use provided symbol index or default to 0
+        nodeData.symbolIndex = symbolIndexStr ? parseInt(symbolIndexStr, 10) : 0;
+        // Include subclass if provided
+        if (dexpiSubclass) {
+          nodeData.dexpiSubclass = dexpiSubclass;
+        }
+        // Label is intentionally not set - will show nothing by default
+      } else {
+        // For non-DEXPI nodes, use the provided label or default
+        nodeData.label = label || type.toUpperCase();
+      }
+
       const newNode: Node = {
         id: `${type}_${Date.now()}`,
         type,
         position,
-        data: { label: label || type.toUpperCase() },
+        data: nodeData,
       };
 
       addNode(newNode);

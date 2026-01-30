@@ -1,9 +1,9 @@
 "use client";
 
-import { memo } from "react";
-import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { cn } from "@/lib/utils";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { cn } from "@/lib/utils";
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { memo } from "react";
 import { EngineeringNodeComponent } from "./engineering-node";
 
 type PFDNodeData = {

@@ -162,3 +162,101 @@
   opacity: 1;
 }
 
+/* DEXPI Node SVG Styles */
+.dexpi-node {
+  font-family: inherit;
+}
+
+.dexpi-node .dexpi-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dexpi-node .dexpi-symbol svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+/* Ensure SVG paths and shapes render correctly */
+.dexpi-node .dexpi-symbol svg path,
+.dexpi-node .dexpi-symbol svg rect,
+.dexpi-node .dexpi-symbol svg circle,
+.dexpi-node .dexpi-symbol svg polygon,
+.dexpi-node .dexpi-symbol svg line {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Toolbar SVG Preview Styles */
+.toolbar-svg-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-svg-preview svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.toolbar-svg-preview svg path,
+.toolbar-svg-preview svg rect,
+.toolbar-svg-preview svg circle,
+.toolbar-svg-preview svg polygon,
+.toolbar-svg-preview svg line {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Symbol Preview in Properties Panel dropdown */
+.symbol-preview-svg svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.symbol-preview-svg svg path,
+.symbol-preview-svg svg rect,
+.symbol-preview-svg svg circle,
+.symbol-preview-svg svg polygon,
+.symbol-preview-svg svg line {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* DEXPI handle styles - similar to engineering handles */
+.dexpi-node .react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.dexpi-node:hover .react-flow__handle {
+  opacity: 1;
+}
+
+.dexpi-node .react-flow__handle.connected-handle {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.react-flow.connecting .dexpi-node .react-flow__handle:not(.connected-handle) {
+  opacity: 1;
+}
+
+.react-flow__node.selected .dexpi-node .react-flow__handle:not(.connected-handle) {
+  opacity: 1;
+}
+

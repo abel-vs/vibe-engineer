@@ -69,7 +69,7 @@ export function autoSave(
   nodes: Node[],
   edges: Edge[],
   mode: DiagramMode,
-  style: DiagramStyle = "colorful"
+  style: DiagramStyle = "engineering"
 ): void {
   const data = {
     nodes,
@@ -91,10 +91,10 @@ export function loadAutoSave(): {
   if (!data) return null;
   try {
     const parsed = JSON.parse(data);
-    // Backward compatible: default to "colorful" if style is missing
+    // Backward compatible: default to "engineering" if style is missing
     return {
       ...parsed,
-      style: parsed.style ?? "colorful",
+      style: parsed.style ?? "engineering",
     };
   } catch {
     return null;
