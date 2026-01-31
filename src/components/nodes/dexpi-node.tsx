@@ -32,7 +32,7 @@ interface DexpiNodeComponentProps extends NodeProps<DexpiNode> {
   nodeType?: string;
 }
 
-// SVG size for the node
+// Default SVG size for the node
 const SVG_SIZE = 64;
 
 export const DexpiNodeComponent = memo(function DexpiNodeComponent(
@@ -56,7 +56,7 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
   const categoryDisplayName = getCategoryDisplayName(category);
   const subtypeName = symbol?.description || "";
 
-  // Fetch SVG content for inline rendering
+  // Fetch and process SVG for proper scaling
   useEffect(() => {
     if (!symbolPath) {
       setSvgError(true);
@@ -69,11 +69,38 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
         return res.text();
       })
       .then((text) => {
-        // Clean up the SVG for inline rendering
-        // Remove XML declaration and extract just the SVG element
+        // Extract the SVG element
         const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
         if (svgMatch) {
-          setSvgContent(svgMatch[0]);
+          let svg = svgMatch[0];
+          
+          // Extract original dimensions from inline style
+          const styleMatch = svg.match(/style="[^"]*width:\s*(\d+)px[^"]*height:\s*(\d+)px[^"]*"/i);
+          let width = 42;
+          let height = 42;
+          if (styleMatch) {
+            width = parseInt(styleMatch[1], 10) || 42;
+            height = parseInt(styleMatch[2], 10) || 42;
+          }
+          
+          // Remove the inline style attribute entirely
+          svg = svg.replace(/\s*style="[^"]*"/i, '');
+          
+          // Add viewBox if not present, and set width/height to 100%
+          if (!svg.includes('viewBox')) {
+            svg = svg.replace(
+              /<svg/,
+              `<svg viewBox="0 0 ${width} ${height}"`
+            );
+          }
+          
+          // Add width="100%" height="100%" and preserveAspectRatio
+          svg = svg.replace(
+            /<svg([^>]*)>/,
+            '<svg$1 width="100%" height="100%" preserveAspectRatio="xMidYMid meet">'
+          );
+          
+          setSvgContent(svg);
           setSvgError(false);
         } else {
           setSvgError(true);
@@ -99,10 +126,11 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
   const properties = data?.properties ?? {};
   const hasProperties = Object.keys(properties).length > 0;
 
-  // Support resizing
+  // Support resizing - get dimensions from node props
   const nodeWidth = (props as NodeProps<DexpiNode> & { width?: number }).width;
   const nodeHeight = (props as NodeProps<DexpiNode> & { height?: number }).height;
-  const displaySize = nodeWidth || nodeHeight || SVG_SIZE;
+  const displayWidth = nodeWidth || SVG_SIZE;
+  const displayHeight = nodeHeight || SVG_SIZE;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -123,7 +151,7 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
                 "relative flex items-center justify-center",
                 selected && "ring-2 ring-blue-400 ring-offset-1 rounded"
               )}
-              style={{ width: displaySize, height: displaySize }}
+              style={{ width: displayWidth, height: displayHeight }}
             >
               {/* Handles positioned at the edges of the SVG */}
               <Handle
@@ -167,18 +195,18 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
                 style={{ top: "50%" }}
               />
 
-              {/* SVG Symbol */}
+              {/* SVG Symbol - inline for proper scaling */}
               {svgContent && !svgError ? (
                 <div
-                  className="dexpi-symbol w-full h-full flex items-center justify-center"
+                  className="w-full h-full"
                   dangerouslySetInnerHTML={{ __html: svgContent }}
                 />
               ) : svgError ? (
-                <div className="w-10 h-10 bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-400 rounded">
+                <div className="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-400 rounded">
                   ?
                 </div>
               ) : (
-                <div className="w-10 h-10 bg-gray-50 animate-pulse rounded" />
+                <div className="w-full h-full bg-gray-50 animate-pulse rounded" />
               )}
             </div>
           </TooltipTrigger>
