@@ -195,15 +195,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .toolbar-svg-preview svg {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: block !important;
   object-fit: contain;
+  /* Override any inline styles */
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
 }
 
 .toolbar-svg-preview svg path,
@@ -214,11 +219,25 @@
   vector-effect: non-scaling-stroke;
 }
 
-/* Symbol Preview in Properties Panel dropdown */
+/* Symbol Preview in Properties Panel dropdown and Command Menu */
+.symbol-preview-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .symbol-preview-svg svg {
-  width: 100%;
-  height: 100%;
-  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: block !important;
+  object-fit: contain;
+  /* Override any inline styles */
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
 }
 
 .symbol-preview-svg svg path,
@@ -257,6 +276,37 @@
 }
 
 .react-flow__node.selected .dexpi-node .react-flow__handle:not(.connected-handle) {
+  opacity: 1;
+}
+
+/* DrawIO P&ID Node handle styles - show on hover, hide by default */
+.drawio-pid-node .react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+/* Show handles at 50% opacity when hovering over the node */
+.drawio-pid-node:hover .react-flow__handle {
+  opacity: 0.5;
+}
+
+/* Show handle at 100% when directly hovering over it */
+.drawio-pid-node .react-flow__handle:hover {
+  opacity: 1 !important;
+}
+
+.drawio-pid-node .react-flow__handle.connected-handle {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Full opacity when dragging a connection */
+.react-flow.connecting .drawio-pid-node .react-flow__handle:not(.connected-handle) {
+  opacity: 1;
+}
+
+/* Full opacity when node is selected */
+.react-flow__node.selected .drawio-pid-node .react-flow__handle:not(.connected-handle) {
   opacity: 1;
 }
 

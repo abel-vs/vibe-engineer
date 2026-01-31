@@ -30,6 +30,56 @@ import { useCallback, useEffect, useState } from "react";
 
 type View = "main" | "dictionary" | "addNode";
 
+// Utility to process SVG content for proper scaling
+function processSvgForPreview(svgText: string): string {
+  // Extract width and height from inline style or attributes
+  let width = 42;
+  let height = 42;
+
+  // Try to extract from style attribute
+  const styleMatch = svgText.match(/style="[^"]*width:\s*(\d+(?:\.\d+)?)/);
+  const styleHeightMatch = svgText.match(/style="[^"]*height:\s*(\d+(?:\.\d+)?)/);
+  if (styleMatch) width = parseFloat(styleMatch[1]);
+  if (styleHeightMatch) height = parseFloat(styleHeightMatch[1]);
+
+  // Try to extract from width/height attributes if not in style
+  const widthAttrMatch = svgText.match(/<svg[^>]*\swidth="(\d+(?:\.\d+)?)"/);
+  const heightAttrMatch = svgText.match(/<svg[^>]*\sheight="(\d+(?:\.\d+)?)"/);
+  if (widthAttrMatch) width = parseFloat(widthAttrMatch[1]);
+  if (heightAttrMatch) height = parseFloat(heightAttrMatch[1]);
+
+  // Check if viewBox exists
+  const hasViewBox = /viewBox\s*=/.test(svgText);
+
+  let processed = svgText;
+
+  // Add viewBox if missing
+  if (!hasViewBox) {
+    processed = processed.replace(/<svg/, `<svg viewBox="0 0 ${width} ${height}"`);
+  }
+
+  // Remove inline width/height from style attribute to let CSS take over
+  processed = processed.replace(
+    /style="([^"]*)"/,
+    (match, styleContent) => {
+      const cleanedStyle = styleContent
+        .replace(/width:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/height:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/left:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/top:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/position:\s*\w+;?\s*/gi, "")
+        .trim();
+      return cleanedStyle ? `style="${cleanedStyle}"` : "";
+    }
+  );
+
+  // Remove width/height attributes from svg tag
+  processed = processed.replace(/<svg([^>]*)\swidth="[\d.]+"/i, "<svg$1");
+  processed = processed.replace(/<svg([^>]*)\sheight="[\d.]+"/i, "<svg$1");
+
+  return processed;
+}
+
 // Simple SVG preview component for command menu
 function SymbolPreview({ path }: { path: string }) {
   const [svgContent, setSvgContent] = useState<string | null>(null);
@@ -41,7 +91,7 @@ function SymbolPreview({ path }: { path: string }) {
       .then((text) => {
         if (text) {
           const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
-          if (svgMatch) setSvgContent(svgMatch[0]);
+          if (svgMatch) setSvgContent(processSvgForPreview(svgMatch[0]));
         }
       })
       .catch(() => setSvgContent(null));
