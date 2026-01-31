@@ -28,20 +28,27 @@ function calculateEdgeOffset(
   edgeId: string,
   sourceId: string,
   targetId: string,
+  sourceHandle: string | null | undefined,
+  targetHandle: string | null | undefined,
   allEdges: Edge[]
 ): { sourceOffset: number; targetOffset: number } {
   const offsetStep = 15;
 
-  // Find all edges from the same source
-  const sourceEdges = allEdges.filter((e) => e.source === sourceId);
+  // Find all edges from the same source AND same source handle
+  // Only edges sharing the exact same connection point should be offset
+  const sourceEdges = allEdges.filter(
+    (e) => e.source === sourceId && e.sourceHandle === sourceHandle
+  );
   const sourceIndex = sourceEdges.findIndex((e) => e.id === edgeId);
   const sourceOffset =
     sourceEdges.length > 1
       ? (sourceIndex - (sourceEdges.length - 1) / 2) * offsetStep
       : 0;
 
-  // Find all edges to the same target
-  const targetEdges = allEdges.filter((e) => e.target === targetId);
+  // Find all edges to the same target AND same target handle
+  const targetEdges = allEdges.filter(
+    (e) => e.target === targetId && e.targetHandle === targetHandle
+  );
   const targetIndex = targetEdges.findIndex((e) => e.id === edgeId);
   const targetOffset =
     targetEdges.length > 1
@@ -126,6 +133,8 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   targetY,
   sourcePosition,
   targetPosition,
+  sourceHandleId,
+  targetHandleId,
   data,
   selected,
   markerEnd,
@@ -135,9 +144,10 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   const allEdges = useDiagramStore((state) => state.edges);
 
   // Calculate offsets to prevent overlapping edges
+  // Only edges sharing the exact same handle should be offset from each other
   const { sourceOffset, targetOffset } = useMemo(
-    () => calculateEdgeOffset(id, source, target, allEdges),
-    [id, source, target, allEdges]
+    () => calculateEdgeOffset(id, source, target, sourceHandleId, targetHandleId, allEdges),
+    [id, source, target, sourceHandleId, targetHandleId, allEdges]
   );
 
   // Apply offsets perpendicular to the edge direction
