@@ -14,6 +14,7 @@ import {
   getFallbackEdgeType,
   getFallbackNodeType,
   getNodeTypeFromComponentClass,
+  getSymbolIndexFromComponentClass,
 } from "./mapping";
 import type {
   DexpiDocument,
@@ -227,7 +228,10 @@ function convertProcessStepToNode(
   // Add DEXPI category for P&ID mode SVG rendering
   if (dexpiCategory) {
     data.dexpiCategory = dexpiCategory;
-    data.symbolIndex = 0; // Default to first symbol in category
+    // Get the specific symbol index for this ComponentClass (e.g., GlobeValve -> index 2)
+    data.symbolIndex = step.originalNodeType
+      ? getSymbolIndexFromComponentClass(step.originalNodeType)
+      : 0;
   }
 
   // Convert parameters to properties
@@ -311,12 +315,21 @@ function buildPortToNodeMap(
 
   // Process ProcessStep ports
   for (const step of model.processSteps) {
+    // Map each port to its parent node
     for (const port of step.ports) {
       map.set(port.id, {
         nodeId: step.id,
         handle: extractHandleFromPortId(port.id, step.id),
       });
     }
+
+    // Also register the step ID itself as a valid port reference
+    // This is needed for PipingComponents (valves, tees, etc.) that are referenced
+    // directly by their ID in connections rather than by their port IDs
+    map.set(step.id, {
+      nodeId: step.id,
+      handle: "default",
+    });
   }
 
   // Process ExternalPorts - they act as both node and port
@@ -554,9 +567,12 @@ export function validateDexpiForImport(xmlString: string): {
     // Check for process connections referencing non-existent ports
     const allPortIds = new Set<string>();
     for (const step of processModel.processSteps) {
+      // Add each port ID
       for (const port of step.ports) {
         allPortIds.add(port.id);
       }
+      // Also add step ID itself as a valid reference (for PipingComponents)
+      allPortIds.add(step.id);
     }
     for (const extPort of processModel.externalPorts) {
       allPortIds.add(extPort.id);

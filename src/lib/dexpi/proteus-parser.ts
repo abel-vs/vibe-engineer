@@ -25,6 +25,7 @@ const EQUIPMENT_TO_PROCESS_TYPE: Record<string, DexpiProcessStepType> = {
   CentrifugalPump: "Process/Process.TransportingLiquids",
   PositiveDisplacementPump: "Process/Process.TransportingLiquids",
   Pump: "Process/Process.TransportingLiquids",
+  ReciprocatingPump: "Process/Process.TransportingLiquids",
 
   // Compressors
   Compressor: "Process/Process.Compressing",
@@ -47,6 +48,7 @@ const EQUIPMENT_TO_PROCESS_TYPE: Record<string, DexpiProcessStepType> = {
   // Heat Exchangers
   HeatExchanger: "Process/Process.HeatingCooling",
   ShellandTubeHeatExchanger: "Process/Process.HeatingCooling",
+  TubularHeatExchanger: "Process/Process.HeatingCooling",
   PlateHeatExchanger: "Process/Process.HeatingCooling",
   AirCooler: "Process/Process.HeatingCooling",
   Cooler: "Process/Process.HeatingCooling",
@@ -69,10 +71,31 @@ const EQUIPMENT_TO_PROCESS_TYPE: Record<string, DexpiProcessStepType> = {
   Valve: "Process/Process.Throttling",
   ControlValve: "Process/Process.Throttling",
   CheckValve: "Process/Process.Throttling",
+  SwingCheckValve: "Process/Process.Throttling",
+  GlobeValve: "Process/Process.Throttling",
+  BallValve: "Process/Process.Throttling",
+  ButterflyValve: "Process/Process.Throttling",
+  GateValve: "Process/Process.Throttling",
+  SafetyValve: "Process/Process.Throttling",
+  SpringLoadedGlobeSafetyValve: "Process/Process.Throttling",
+
+  // Fittings
+  PipeReducer: "Process/Process.GenericProcessStep",
+  PipeTee: "Process/Process.GenericProcessStep",
+  BlindFlange: "Process/Process.GenericProcessStep",
+  Flange: "Process/Process.GenericProcessStep",
 
   // Generic
   Equipment: "Process/Process.GenericProcessStep",
 };
+
+// Sub-components to skip (nested equipment that shouldn't be parsed as standalone)
+const SKIP_COMPONENT_CLASSES = new Set([
+  "Chamber",
+  "TubeBundle",
+  "Impeller",
+  "Displacer",
+]);
 
 // ============================================================================
 // Version Detection
@@ -143,6 +166,15 @@ export function detectDexpiVersion(xmlString: string): DexpiVersionInfo {
 // ============================================================================
 
 /**
+ * Port mapping info for resolving connections
+ */
+interface PortMapEntry {
+  stepId: string;
+  direction: "inlet" | "outlet";
+  nodeIndex?: number; // For PipingComponent connection points
+}
+
+/**
  * Parse DEXPI 1.x (Proteus Schema) XML to our internal model
  */
 export function parseDexpi1x(xmlString: string): DexpiDocument {
@@ -165,13 +197,10 @@ export function parseDexpi1x(xmlString: string): DexpiDocument {
   // Get version info
   const versionInfo = extractVersionInfo(root);
 
-  // Parse equipment elements
-  const equipmentElements = root.querySelectorAll("Equipment");
+  // Parse equipment elements - only top-level, not inside ShapeCatalogue or other Equipment
+  const equipmentElements = getTopLevelEquipment(root);
   const processSteps: ProcessStep[] = [];
-  const portMap = new Map<
-    string,
-    { stepId: string; direction: "inlet" | "outlet" }
-  >();
+  const portMap = new Map<string, PortMapEntry>();
 
   let stepIndex = 0;
   for (const equipEl of equipmentElements) {
@@ -185,22 +214,36 @@ export function parseDexpi1x(xmlString: string): DexpiDocument {
     }
   }
 
-  // Parse piping network systems for connections and external ports
+  // Parse piping network systems for connections, external ports, and inline components
   const pipingNetworkSystems = root.querySelectorAll("PipingNetworkSystem");
   const processConnections: ProcessConnection[] = [];
   const externalPorts: ExternalPort[] = [];
 
   let connectionIndex = 0;
   let extPortIndex = 0;
+  let pipingComponentIndex = 0;
 
   for (const pnsEl of pipingNetworkSystems) {
-    // Parse connections
-    const connections = parsePipingNetworkConnections(pnsEl, connectionIndex);
+    // Parse PipingComponents (valves, reducers, tees, etc.) as process steps
+    const pipingComponentResult = parsePipingComponents(
+      pnsEl,
+      pipingComponentIndex,
+      portMap
+    );
+    processSteps.push(...pipingComponentResult.steps);
+    pipingComponentIndex += pipingComponentResult.steps.length;
+
+    // Parse connections with enhanced port resolution
+    const connections = parsePipingNetworkConnections(
+      pnsEl,
+      connectionIndex,
+      portMap
+    );
     processConnections.push(...connections.connections);
     connectionIndex += connections.connections.length;
 
     // Parse external ports (off-page connectors)
-    const extPorts = parseExternalConnectors(pnsEl, extPortIndex);
+    const extPorts = parseExternalConnectors(pnsEl, extPortIndex, portMap);
     externalPorts.push(...extPorts.ports);
     extPortIndex += extPorts.ports.length;
   }
@@ -230,6 +273,34 @@ export function parseDexpi1x(xmlString: string): DexpiDocument {
     version: versionInfo.version || "1.x",
     processModel,
   };
+}
+
+/**
+ * Get only top-level Equipment elements (not inside ShapeCatalogue or nested in other Equipment)
+ */
+function getTopLevelEquipment(root: Element): Element[] {
+  const equipmentElements: Element[] = [];
+
+  // Only get direct children of root that are Equipment
+  for (const child of root.children) {
+    if (child.localName === "Equipment") {
+      const componentClass = child.getAttribute("ComponentClass");
+
+      // Skip equipment without ComponentClass (likely shape templates)
+      if (!componentClass) {
+        continue;
+      }
+
+      // Skip sub-component types that shouldn't be standalone nodes
+      if (SKIP_COMPONENT_CLASSES.has(componentClass)) {
+        continue;
+      }
+
+      equipmentElements.push(child);
+    }
+  }
+
+  return equipmentElements;
 }
 
 // ============================================================================
@@ -344,11 +415,142 @@ function parseNozzleElement(
 }
 
 /**
+ * Parse PipingComponent elements (valves, reducers, tees, etc.) as ProcessSteps
+ */
+function parsePipingComponents(
+  pnsEl: Element,
+  startIndex: number,
+  portMap: Map<string, PortMapEntry>
+): { steps: ProcessStep[] } {
+  const steps: ProcessStep[] = [];
+
+  // Find all PipingComponent elements within PipingNetworkSegments
+  const pipingComponents = pnsEl.querySelectorAll(
+    "PipingNetworkSegment > PipingComponent"
+  );
+
+  let index = startIndex;
+  for (const compEl of pipingComponents) {
+    const step = parsePipingComponentElement(compEl, index++, portMap);
+    if (step) {
+      steps.push(step);
+    }
+  }
+
+  return { steps };
+}
+
+/**
+ * Parse a PipingComponent element to ProcessStep
+ */
+function parsePipingComponentElement(
+  el: Element,
+  index: number,
+  portMap: Map<string, PortMapEntry>
+): ProcessStep | null {
+  const id = el.getAttribute("ID") || `piping_component_${index}`;
+  const componentClass = el.getAttribute("ComponentClass") || "PipingComponent";
+
+  // Map ComponentClass to our ProcessStep type
+  const type =
+    EQUIPMENT_TO_PROCESS_TYPE[componentClass] ||
+    "Process/Process.GenericProcessStep";
+
+  // Get name from GenericAttributes or use ComponentClass
+  const name =
+    getGenericAttributeValue(el, "PipingComponentNameAssignmentClass") ||
+    getGenericAttributeValue(el, "TagNameAssignmentClass") ||
+    componentClass;
+
+  // Parse ConnectionPoints as ports and register in portMap
+  const ports: Port[] = [];
+  const connectionPoints = el.querySelector("ConnectionPoints");
+
+  if (connectionPoints) {
+    const flowIn = connectionPoints.getAttribute("FlowIn");
+    const flowOut = connectionPoints.getAttribute("FlowOut");
+    const nodes = connectionPoints.querySelectorAll("Node");
+
+    let nodeIndex = 0;
+    for (const nodeEl of nodes) {
+      const nodeId = nodeEl.getAttribute("ID");
+      const nodeType = nodeEl.getAttribute("Type");
+
+      // Skip default nodes (they're just placeholders)
+      if (nodeId?.includes("-DefaultNode")) {
+        nodeIndex++;
+        continue;
+      }
+
+      // Determine direction based on FlowIn/FlowOut attributes and node index
+      // FlowIn/FlowOut indicate which node indices are inlets/outlets
+      let direction: "inlet" | "outlet" = "inlet";
+
+      // Parse flow direction from attributes
+      // FlowIn="1" means node at index 1 is an inlet
+      // FlowOut="2" means node at index 2 is an outlet
+      if (flowOut && parseInt(flowOut) === nodeIndex + 1) {
+        direction = "outlet";
+      } else if (flowIn && parseInt(flowIn) === nodeIndex + 1) {
+        direction = "inlet";
+      } else if (nodeType === "process") {
+        // Default process nodes are typically connection points
+        direction = nodeIndex === 1 ? "inlet" : "outlet";
+      }
+
+      const port: Port = {
+        id: nodeId || `${id}_port_${nodeIndex}`,
+        name: `Port ${nodeIndex + 1}`,
+        direction,
+        flowType: "material",
+        stepId: id,
+      };
+
+      ports.push(port);
+
+      // Register in portMap for connection resolution
+      if (nodeId) {
+        portMap.set(nodeId, { stepId: id, direction, nodeIndex });
+      }
+
+      nodeIndex++;
+    }
+
+    // Also register the component ID itself for direct references
+    // Connections often reference component IDs with node indices
+    portMap.set(id, { stepId: id, direction: "inlet", nodeIndex: 0 });
+  }
+
+  // Get position from Position element
+  const positionEl = el.querySelector("Position > Location");
+  const layout = positionEl
+    ? {
+        x: parseFloat(positionEl.getAttribute("X") || "0"),
+        y: parseFloat(positionEl.getAttribute("Y") || "0"),
+      }
+    : undefined;
+
+  // Parse parameters from GenericAttributes
+  const parameters = parseGenericAttributesToParameters(el);
+
+  return {
+    id,
+    type,
+    name,
+    ports,
+    parameters: parameters.length > 0 ? parameters : undefined,
+    layout,
+    originalNodeType: componentClass.toLowerCase(),
+  };
+}
+
+/**
  * Parse piping network for connections
  */
 function parsePipingNetworkConnections(
   pnsEl: Element,
-  startIndex: number
+  startIndex: number,
+  _portMap: Map<string, PortMapEntry>
 ): { connections: ProcessConnection[] } {
   const connections: ProcessConnection[] = [];
 
@@ -360,17 +562,22 @@ function parsePipingNetworkConnections(
     const fromId = connEl.getAttribute("FromID");
     const toId = connEl.getAttribute("ToID");
 
-    if (fromId && toId) {
-      const id = `conn_${index++}`;
-
-      connections.push({
-        id,
-        type: "Process/Process.MaterialFlow",
-        fromPort: fromId,
-        toPort: toId,
-        flowType: "material",
-      });
+    // Skip incomplete connections
+    if (!fromId || !toId) {
+      continue;
     }
+
+    const id = `conn_${index++}`;
+
+    // Keep original IDs - resolution to node IDs happens in from-dexpi.ts
+    // This preserves the connection topology for proper port-to-node mapping
+    connections.push({
+      id,
+      type: "Process/Process.MaterialFlow",
+      fromPort: fromId,
+      toPort: toId,
+      flowType: "material",
+    });
   }
 
   return { connections };
@@ -381,7 +588,8 @@ function parsePipingNetworkConnections(
  */
 function parseExternalConnectors(
   pnsEl: Element,
-  startIndex: number
+  startIndex: number,
+  portMap: Map<string, PortMapEntry>
 ): { ports: ExternalPort[] } {
   const ports: ExternalPort[] = [];
 
@@ -402,12 +610,26 @@ function parseExternalConnectors(
       getGenericAttributeValue(connEl, "PipeConnectorNumberAssignmentClass") ||
       `External Input ${index + 1}`;
 
+    // Get position from Position element
+    const positionEl = connEl.querySelector("Position > Location");
+    const layout = positionEl
+      ? {
+          x: parseFloat(positionEl.getAttribute("X") || "0"),
+          y: parseFloat(positionEl.getAttribute("Y") || "0"),
+        }
+      : undefined;
+
     ports.push({
       id,
       name,
       direction: "inlet",
       flowType: "material",
+      layout,
     });
+
+    // Register in portMap for connection resolution
+    portMap.set(id, { stepId: id, direction: "inlet" });
+
     index++;
   }
 
@@ -418,12 +640,26 @@ function parseExternalConnectors(
       getGenericAttributeValue(connEl, "PipeConnectorNumberAssignmentClass") ||
       `External Output ${index + 1}`;
 
+    // Get position from Position element
+    const positionEl = connEl.querySelector("Position > Location");
+    const layout = positionEl
+      ? {
+          x: parseFloat(positionEl.getAttribute("X") || "0"),
+          y: parseFloat(positionEl.getAttribute("Y") || "0"),
+        }
+      : undefined;
+
     ports.push({
       id,
       name,
       direction: "outlet",
       flowType: "material",
+      layout,
     });
+
+    // Register in portMap for connection resolution
+    portMap.set(id, { stepId: id, direction: "outlet" });
+
     index++;
   }
 
@@ -436,7 +672,7 @@ function parseExternalConnectors(
  * @param discipline - Discipline attribute from PlantInformation (e.g., "PID", "PFD")
  */
 function detectDiagramType(
-  equipmentElements: NodeListOf<Element>,
+  equipmentElements: Element[],
   discipline?: string
 ): "BFD" | "PFD" | "P&ID" {
   // First check explicit discipline from PlantInformation
@@ -604,15 +840,16 @@ export function validateDexpi1x(xmlString: string): Dexpi1xValidationResult {
     }
 
     // Check for equipment or piping elements
-    const equipment = root.querySelectorAll("Equipment");
+    // Only check top-level Equipment (not ShapeCatalogue or nested sub-components)
+    const topLevelEquipment = getTopLevelEquipment(root);
     const piping = root.querySelectorAll("PipingNetworkSystem");
 
-    if (equipment.length === 0 && piping.length === 0) {
+    if (topLevelEquipment.length === 0 && piping.length === 0) {
       warnings.push("No Equipment or PipingNetworkSystem elements found");
     }
 
-    // Validate equipment elements
-    for (const eq of equipment) {
+    // Validate top-level equipment elements
+    for (const eq of topLevelEquipment) {
       const id = eq.getAttribute("ID");
       if (!id) {
         errors.push("Equipment element is missing ID attribute");

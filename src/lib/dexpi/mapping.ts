@@ -281,6 +281,7 @@ export const componentClassToDexpiCategory: Record<string, string> = {
   // Heat Exchangers -> Heat_Exchangers
   HeatExchanger: "Heat_Exchangers",
   ShellandTubeHeatExchanger: "Heat_Exchangers",
+  TubularHeatExchanger: "Heat_Exchangers",
   PlateHeatExchanger: "Heat_Exchangers",
   AirCooler: "Heat_Exchangers",
   Cooler: "Heat_Exchangers",
@@ -315,12 +316,20 @@ export const componentClassToDexpiCategory: Record<string, string> = {
   Valve: "Valves",
   ControlValve: "Valves",
   CheckValve: "Valves",
+  SwingCheckValve: "Valves",
   GateValve: "Valves",
   GlobeValve: "Valves",
   BallValve: "Valves",
   ButterflyValve: "Valves",
   SafetyValve: "Valves",
+  SpringLoadedGlobeSafetyValve: "Valves",
   PressureReliefValve: "Valves",
+
+  // Fittings -> Fittings
+  PipeReducer: "Fittings",
+  PipeTee: "Fittings",
+  BlindFlange: "Fittings",
+  Flange: "Fittings",
 
   // Reactors -> Vessels (use vessel symbol for reactors)
   Reactor: "Vessels",
@@ -377,6 +386,7 @@ export const componentClassToNodeType: Record<string, string> = {
   CentrifugalPump: "pump",
   PositiveDisplacementPump: "pump",
   Pump: "pump",
+  ReciprocatingPump: "pump",
 
   // Compressors
   Compressor: "compressor",
@@ -399,6 +409,7 @@ export const componentClassToNodeType: Record<string, string> = {
   // Heat Exchangers
   HeatExchanger: "heat_exchanger",
   ShellandTubeHeatExchanger: "heat_exchanger",
+  TubularHeatExchanger: "heat_exchanger",
   PlateHeatExchanger: "heat_exchanger",
   AirCooler: "heat_exchanger",
   Cooler: "heat_exchanger",
@@ -421,6 +432,19 @@ export const componentClassToNodeType: Record<string, string> = {
   Valve: "valve",
   ControlValve: "valve",
   CheckValve: "valve",
+  SwingCheckValve: "valve",
+  GlobeValve: "valve",
+  BallValve: "valve",
+  ButterflyValve: "valve",
+  GateValve: "valve",
+  SafetyValve: "valve",
+  SpringLoadedGlobeSafetyValve: "valve",
+
+  // Fittings (map to process_block for now)
+  PipeReducer: "process_block",
+  PipeTee: "process_block",
+  BlindFlange: "process_block",
+  Flange: "process_block",
 
   // Generic fallbacks
   Equipment: "process_block",
@@ -445,4 +469,57 @@ export function getNodeTypeFromComponentClass(
   }
 
   return getFallbackNodeType(mode);
+}
+
+// ============================================================================
+// DEXPI Symbol Index Mappings
+// Maps ComponentClass to specific symbol index within a category
+// ============================================================================
+
+/**
+ * Map ComponentClass values to specific symbol indices within DEXPI categories
+ * These indices correspond to specific SVG symbols in dexpi-mapping.json
+ */
+export const componentClassToSymbolIndex: Record<string, number> = {
+  // Valves - indices from dexpi-mapping.json Valves category
+  Valve: 0, // Generic valve
+  GateValve: 1,
+  GlobeValve: 2,
+  BallValve: 3,
+  ButterflyValve: 4,
+  CheckValve: 5,
+  SwingCheckValve: 5, // Also a check valve
+  PlugValve: 6,
+  NeedleValve: 7,
+  DiaphragmValve: 8,
+  PinchValve: 9,
+  SafetyValve: 10,
+  SpringLoadedGlobeSafetyValve: 10, // Safety valve
+  PressureReliefValve: 10, // Safety valve
+  ControlValve: 11,
+  ThreeWayValve: 12,
+};
+
+/**
+ * Get the symbol index for a ComponentClass within its category
+ * Returns 0 (default/generic symbol) if no specific mapping exists
+ */
+export function getSymbolIndexFromComponentClass(
+  componentClass: string
+): number {
+  // Try exact match first
+  if (componentClass in componentClassToSymbolIndex) {
+    return componentClassToSymbolIndex[componentClass];
+  }
+
+  // Try case-insensitive match
+  const lowerClass = componentClass.toLowerCase();
+  for (const [key, value] of Object.entries(componentClassToSymbolIndex)) {
+    if (key.toLowerCase() === lowerClass) {
+      return value;
+    }
+  }
+
+  // Default to first symbol (generic) in the category
+  return 0;
 }
