@@ -2,19 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
-    INLINE_CATEGORIES,
-    INLINE_CATEGORY_INFO,
-    getInlineNodeType,
-    getInlineSymbolsByCategory,
-    type InlineCategory,
+  INLINE_CATEGORIES,
+  INLINE_CATEGORY_INFO,
+  getInlineNodeType,
+  getInlineSymbolsByCategory,
+  type InlineCategory,
 } from "@/lib/inline-components";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

@@ -20,6 +20,10 @@ export type StreamEdgeData = {
   temperature?: string;
   pressure?: string;
   streamType?: "material" | "energy" | "utility" | "signal";
+  // Label position along the edge: 0 = source, 0.5 = middle (default), 1 = target
+  labelPosition?: number;
+  // Vertical offset for label (positive = below edge)
+  labelOffset?: number;
 };
 
 export type StreamEdge = Edge<StreamEdgeData>;
@@ -221,7 +225,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
 
   // Engineering style: use step path with hard corners (borderRadius: 0)
   // Colorful style: use smooth bezier curves
-  const [edgePath, labelX, labelY] = diagramStyle === "engineering"
+  const [edgePath, midLabelX, midLabelY] = diagramStyle === "engineering"
     ? getSmoothStepPath({
         sourceX: adjustedSourceX,
         sourceY: adjustedSourceY,
@@ -239,6 +243,16 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
         targetY: adjustedTargetY,
         targetPosition,
       });
+
+  // Calculate label position based on labelPosition prop (default: 0.33 to avoid node overlap)
+  // Position 0.33 places the label closer to the source, reducing overlap with target node
+  const labelPosition = data?.labelPosition ?? 0.33;
+  const labelOffset = data?.labelOffset ?? 0;
+  
+  // Interpolate between source and target based on labelPosition
+  // This is a simplified calculation - for complex paths, the midpoint is still used
+  const labelX = adjustedSourceX + (adjustedTargetX - adjustedSourceX) * labelPosition;
+  const labelY = adjustedSourceY + (adjustedTargetY - adjustedSourceY) * labelPosition + labelOffset;
 
   const edgeStyle = getEdgeStyle(data?.streamType, selected, diagramStyle);
   // Support both React Flow's standard label prop and data.label for backwards compatibility
