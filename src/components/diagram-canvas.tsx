@@ -10,14 +10,20 @@ import {
     Panel,
     ReactFlow,
     SelectionMode,
+    ViewportPortal,
     type Edge,
     type Node,
     type ReactFlowInstance,
+    type XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { edgeTypes } from "@/components/edges/stream-edge";
+import {
+    InlineComponentSelector,
+    type InlineComponentSelection,
+} from "@/components/inline-component-selector";
 import { allNodeTypes } from "@/components/nodes";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { MODES } from "@/lib/modes";
@@ -32,6 +38,16 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
+  // State for inline component selector (edge double-click)
+  const [inlineSelectorOpen, setInlineSelectorOpen] = useState(false);
+  const [inlineSelectorPosition, setInlineSelectorPosition] = useState<{ x: number; y: number } | undefined>();
+  const [selectedEdgeForInline, setSelectedEdgeForInline] = useState<string | null>(null);
+  const [inlineInsertPosition, setInlineInsertPosition] = useState<XYPosition | null>(null);
+
+  // State for edge hover preview (PFD mode)
+  const [edgeHoverPosition, setEdgeHoverPosition] = useState<XYPosition | null>(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
+
   const {
     nodes,
     edges,
@@ -41,6 +57,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     onEdgesChange,
     onConnect,
     addNode,
+    insertNodeOnEdge,
     selectedNodeIds,
     selectedEdgeIds,
     shouldZoomToSelection,
@@ -213,6 +230,142 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     []
   );
 
+  // Helper function to find closest point on an edge's SVG path
+  const getClosestPointOnEdge = useCallback((edgeId: string, mousePosition: XYPosition): XYPosition | null => {
+    // Find the edge's SVG path element
+    const pathElement = document.querySelector(`[data-testid="rf__edge-${edgeId}"] path`) as SVGPathElement | null;
+    if (!pathElement) return null;
+
+    const pathLength = pathElement.getTotalLength();
+    if (pathLength === 0) return null;
+
+    // Sample points along the path to find the closest one
+    const numSamples = Math.max(50, Math.ceil(pathLength / 5)); // At least 50 samples, or 1 per 5px
+    let closestPoint: XYPosition | null = null;
+    let closestDistance = Infinity;
+
+    for (let i = 0; i <= numSamples; i++) {
+      const length = (i / numSamples) * pathLength;
+      const point = pathElement.getPointAtLength(length);
+      const distance = Math.hypot(point.x - mousePosition.x, point.y - mousePosition.y);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestPoint = { x: point.x, y: point.y };
+      }
+    }
+
+    return closestPoint;
+  }, []);
+
+  // Edge hover handlers for preview dot (PFD mode only)
+  const onEdgeMouseEnter = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      if (mode !== "pfd" || inlineSelectorOpen) return;
+      setHoveredEdgeId(edge.id);
+    },
+    [mode, inlineSelectorOpen]
+  );
+
+  const onEdgeMouseMove = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      if (mode !== "pfd" || inlineSelectorOpen) return;
+      if (!reactFlowInstance.current) return;
+
+      // Convert screen position to flow position
+      const flowPosition = reactFlowInstance.current.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      // Snap to the edge path
+      const snappedPosition = getClosestPointOnEdge(edge.id, flowPosition);
+      setEdgeHoverPosition(snappedPosition || flowPosition);
+    },
+    [mode, inlineSelectorOpen, getClosestPointOnEdge]
+  );
+
+  const onEdgeMouseLeave = useCallback(() => {
+    setHoveredEdgeId(null);
+    setEdgeHoverPosition(null);
+  }, []);
+
+  // Double-click handler to insert inline component on edge (PFD mode only)
+  const onEdgeDoubleClick = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      // Only enable in PFD mode where DEXPI symbols are available
+      if (mode !== "pfd") return;
+      if (!reactFlowInstance.current) return;
+
+      // Use the snapped hover position if available, otherwise calculate from click
+      let flowPosition: XYPosition;
+      if (edgeHoverPosition && hoveredEdgeId === edge.id) {
+        flowPosition = edgeHoverPosition;
+      } else {
+        flowPosition = reactFlowInstance.current.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        // Try to snap to edge
+        const snapped = getClosestPointOnEdge(edge.id, flowPosition);
+        if (snapped) flowPosition = snapped;
+      }
+
+      // Store the edge and flow position for insertion
+      setSelectedEdgeForInline(edge.id);
+      setInlineInsertPosition(flowPosition);
+
+      // Clear hover state
+      setHoveredEdgeId(null);
+      setEdgeHoverPosition(null);
+
+      // Store screen position for the popover (fixed UI element)
+      const screenPos = reactFlowInstance.current.flowToScreenPosition(flowPosition);
+      setInlineSelectorPosition({
+        x: screenPos.x,
+        y: screenPos.y,
+      });
+      setInlineSelectorOpen(true);
+    },
+    [mode, edgeHoverPosition, hoveredEdgeId, getClosestPointOnEdge]
+  );
+
+  // Compute screen position for popover on-demand (for when viewport changes)
+  const getPopoverScreenPosition = useCallback(() => {
+    if (!inlineInsertPosition || !reactFlowInstance.current) {
+      return inlineSelectorPosition;
+    }
+    // flowToScreenPosition returns raw screen coordinates
+    const screenPos = reactFlowInstance.current.flowToScreenPosition(inlineInsertPosition);
+    return {
+      x: screenPos.x,
+      y: screenPos.y,
+    };
+  }, [inlineInsertPosition, inlineSelectorPosition]);
+
+  // Handle inline component selection
+  const handleInlineComponentSelect = useCallback(
+    (selection: InlineComponentSelection) => {
+      if (!selectedEdgeForInline || !inlineInsertPosition) return;
+
+      // Insert the node on the edge
+      insertNodeOnEdge(selectedEdgeForInline, inlineInsertPosition, {
+        type: selection.nodeType,
+        data: {
+          dexpiCategory: selection.category,
+          symbolIndex: selection.symbolIndex,
+          dexpiSubclass: selection.dexpiSubclass,
+        },
+      });
+
+      // Reset state
+      setSelectedEdgeForInline(null);
+      setInlineInsertPosition(null);
+      setInlineSelectorOpen(false);
+    },
+    [selectedEdgeForInline, inlineInsertPosition, insertNodeOnEdge]
+  );
+
   return (
     <div ref={reactFlowWrapper} className="w-full h-full">
       <ReactFlow
@@ -226,6 +379,10 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         onDrop={onDrop}
         onSelectionChange={handleSelectionChange}
         onNodeDoubleClick={onNodeDoubleClick}
+        onEdgeDoubleClick={onEdgeDoubleClick}
+        onEdgeMouseEnter={onEdgeMouseEnter}
+        onEdgeMouseMove={onEdgeMouseMove}
+        onEdgeMouseLeave={onEdgeMouseLeave}
         nodeTypes={allNodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
@@ -303,7 +460,59 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
             )}
           </div>
         </Panel>
+
+        {/* Preview dot when hovering over edges (PFD mode) - snaps to edge */}
+        {!inlineSelectorOpen && edgeHoverPosition && hoveredEdgeId && (
+          <ViewportPortal>
+            <div
+              className="pointer-events-none"
+              style={{
+                position: "absolute",
+                transform: `translate(${edgeHoverPosition.x}px, ${edgeHoverPosition.y}px) translate(-50%, -50%)`,
+              }}
+            >
+              {/* Preview dot - black, 50% opacity */}
+              <div className="w-3 h-3 rounded-full bg-black/50" />
+            </div>
+          </ViewportPortal>
+        )}
+
+        {/* Pulsating indicator dot for inline component insertion - rendered in viewport coordinates */}
+        {inlineSelectorOpen && inlineInsertPosition && (
+          <ViewportPortal>
+            <div
+              className="pointer-events-none"
+              style={{
+                position: "absolute",
+                transform: `translate(${inlineInsertPosition.x}px, ${inlineInsertPosition.y}px) translate(-50%, -50%)`,
+              }}
+            >
+              <div className="relative flex items-center justify-center">
+                {/* Outer pulsating ring */}
+                <div className="absolute w-6 h-6 rounded-full bg-red-500/30 animate-ping" />
+                {/* Inner solid dot */}
+                <div className="w-3 h-3 rounded-full bg-red-500/70 shadow-lg shadow-red-500/50" />
+              </div>
+            </div>
+          </ViewportPortal>
+        )}
       </ReactFlow>
+
+      {/* Inline component selector for edge double-click */}
+      <InlineComponentSelector
+        open={inlineSelectorOpen}
+        onOpenChange={(open) => {
+          setInlineSelectorOpen(open);
+          if (!open) {
+            // Reset state when closing
+            setSelectedEdgeForInline(null);
+            setInlineInsertPosition(null);
+            setInlineSelectorPosition(undefined);
+          }
+        }}
+        onSelect={handleInlineComponentSelect}
+        position={getPopoverScreenPosition()}
+      />
     </div>
   );
 }

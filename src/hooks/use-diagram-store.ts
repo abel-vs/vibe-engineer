@@ -9,6 +9,7 @@ import type {
   OnEdgesChange,
   OnNodesChange,
   ReactFlowInstance,
+  XYPosition,
 } from "@xyflow/react";
 import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { create } from "zustand";
@@ -32,7 +33,7 @@ export interface DiagramState {
   // Selection state
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
-  
+
   // Flag to trigger zoom on selection (for voice commands)
   shouldZoomToSelection: boolean;
 
@@ -96,6 +97,13 @@ export interface DiagramState {
 
   // Pinning
   clearPinnedNodes: () => void;
+
+  // Inline component insertion (for P&ID)
+  insertNodeOnEdge: (
+    edgeId: string,
+    position: XYPosition,
+    nodeConfig: Partial<Node>
+  ) => string | null;
 }
 
 // Helper to create a deep clone of nodes/edges for history
@@ -254,9 +262,40 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
       -MAX_HISTORY_SIZE
     );
+
+    // Find edges connected to this node
+    const incomingEdges = edges.filter((e) => e.target === nodeId);
+    const outgoingEdges = edges.filter((e) => e.source === nodeId);
+
+    // Check if this is an inline component (exactly 1 incoming and 1 outgoing edge)
+    // If so, reconnect the edges to maintain flow continuity
+    let newEdges = edges.filter(
+      (e) => e.source !== nodeId && e.target !== nodeId
+    );
+
+    if (incomingEdges.length === 1 && outgoingEdges.length === 1) {
+      const inEdge = incomingEdges[0];
+      const outEdge = outgoingEdges[0];
+
+      // Create a reconnecting edge from the source to the target
+      const reconnectingEdge: Edge = {
+        id: `edge_reconnect_${Date.now()}`,
+        source: inEdge.source,
+        target: outEdge.target,
+        sourceHandle: inEdge.sourceHandle,
+        targetHandle: outEdge.targetHandle,
+        type: inEdge.type || outEdge.type, // Preserve edge type
+        // Inherit other properties from the incoming edge
+        label: inEdge.label,
+        data: inEdge.data,
+      };
+
+      newEdges = [...newEdges, reconnectingEdge];
+    }
+
     set({
       nodes: nodes.filter((n) => n.id !== nodeId),
-      edges: edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      edges: newEdges,
       selectedNodeIds: selectedNodeIds.filter((id) => id !== nodeId),
       past: newPast,
       future: [],
@@ -406,7 +445,13 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   organizeLayout: (direction = "TB", pinnedNodeIds) => {
-    const { nodes, edges, past, pinnedNodeIds: storePinnedIds, reactFlowInstance } = get();
+    const {
+      nodes,
+      edges,
+      past,
+      pinnedNodeIds: storePinnedIds,
+      reactFlowInstance,
+    } = get();
     if (nodes.length === 0) return;
 
     // Save to history before organizing
@@ -473,5 +518,72 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   clearPinnedNodes: () => {
     set({ pinnedNodeIds: new Set<string>() });
+  },
+
+  insertNodeOnEdge: (edgeId, position, nodeConfig) => {
+    const { nodes, edges, past } = get();
+    const edge = edges.find((e) => e.id === edgeId);
+    if (!edge) return null;
+
+    // Save to history before making changes
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
+
+    // Center the node around the click position
+    // Default inline component size is ~42x42 for DEXPI symbols
+    const NODE_SIZE = 42;
+    const centeredPosition: XYPosition = {
+      x: position.x - NODE_SIZE / 2,
+      y: position.y - NODE_SIZE / 2,
+    };
+
+    // Create new inline node
+    const newNodeId = `inline_${Date.now()}`;
+    const newNode: Node = {
+      id: newNodeId,
+      type: nodeConfig.type || "valves",
+      position: centeredPosition,
+      data: nodeConfig.data || {},
+      selected: true, // Auto-select for immediate editing
+    };
+
+    // Create two new edges to replace the original
+    // No arrow markers - P&ID convention for inline segments
+    const timestamp = Date.now();
+    const edge1: Edge = {
+      id: `edge_${timestamp}_1`,
+      source: edge.source,
+      target: newNodeId,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: "left", // Inline components use left/right handles (W/E in DEXPI)
+      type: edge.type,
+      markerEnd: undefined, // No arrow
+    };
+
+    const edge2: Edge = {
+      id: `edge_${timestamp}_2`,
+      source: newNodeId,
+      target: edge.target,
+      sourceHandle: "right",
+      targetHandle: edge.targetHandle,
+      type: edge.type,
+      markerEnd: undefined, // No arrow
+    };
+
+    // Atomic operation: remove old edge, add node + 2 new edges
+    set({
+      nodes: [
+        ...nodes.map((n) => ({ ...n, selected: false })), // Deselect other nodes
+        newNode,
+      ],
+      edges: [...edges.filter((e) => e.id !== edgeId), edge1, edge2],
+      selectedNodeIds: [newNodeId],
+      selectedEdgeIds: [],
+      past: newPast,
+      future: [],
+    });
+
+    return newNodeId;
   },
 }));
