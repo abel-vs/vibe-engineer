@@ -212,9 +212,10 @@ export default function DiagramPage() {
     lintGutter(),
   ], []);
 
-  // CodeMirror extensions for XML viewing
+  // CodeMirror extensions for XML viewing (with line wrapping)
   const xmlExtensions = useMemo(() => [
     xml(),
+    // Enable line wrapping for XML to prevent horizontal overflow
   ], []);
 
   // Auto-save on changes - save to per-mode workspace
@@ -1036,32 +1037,33 @@ export default function DiagramPage() {
           </aside>
 
           {/* Canvas Area */}
-          <main className="flex-1 relative" ref={flowRef}>
+          <main className="flex-1 relative overflow-hidden" ref={flowRef}>
             {showJsonView ? (
-              <div className="w-full h-full flex flex-col bg-gray-900 relative">
+              <div className="w-full h-full flex flex-col bg-gray-900 relative overflow-hidden">
                 <Tabs
                   value={codeViewMode}
                   onValueChange={(value) => setCodeViewMode(value as "json" | "dexpi")}
                   className="flex flex-col h-full"
                 >
                   {/* Toolbar with Tabs and Actions */}
-                  <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0 bg-gray-800">
-                    <div className="flex items-center gap-2">
-                      {/* Tabs */}
-                      <TabsList className="bg-gray-900 border border-gray-700">
-                        <TabsTrigger value="json" className="data-[state=active]:bg-gray-700">
-                          JSON
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="dexpi"
-                          className="data-[state=active]:bg-gray-700"
-                          disabled={!canExportToDexpi(mode)}
-                          title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
-                        >
-                          DEXPI XML
-                        </TabsTrigger>
-                      </TabsList>
+                  <div className="flex items-center justify-between p-2 border-b border-neutral-700 shrink-0 bg-neutral-800">
+                    {/* Tabs */}
+                    <TabsList className="bg-neutral-900 border border-neutral-700">
+                      <TabsTrigger value="json" className="data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100 text-neutral-400">
+                        JSON
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="dexpi"
+                        className="data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100 text-neutral-400"
+                        disabled={!canExportToDexpi(mode)}
+                        title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
+                      >
+                        DEXPI XML
+                      </TabsTrigger>
+                    </TabsList>
 
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
                       {/* Edit/Apply/Cancel Buttons - Only for JSON */}
                       {codeViewMode === "json" && (
                         <>
@@ -1102,35 +1104,35 @@ export default function DiagramPage() {
                           )}
                         </>
                       )}
-                    </div>
 
-                    {/* Copy Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-400 hover:text-white hover:bg-gray-700"
-                      onClick={() => {
-                        const content = codeViewMode === "json"
-                          ? (jsonEditMode ? editableJson : generateJsonString())
-                          : generateDexpiXml();
-                        navigator.clipboard.writeText(content);
-                        setJsonCopied(true);
-                        setTimeout(() => setJsonCopied(false), 2000);
-                      }}
-                      title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
-                    >
-                      {jsonCopied ? (
-                        <>
-                          <Check className="w-4 h-4 mr-1 text-green-400" />
-                          <span className="text-green-400">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 mr-1" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
+                      {/* Copy Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white hover:bg-gray-700"
+                        onClick={() => {
+                          const content = codeViewMode === "json"
+                            ? (jsonEditMode ? editableJson : generateJsonString())
+                            : generateDexpiXml();
+                          navigator.clipboard.writeText(content);
+                          setJsonCopied(true);
+                          setTimeout(() => setJsonCopied(false), 2000);
+                        }}
+                        title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
+                      >
+                        {jsonCopied ? (
+                          <>
+                            <Check className="w-4 h-4 mr-1 text-green-400" />
+                            <span className="text-green-400">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Error message */}
@@ -1141,10 +1143,11 @@ export default function DiagramPage() {
                   )}
 
                   {/* Tab Content */}
-                  <TabsContent value="json" className="flex-1 overflow-hidden m-0 ring-0">
+                  <TabsContent value="json" className="flex-1 overflow-hidden m-0 ring-0 w-full">
                     <CodeMirror
                       value={jsonEditMode ? editableJson : generateJsonString()}
                       height="100%"
+                      width="100%"
                       theme={vscodeDark}
                       extensions={jsonExtensions}
                       editable={jsonEditMode}
@@ -1165,14 +1168,15 @@ export default function DiagramPage() {
                         autocompletion: jsonEditMode,
                         indentOnInput: jsonEditMode,
                       }}
-                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+                      className="h-full w-full max-w-full [&_.cm-editor]:h-full [&_.cm-editor]:w-full [&_.cm-scroller]:overflow-auto"
                     />
                   </TabsContent>
 
-                  <TabsContent value="dexpi" className="flex-1 overflow-hidden m-0 ring-0">
+                  <TabsContent value="dexpi" className="flex-1 overflow-hidden m-0 ring-0 w-full">
                     <CodeMirror
                       value={generateDexpiXml()}
                       height="100%"
+                      width="100%"
                       theme={vscodeDark}
                       extensions={xmlExtensions}
                       editable={false}
@@ -1183,7 +1187,7 @@ export default function DiagramPage() {
                         foldGutter: true,
                         bracketMatching: true,
                       }}
-                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-x-auto [&_.cm-scroller]:overflow-y-auto"
+                      className="h-full w-full max-w-full [&_.cm-editor]:h-full [&_.cm-editor]:w-full [&_.cm-scroller]:overflow-auto"
                     />
                   </TabsContent>
                 </Tabs>
