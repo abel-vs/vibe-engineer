@@ -6,12 +6,14 @@ export interface Settings {
   ttsEnabled: boolean;
   dictionaryEnabled: boolean;
   dictionary: string[]; // Custom words/terms for STT correction
+  showFlow: boolean; // Show animated flow dots on edges
 }
 
 const DEFAULT_SETTINGS: Settings = {
   ttsEnabled: true,
   dictionaryEnabled: true,
   dictionary: [],
+  showFlow: false,
 };
 
 const STORAGE_KEY = "voice-diagram-settings";

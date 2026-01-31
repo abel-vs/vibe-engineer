@@ -25,7 +25,7 @@ import {
 } from "@/lib/dexpi-config";
 import { MODES } from "@/lib/modes";
 import { deleteDiagram, listDiagrams, type SavedDiagram } from "@/lib/storage";
-import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Plus, Trash2, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Plus, Trash2, Volume2, VolumeX, Waves } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 type View = "main" | "dictionary" | "addNode";
@@ -112,7 +112,7 @@ function SymbolPreview({ path }: { path: string }) {
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
-  const { ttsEnabled, dictionaryEnabled, dictionary, updateSetting } = useSettings();
+  const { ttsEnabled, dictionaryEnabled, dictionary, showFlow, updateSetting } = useSettings();
   const [dictionaryText, setDictionaryText] = useState("");
   const [savedDesigns, setSavedDesigns] = useState<SavedDiagram[]>([]);
   const { mode, loadDiagram, addNode, zoomToNode } = useDiagramStore();
@@ -201,6 +201,10 @@ export function CommandMenu() {
 
   const toggleDictionary = () => {
     updateSetting("dictionaryEnabled", !dictionaryEnabled);
+  };
+
+  const toggleShowFlow = () => {
+    updateSetting("showFlow", !showFlow);
   };
 
   const handleDictionaryChange = useCallback((value: string) => {
@@ -431,6 +435,21 @@ export function CommandMenu() {
             <Book className="h-4 w-4" />
             <span>Custom Dictionary</span>
             <CommandShortcut>{dictionary.length} words</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={toggleShowFlow}
+            className="flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Waves className="h-4 w-4" />
+              <span>Show Flow</span>
+            </div>
+            <Switch
+              checked={showFlow}
+              onCheckedChange={toggleShowFlow}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            />
           </CommandItem>
         </CommandGroup>
         {savedDesigns.length > 0 && (

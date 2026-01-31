@@ -1,5 +1,6 @@
 "use client";
 
+import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import type { DiagramStyle } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -123,6 +124,65 @@ const getEdgeStyle = (streamType?: string, selected?: boolean, diagramStyle?: Di
   }
 };
 
+// Get flow dot color based on stream type and diagram style
+function getFlowDotColor(streamType?: string, diagramStyle?: DiagramStyle): string {
+  if (diagramStyle === "engineering") {
+    return "#000000";
+  }
+  
+  switch (streamType) {
+    case "energy":
+      return "#ef4444";
+    case "utility":
+      return "#8b5cf6";
+    case "signal":
+      return "#06b6d4";
+    case "material":
+    default:
+      return "#3b82f6";
+  }
+}
+
+// Animated flow dots component
+function FlowDots({ 
+  edgePath, 
+  dotColor, 
+  dotCount = 3 
+}: { 
+  edgePath: string; 
+  dotColor: string;
+  dotCount?: number;
+}) {
+  // Create multiple dots with staggered animation timing
+  const dots = useMemo(() => {
+    return Array.from({ length: dotCount }, (_, i) => ({
+      id: i,
+      // Stagger the animation start so dots are evenly distributed
+      delay: (i / dotCount) * 2, // 2s total duration
+    }));
+  }, [dotCount]);
+
+  return (
+    <g className="flow-dots">
+      {dots.map((dot) => (
+        <circle
+          key={dot.id}
+          r={3}
+          fill={dotColor}
+          opacity={0.8}
+        >
+          <animateMotion
+            dur="2s"
+            repeatCount="indefinite"
+            begin={`${dot.delay}s`}
+            path={edgePath}
+          />
+        </circle>
+      ))}
+    </g>
+  );
+}
+
 export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   id,
   source,
@@ -142,6 +202,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
 }: EdgeProps<StreamEdge>) {
   const diagramStyle = useDiagramStore((state) => state.style);
   const allEdges = useDiagramStore((state) => state.edges);
+  const { showFlow } = useSettings();
 
   // Calculate offsets to prevent overlapping edges
   // Only edges sharing the exact same handle should be offset from each other
@@ -182,6 +243,7 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
   const edgeStyle = getEdgeStyle(data?.streamType, selected, diagramStyle);
   // Support both React Flow's standard label prop and data.label for backwards compatibility
   const label = propLabel || data?.label;
+  const flowDotColor = getFlowDotColor(data?.streamType, diagramStyle);
 
   return (
     <>
@@ -191,6 +253,13 @@ export const StreamEdgeComponent = memo(function StreamEdgeComponent({
         style={edgeStyle}
         markerEnd={markerEnd}
       />
+      {showFlow && (
+        <FlowDots 
+          edgePath={edgePath} 
+          dotColor={flowDotColor}
+          dotCount={3}
+        />
+      )}
       {label && (
         <EdgeLabelRenderer>
           <div
