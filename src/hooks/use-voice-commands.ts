@@ -3,13 +3,53 @@
 import { useSettings } from "@/contexts/settings-context";
 import { getDefaultDirection } from "@/lib/auto-layout";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
-import { selectTargetHandle } from "@/lib/edge-routing";
 import type { Edge, Node } from "@xyflow/react";
 import { useCallback, useState } from "react";
 import { useDiagramStore } from "./use-diagram-store";
 
 // Get fresh state from store at call time (avoids stale closures)
 const getStoreState = () => useDiagramStore.getState();
+
+// Normalize node types - convert plurals to singulars and common variations
+function normalizeNodeType(nodeType: string): string {
+  const normalized = nodeType.toLowerCase().trim();
+  
+  // Map plural/variant forms to the correct singular PFD node types
+  const typeMap: Record<string, string> = {
+    // Plural to singular mappings
+    vessels: "vessel",
+    tanks: "tank",
+    pumps: "pump",
+    reactors: "reactor",
+    compressors: "compressor",
+    heat_exchangers: "heat_exchanger",
+    columns: "column",
+    valves: "valve",
+    mixers: "mixer",
+    splitters: "splitter",
+    // Common variations
+    filters: "vessel",
+    filter: "vessel",
+    clarifiers: "vessel",
+    clarifier: "vessel",
+    separators: "vessel",
+    separator: "vessel",
+    exchangers: "heat_exchanger",
+    exchanger: "heat_exchanger",
+    // BFD variations
+    process_blocks: "process_block",
+    input_outputs: "input_output",
+    storages: "storage",
+    // Playground variations
+    rectangles: "rectangle",
+    circles: "circle",
+    diamonds: "diamond",
+    triangles: "triangle",
+    texts: "text",
+  };
+  
+  return typeMap[normalized] || normalized;
+}
 
 interface ToolResult {
   toolName: string;
@@ -187,7 +227,9 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         switch (toolName) {
           case "add_node": {
             const rawArgs = args as Record<string, unknown>;
-            const nodeType = rawArgs.nodeType as string;
+            const rawNodeType = rawArgs.nodeType as string;
+            // Normalize node type to handle plurals and variations
+            const nodeType = normalizeNodeType(rawNodeType);
             // Handle position as nested object OR top-level x/y fields
             let position = rawArgs.position as
               | { x: number; y: number }
@@ -287,32 +329,10 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const edgeId =
               (result as { edgeId: string }).edgeId || `edge_${Date.now()}`;
 
-            // For BFD/PFD: always exit right, enter based on geometry
-            let sourceHandle: string | undefined;
-            let targetHandle: string | undefined;
-
-            const sourceNode = currentState.nodes.find(
-              (n) => n.id === sourceNodeId
-            );
-            const targetNode = currentState.nodes.find(
-              (n) => n.id === targetNodeId
-            );
-
-            if (
-              (currentState.mode === "bfd" || currentState.mode === "pfd") &&
-              sourceNode &&
-              targetNode
-            ) {
-              sourceHandle = "right";
-              targetHandle = selectTargetHandle(sourceNode, targetNode);
-            }
-
             const newEdge: Edge = {
               id: edgeId,
               source: sourceNodeId,
               target: targetNodeId,
-              sourceHandle,
-              targetHandle,
               type: edgeType || "stream",
               label,
               data: data,
@@ -469,11 +489,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               .clearPrevious as boolean | undefined;
 
             if (clearPrevious !== false) {
-              setSelectedNodes([]);
-              setSelectedEdges([]);
+              setSelectedNodes([], false);
+              setSelectedEdges([], false);
             }
-            if (nodeIds) setSelectedNodes(nodeIds);
-            if (edgeIds) setSelectedEdges(edgeIds);
+            // Voice commands should zoom to selected elements
+            if (nodeIds) setSelectedNodes(nodeIds, true);
+            if (edgeIds) setSelectedEdges(edgeIds, true);
             log("result", `Selected elements`, { nodeIds, edgeIds });
             break;
           }

@@ -1,5 +1,5 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
-import { recalculateEdgeHandles, selectTargetHandle } from "@/lib/edge-routing";
+import { recalculateEdgeHandles } from "@/lib/edge-routing";
 import type { DiagramMode } from "@/lib/modes";
 import type { DiagramStyle } from "@/lib/styles";
 import type {
@@ -32,6 +32,9 @@ export interface DiagramState {
   // Selection state
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
+  
+  // Flag to trigger zoom on selection (for voice commands)
+  shouldZoomToSelection: boolean;
 
   // Pinned nodes (manually positioned, preserved during auto-layout)
   pinnedNodeIds: Set<string>;
@@ -60,8 +63,9 @@ export interface DiagramState {
   removeEdge: (edgeId: string) => void;
   updateNode: (nodeId: string, updates: Partial<Node>) => void;
   updateEdge: (edgeId: string, updates: Partial<Edge>) => void;
-  setSelectedNodes: (nodeIds: string[]) => void;
-  setSelectedEdges: (edgeIds: string[]) => void;
+  setSelectedNodes: (nodeIds: string[], zoomTo?: boolean) => void;
+  setSelectedEdges: (edgeIds: string[], zoomTo?: boolean) => void;
+  clearZoomFlag: () => void;
   clearCanvas: () => void;
 
   // Undo/Redo
@@ -107,6 +111,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   style: "engineering",
   selectedNodeIds: [],
   selectedEdgeIds: [],
+  shouldZoomToSelection: false,
   pinnedNodeIds: new Set<string>(),
   past: [],
   future: [],
@@ -115,10 +120,11 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
 
   onNodesChange: (changes) => {
-    // Check if this is a meaningful change (not just selection)
+    // Check if this is a meaningful change (not just selection or dimension measurements)
+    // Note: "dimensions" changes are excluded because React Flow fires them continuously
+    // as it measures nodes, which can cause infinite re-render loops
     const hasMeaningfulChange = changes.some(
-      (c) =>
-        c.type === "remove" || c.type === "position" || c.type === "dimensions"
+      (c) => c.type === "remove" || c.type === "position"
     );
 
     if (hasMeaningfulChange) {
@@ -187,32 +193,14 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   onConnect: (connection) => {
     // Save to history before adding edge
-    const { nodes, edges, past, mode } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+    const { edges, past } = get();
+    const newPast = [...past, cloneSnapshot(get().nodes, edges)].slice(
       -MAX_HISTORY_SIZE
     );
 
-    // Get the source and target nodes to check their types
-    const sourceNode = nodes.find((n) => n.id === connection.source);
-    const targetNode = nodes.find((n) => n.id === connection.target);
-
-    // Check if either node is a draw.io node (has type starting with "drawio_")
-    const isDrawioSource = sourceNode?.type?.startsWith("drawio_");
-    const isDrawioTarget = targetNode?.type?.startsWith("drawio_");
-
-    let sourceHandle = connection.sourceHandle ?? null;
-    let targetHandle = connection.targetHandle ?? null;
-
-    // For BFD/PFD with non-draw.io nodes: enforce routing rules (exit right, enter based on geometry)
-    // For draw.io nodes: preserve the actual handle IDs from the connection
-    if ((mode === "bfd" || mode === "pfd") && sourceNode && targetNode) {
-      if (!isDrawioSource && !isDrawioTarget) {
-        // Legacy behavior for non-draw.io nodes
-        sourceHandle = "right";
-        targetHandle = selectTargetHandle(sourceNode, targetNode);
-      }
-      // For draw.io nodes, keep the handle IDs from the connection as-is
-    }
+    // Preserve the actual handle IDs from the user's connection
+    const sourceHandle = connection.sourceHandle ?? null;
+    const targetHandle = connection.targetHandle ?? null;
 
     const newEdge: Edge = {
       id: `edge_${Date.now()}`,
@@ -312,7 +300,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     });
   },
 
-  setSelectedNodes: (nodeIds) => {
+  setSelectedNodes: (nodeIds, zoomTo = false) => {
     // Selection changes don't affect history
     set({
       nodes: get().nodes.map((n) => ({
@@ -320,10 +308,11 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         selected: nodeIds.includes(n.id),
       })),
       selectedNodeIds: nodeIds,
+      shouldZoomToSelection: zoomTo,
     });
   },
 
-  setSelectedEdges: (edgeIds) => {
+  setSelectedEdges: (edgeIds, zoomTo = false) => {
     // Selection changes don't affect history
     set({
       edges: get().edges.map((e) => ({
@@ -331,7 +320,12 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         selected: edgeIds.includes(e.id),
       })),
       selectedEdgeIds: edgeIds,
+      shouldZoomToSelection: zoomTo,
     });
+  },
+
+  clearZoomFlag: () => {
+    set({ shouldZoomToSelection: false });
   },
 
   clearCanvas: () => {
@@ -412,7 +406,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   },
 
   organizeLayout: (direction = "TB", pinnedNodeIds) => {
-    const { nodes, edges, past, pinnedNodeIds: storePinnedIds } = get();
+    const { nodes, edges, past, pinnedNodeIds: storePinnedIds, reactFlowInstance } = get();
     if (nodes.length === 0) return;
 
     // Save to history before organizing
@@ -436,6 +430,17 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       past: newPast,
       future: [],
     });
+
+    // Fit view to show all nodes after organizing
+    if (reactFlowInstance) {
+      // Use setTimeout to ensure React Flow has updated the DOM
+      setTimeout(() => {
+        reactFlowInstance.fitView({
+          padding: 0.15,
+          duration: 300,
+        });
+      }, 100);
+    }
   },
 
   zoomToNode: (nodeId) => {
@@ -462,7 +467,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     if (mode !== "bfd" && mode !== "pfd") return;
     if (edges.length === 0) return;
 
-    const updatedEdges = recalculateEdgeHandles(edges, nodes);
+    const updatedEdges = recalculateEdgeHandles(edges);
     set({ edges: updatedEdges });
   },
 

@@ -10,7 +10,17 @@ export const addNodeSchema = z.object({
   nodeType: z
     .string()
     .describe(
-      `Type/shape of node. For Playground mode use: 'rectangle', 'circle', 'diamond', 'triangle', or 'text'. For BFD mode use: 'process_block' (for equipment like Dryer, Reactor, Filter, Turbine, HRSG, Compressor, Settler Separator), 'input_output' (for boundary stream labels like Biomass Fuel, Air, Steam, Ash, Spent Gas - materials entering/leaving the system), 'storage' (for tanks). For PFD mode use DEXPI equipment categories: ${dexpiEquipmentTypes.join(", ")}. Common mappings: pump=pumps, vessel/tank=vessels, heat exchanger=heat_exchangers, compressor=compressors, valve=valves, filter=filters, separator=separators, column=vessels, reactor=vessels, mixer=mixers, agitator=agitators, centrifuge=centrifuges. IMPORTANT: In BFD, equipment names become 'process_block', stream/material labels become 'input_output'.`
+      `Type/shape of node. IMPORTANT: Use exact type names below.
+      
+For Playground mode: 'rectangle', 'circle', 'diamond', 'triangle', 'text'.
+
+For BFD mode: 'process_block' (for any equipment), 'input_output' (for boundary stream labels), 'storage' (for tanks).
+
+For PFD mode use these SINGULAR forms: 'reactor', 'tank', 'vessel', 'pump', 'compressor', 'heat_exchanger', 'column', 'valve', 'mixer', 'splitter'.
+
+For advanced P&ID (DEXPI): ${dexpiEquipmentTypes.join(", ")}.
+
+Type mapping guide: pumps→pump, vessels/tanks→vessel, reactors→reactor, heat exchangers→heat_exchanger, columns→column, valves→valve, mixers→mixer, compressors→compressor, filters→vessel, clarifiers→vessel, separators→vessel.`
     ),
   label: z
     .string()

@@ -43,6 +43,8 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     addNode,
     selectedNodeIds,
     selectedEdgeIds,
+    shouldZoomToSelection,
+    clearZoomFlag,
     setReactFlowInstance,
   } = useDiagramStore();
 
@@ -153,9 +155,9 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     [onNodeSelect, onEdgeSelect]
   );
 
-  // Zoom to selected nodes/edges when they're highlighted
+  // Zoom to selected nodes/edges only when triggered programmatically (e.g., voice commands)
   useEffect(() => {
-    if (!reactFlowInstance.current) return;
+    if (!reactFlowInstance.current || !shouldZoomToSelection) return;
 
     const nodesToZoom: Node[] = [];
 
@@ -188,9 +190,28 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
           padding: 0.2,
           duration: 300,
         });
+        // Clear the zoom flag after zooming
+        clearZoomFlag();
       }, 100);
+    } else {
+      // Clear the flag even if no nodes to zoom
+      clearZoomFlag();
     }
-  }, [selectedNodeIds, selectedEdgeIds, nodes, edges]);
+  }, [selectedNodeIds, selectedEdgeIds, shouldZoomToSelection, nodes, edges, clearZoomFlag]);
+
+  // Double-click handler to zoom to a node
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (!reactFlowInstance.current) return;
+      
+      reactFlowInstance.current.fitView({
+        nodes: [node],
+        padding: 0.2,
+        duration: 300,
+      });
+    },
+    []
+  );
 
   return (
     <div ref={reactFlowWrapper} className="w-full h-full">
@@ -204,6 +225,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         onDragOver={onDragOver}
         onDrop={onDrop}
         onSelectionChange={handleSelectionChange}
+        onNodeDoubleClick={onNodeDoubleClick}
         nodeTypes={allNodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
