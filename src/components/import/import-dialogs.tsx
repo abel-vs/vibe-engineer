@@ -23,10 +23,11 @@ export interface ImportResult {
   mode?: DiagramMode;
   warnings?: string[];
   error?: string;
+  originalXml?: string; // Original XML content when importing from DEXPI
 }
 
 interface ImportDialogsProps {
-  onImportComplete: (nodes: Node[], edges: Edge[], mode: DiagramMode) => void;
+  onImportComplete: (nodes: Node[], edges: Edge[], mode: DiagramMode, originalXml?: string) => void;
   hasExistingContent: boolean;
 }
 
@@ -59,6 +60,7 @@ export function ImportDialogs({ onImportComplete, hasExistingContent }: ImportDi
             edges: result.edges,
             mode: result.mode,
             warnings: [...(validation.warnings || []), ...result.warnings],
+            originalXml: text, // Preserve the original XML
           };
         } catch (err) {
           return {
@@ -107,7 +109,7 @@ export function ImportDialogs({ onImportComplete, hasExistingContent }: ImportDi
   const confirmImport = useCallback(
     (result: ImportResult | null) => {
       if (result?.success && result.nodes && result.edges && result.mode) {
-        onImportComplete(result.nodes, result.edges, result.mode);
+        onImportComplete(result.nodes, result.edges, result.mode, result.originalXml);
         setShowConfirmDialog(false);
         if (result.warnings && result.warnings.length > 0) {
           setShowResultDialog(true);
@@ -156,7 +158,7 @@ export function ImportDialogs({ onImportComplete, hasExistingContent }: ImportDi
           setShowConfirmDialog(true);
         } else {
           if (result.nodes && result.edges && result.mode) {
-            onImportComplete(result.nodes, result.edges, result.mode);
+            onImportComplete(result.nodes, result.edges, result.mode, result.originalXml);
           }
           if (result.warnings && result.warnings.length > 0) {
             setShowResultDialog(true);

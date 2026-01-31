@@ -25,10 +25,13 @@ import {
     type InlineComponentSelection,
 } from "@/components/inline-component-selector";
 import { allNodeTypes } from "@/components/nodes";
+import { useCodeView } from "@/contexts/code-view-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { canExportToDexpi } from "@/lib/dexpi";
 import { MODES } from "@/lib/modes";
 import { STYLES } from "@/lib/styles";
 import { useReactFlow } from "@xyflow/react";
+import { Braces, FileCode } from "lucide-react";
 
 interface DiagramCanvasProps {
   onNodeSelect?: (nodeIds: string[]) => void;
@@ -39,6 +42,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
   const { fitView, getNodes } = useReactFlow();
+  const { highlightEdge } = useCodeView();
 
   // State for inline component selector (edge double-click)
   const [inlineSelectorOpen, setInlineSelectorOpen] = useState(false);
@@ -49,6 +53,13 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
   // State for edge hover preview (PFD mode)
   const [edgeHoverPosition, setEdgeHoverPosition] = useState<XYPosition | null>(null);
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
+
+  // State for edge context menu (right-click)
+  const [edgeContextMenu, setEdgeContextMenu] = useState<{
+    edge: Edge;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const {
     nodes,
@@ -328,6 +339,26 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
     setEdgeHoverPosition(null);
   }, []);
 
+  // Edge context menu (right-click)
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      // Prevent the native context menu from showing
+      event.preventDefault();
+      
+      setEdgeContextMenu({
+        edge,
+        x: event.clientX,
+        y: event.clientY,
+      });
+    },
+    []
+  );
+
+  // Close edge context menu
+  const closeEdgeContextMenu = useCallback(() => {
+    setEdgeContextMenu(null);
+  }, []);
+
   // Double-click handler to insert inline component on edge (PFD mode only)
   const onEdgeDoubleClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
@@ -421,6 +452,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         onEdgeMouseEnter={onEdgeMouseEnter}
         onEdgeMouseMove={onEdgeMouseMove}
         onEdgeMouseLeave={onEdgeMouseLeave}
+        onEdgeContextMenu={onEdgeContextMenu}
         nodeTypes={allNodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
@@ -551,6 +583,111 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         onSelect={handleInlineComponentSelect}
         position={getPopoverScreenPosition()}
       />
+
+      {/* Edge context menu (right-click) */}
+      {edgeContextMenu && (
+        <EdgeContextMenuPopup
+          edge={edgeContextMenu.edge}
+          x={edgeContextMenu.x}
+          y={edgeContextMenu.y}
+          onClose={closeEdgeContextMenu}
+          mode={mode}
+          onHighlightEdge={highlightEdge}
+        />
+      )}
+    </div>
+  );
+}
+
+// Edge context menu popup component
+interface EdgeContextMenuPopupProps {
+  edge: Edge;
+  x: number;
+  y: number;
+  onClose: () => void;
+  mode: string;
+  onHighlightEdge: (edgeId: string, format: "json" | "dexpi") => void;
+}
+
+function EdgeContextMenuPopup({ edge, x, y, onClose, mode, onHighlightEdge }: EdgeContextMenuPopupProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isDexpiAvailable = canExportToDexpi(mode as Parameters<typeof canExportToDexpi>[0]);
+  
+  // Get edge label for display
+  const edgeLabel = (edge.data?.label as string) || (edge.label as string) || edge.id;
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as HTMLElement)) {
+        onClose();
+      }
+    };
+
+    // Close on escape key
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  // Calculate adjusted position to keep menu in viewport
+  // Menu is approximately 200px wide and ~80px tall
+  const menuWidth = 200;
+  const menuHeight = 80;
+  const adjustedX = Math.min(x, window.innerWidth - menuWidth - 8);
+  const adjustedY = Math.min(y, window.innerHeight - menuHeight - 8);
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-50 min-w-[200px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95"
+      style={{
+        left: adjustedX,
+        top: adjustedY,
+      }}
+    >
+      <div className="px-2 py-1.5 text-xs text-muted-foreground truncate font-semibold">
+        {edgeLabel}
+      </div>
+      <div className="h-px bg-border my-1" />
+      <button
+        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground gap-2"
+        onClick={() => {
+          onHighlightEdge(edge.id, "json");
+          onClose();
+        }}
+      >
+        <Braces className="w-4 h-4" />
+        View in JSON
+      </button>
+      <button
+        className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!isDexpiAvailable}
+        onClick={() => {
+          if (isDexpiAvailable) {
+            onHighlightEdge(edge.id, "dexpi");
+            onClose();
+          }
+        }}
+      >
+        <FileCode className="w-4 h-4" />
+        View in DEXPI XML
+        {!isDexpiAvailable && (
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            P&ID only
+          </span>
+        )}
+      </button>
     </div>
   );
 }
