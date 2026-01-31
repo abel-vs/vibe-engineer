@@ -28,6 +28,7 @@ import { allNodeTypes } from "@/components/nodes";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { MODES } from "@/lib/modes";
 import { STYLES } from "@/lib/styles";
+import { useReactFlow } from "@xyflow/react";
 
 interface DiagramCanvasProps {
   onNodeSelect?: (nodeIds: string[]) => void;
@@ -37,6 +38,7 @@ interface DiagramCanvasProps {
 export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const { fitView, getNodes } = useReactFlow();
 
   // State for inline component selector (edge double-click)
   const [inlineSelectorOpen, setInlineSelectorOpen] = useState(false);
@@ -215,6 +217,42 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
       clearZoomFlag();
     }
   }, [selectedNodeIds, selectedEdgeIds, shouldZoomToSelection, nodes, edges, clearZoomFlag]);
+
+  // Cmd+A (Mac) / Ctrl+A (Windows) to select all nodes and fit view
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Cmd+A (Mac) or Ctrl+A (Windows)
+      if ((event.metaKey || event.ctrlKey) && event.key === "a") {
+        // Only handle if focus is on the canvas, not on input fields
+        const activeElement = document.activeElement;
+        const isInputFocused = 
+          activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLTextAreaElement ||
+          activeElement?.getAttribute("contenteditable") === "true";
+        
+        if (isInputFocused) return;
+        
+        event.preventDefault();
+        
+        // Get all current nodes
+        const allNodes = getNodes();
+        if (allNodes.length === 0) return;
+        
+        // Select all nodes
+        const allNodeIds = allNodes.map((n) => n.id);
+        useDiagramStore.getState().setSelectedNodes(allNodeIds, false);
+        
+        // Fit view to show all nodes
+        fitView({
+          padding: 0.1,
+          duration: 300,
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [fitView, getNodes]);
 
   // Double-click handler to zoom to a node
   const onNodeDoubleClick = useCallback(
