@@ -1,6 +1,7 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
 import { recalculateEdgeHandles } from "@/lib/edge-routing";
 import type { DiagramMode } from "@/lib/modes";
+import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage";
 import type { DiagramStyle } from "@/lib/styles";
 import type {
   Edge,
@@ -68,6 +69,8 @@ export interface DiagramState {
   setSelectedEdges: (edgeIds: string[], zoomTo?: boolean) => void;
   clearZoomFlag: () => void;
   clearCanvas: () => void;
+  // Hard reset for "New diagram" (clears history/pins too)
+  resetCanvas: () => void;
 
   // Undo/Redo
   undo: () => void;
@@ -85,7 +88,7 @@ export interface DiagramState {
 
   // Layout
   organizeLayout: (
-    direction?: LayoutOptions["direction"],
+    options?: Partial<LayoutOptions>,
     pinnedNodeIds?: Set<string>
   ) => void;
 
@@ -128,14 +131,18 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
 
   onNodesChange: (changes) => {
-    // Check if this is a meaningful change (not just selection or dimension measurements)
+    // Check if this is a meaningful change that should be saved to history
+    // - "remove" changes should always be saved
+    // - "position" changes should only be saved when dragging ENDS (dragging === false)
+    //   to avoid creating a history entry for every intermediate drag position
     // Note: "dimensions" changes are excluded because React Flow fires them continuously
     // as it measures nodes, which can cause infinite re-render loops
-    const hasMeaningfulChange = changes.some(
-      (c) => c.type === "remove" || c.type === "position"
+    const hasRemoval = changes.some((c) => c.type === "remove");
+    const hasDragEnd = changes.some(
+      (c) => c.type === "position" && c.dragging === false
     );
 
-    if (hasMeaningfulChange) {
+    if (hasRemoval || hasDragEnd) {
       // Save to history before applying changes
       const { nodes, edges, past } = get();
       const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
@@ -158,15 +165,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       set({ pinnedNodeIds: newPinnedIds });
     }
 
-    // Update selection from changes
+    // Update selection - sync with React Flow's actual node selection state
+    // This ensures deleted nodes are removed from selectedNodeIds
     const selectionChanges = changes.filter(
-      (c) => c.type === "select"
-    ) as Array<{ id: string; selected: boolean; type: "select" }>;
+      (c) => c.type === "select" || c.type === "remove"
+    );
 
     if (selectionChanges.length > 0) {
-      const selectedIds = get()
-        .nodes.filter((n) => n.selected)
-        .map((n) => n.id);
+      const { nodes } = get();
+      // Always sync selectedNodeIds with actual selected nodes
+      const selectedIds = nodes.filter((n) => n.selected).map((n) => n.id);
       set({ selectedNodeIds: selectedIds });
     }
   },
@@ -186,15 +194,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
     set({ edges: applyEdgeChanges(changes, get().edges) });
 
-    // Update selection from changes
+    // Update selection - sync with React Flow's actual edge selection state
+    // This ensures deleted edges are removed from selectedEdgeIds
     const selectionChanges = changes.filter(
-      (c) => c.type === "select"
-    ) as Array<{ id: string; selected: boolean; type: "select" }>;
+      (c) => c.type === "select" || c.type === "remove"
+    );
 
     if (selectionChanges.length > 0) {
-      const selectedIds = get()
-        .edges.filter((e) => e.selected)
-        .map((e) => e.id);
+      const { edges } = get();
+      // Always sync selectedEdgeIds with actual selected edges
+      const selectedIds = edges.filter((e) => e.selected).map((e) => e.id);
       set({ selectedEdgeIds: selectedIds });
     }
   },
@@ -221,7 +230,50 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     set({ edges: addEdge(newEdge, get().edges), past: newPast, future: [] });
   },
 
-  setMode: (mode) => set({ mode }),
+  setMode: (newMode) => {
+    const { mode: currentMode, nodes, edges, style } = get();
+
+    // Don't do anything if mode is the same
+    if (newMode === currentMode) return;
+
+    // Save current workspace state before switching
+    saveWorkspace(currentMode, {
+      nodes,
+      edges,
+      style,
+      timestamp: Date.now(),
+    });
+
+    // Load the target mode's workspace
+    const targetWorkspace = loadWorkspace(newMode);
+
+    if (targetWorkspace) {
+      // Load saved workspace for the target mode
+      set({
+        mode: newMode,
+        nodes: targetWorkspace.nodes,
+        edges: targetWorkspace.edges,
+        style: targetWorkspace.style,
+        selectedNodeIds: [],
+        selectedEdgeIds: [],
+        pinnedNodeIds: new Set<string>(),
+        past: [],
+        future: [],
+      });
+    } else {
+      // No saved workspace - start with empty canvas
+      set({
+        mode: newMode,
+        nodes: [],
+        edges: [],
+        selectedNodeIds: [],
+        selectedEdgeIds: [],
+        pinnedNodeIds: new Set<string>(),
+        past: [],
+        future: [],
+      });
+    }
+  },
 
   setStyle: (style) => set({ style }),
 
@@ -385,6 +437,22 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     }
   },
 
+  resetCanvas: () => {
+    const { mode } = get();
+    // Clear workspace storage for current mode
+    clearWorkspace(mode);
+    set({
+      nodes: [],
+      edges: [],
+      selectedNodeIds: [],
+      selectedEdgeIds: [],
+      shouldZoomToSelection: false,
+      pinnedNodeIds: new Set<string>(),
+      past: [],
+      future: [],
+    });
+  },
+
   undo: () => {
     const { nodes, edges, past, future } = get();
     if (past.length === 0) return;
@@ -444,7 +512,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     });
   },
 
-  organizeLayout: (direction = "TB", pinnedNodeIds) => {
+  organizeLayout: (options = {}, pinnedNodeIds) => {
     const {
       nodes,
       edges,
@@ -466,7 +534,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     const layoutedNodes = getLayoutedNodes(
       nodes,
       edges,
-      { direction },
+      options,
       effectivePinnedIds
     );
 
@@ -509,7 +577,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   updateEdgeHandles: () => {
     const { nodes, edges, mode } = get();
-    if (mode !== "bfd" && mode !== "pfd") return;
+    if (mode !== "bfd" && mode !== "pfd" && mode !== "pid") return;
     if (edges.length === 0) return;
 
     const updatedEdges = recalculateEdgeHandles(edges);
@@ -550,6 +618,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
     // Create two new edges to replace the original
     // No arrow markers - P&ID convention for inline segments
+    // Preserve edge data (labels, flow rates, etc.) on the first segment
     const timestamp = Date.now();
     const edge1: Edge = {
       id: `edge_${timestamp}_1`,
@@ -558,6 +627,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       sourceHandle: edge.sourceHandle,
       targetHandle: "left", // Inline components use left/right handles (W/E in DEXPI)
       type: edge.type,
+      label: edge.label, // Preserve label on first segment
+      data: edge.data, // Preserve all edge data
       markerEnd: undefined, // No arrow
     };
 
@@ -568,6 +639,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       sourceHandle: "right",
       targetHandle: edge.targetHandle,
       type: edge.type,
+      data: edge.data, // Preserve edge data (but no label to avoid duplication)
       markerEnd: undefined, // No arrow
     };
 

@@ -104,3 +104,45 @@ export function loadAutoSave(): {
 export function clearAutoSave(): void {
   sessionStorage.removeItem(SESSION_SAVE_KEY);
 }
+
+// Per-mode workspace storage (each mode has its own canvas state)
+const WORKSPACE_PREFIX = "voice-diagram-workspace-";
+
+export interface WorkspaceState {
+  nodes: Node[];
+  edges: Edge[];
+  style: DiagramStyle;
+  timestamp: number;
+}
+
+export function saveWorkspace(mode: DiagramMode, state: WorkspaceState): void {
+  const key = `${WORKSPACE_PREFIX}${mode}`;
+  sessionStorage.setItem(key, JSON.stringify(state));
+}
+
+export function loadWorkspace(mode: DiagramMode): WorkspaceState | null {
+  const key = `${WORKSPACE_PREFIX}${mode}`;
+  const data = sessionStorage.getItem(key);
+  if (!data) return null;
+  try {
+    const parsed = JSON.parse(data);
+    return {
+      nodes: parsed.nodes ?? [],
+      edges: parsed.edges ?? [],
+      style: parsed.style ?? "engineering",
+      timestamp: parsed.timestamp ?? Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearWorkspace(mode: DiagramMode): void {
+  const key = `${WORKSPACE_PREFIX}${mode}`;
+  sessionStorage.removeItem(key);
+}
+
+export function clearAllWorkspaces(): void {
+  const modes: DiagramMode[] = ["playground", "bfd", "pfd", "pid"];
+  modes.forEach((mode) => clearWorkspace(mode));
+}
