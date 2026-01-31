@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="91.0" viewBox="0 0 100.0 91.0">
+  <!-- Shape: Tank (Boot) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 11 L 0 81 L 70 81 L 80 91 L 100 91 L 100 11 Z M 67 3 L 85 3 M 67 0 L 85 0"/>
+    <rect x="70" y="3" width="12" height="8"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

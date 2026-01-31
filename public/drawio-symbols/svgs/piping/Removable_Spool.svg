@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="30.0" viewBox="0 0 50.0 30.0">
+  <!-- Shape: Removable Spool -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 10 L 50 10 M 50 0 L 50 20 M 0 0 L 0 20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="10.05" r="2" data-name="W"/>
+    <circle cx="50.0" cy="10.05" r="2" data-name="E"/>
+  </g>
+</svg>

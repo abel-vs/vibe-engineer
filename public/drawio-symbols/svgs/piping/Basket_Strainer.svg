@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="45.0" viewBox="0 0 50.0 45.0">
+  <!-- Shape: Basket Strainer -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 40 0 L 40 30 A 15 15 0 0 1 10 30 L 10 0 Z M 50 15 L 50 35 M 0 15 L 0 35 M 0 25 L 10 25 M 40 25 L 50 25"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="24.975" r="2" data-name="W"/>
+    <circle cx="50.0" cy="24.975" r="2" data-name="E"/>
+  </g>
+</svg>

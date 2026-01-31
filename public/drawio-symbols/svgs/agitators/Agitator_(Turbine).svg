@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="135.0" viewBox="0 0 80.0 135.0">
+  <!-- Shape: Agitator (Turbine) -->
+  <!-- Category: agitators -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 40 0 L 40 105"/>
+    <rect x="0" y="105" width="20" height="30"/>
+    <rect x="60" y="105" width="20" height="30"/>
+    <rect x="20" y="105" width="20" height="30"/>
+    <rect x="40" y="105" width="20" height="30"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="40.0" cy="0.0" r="2" data-name="N"/>
+  </g>
+</svg>

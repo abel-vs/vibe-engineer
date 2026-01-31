@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="96.4" viewBox="0 0 50.0 96.4">
+  <!-- Shape: Mixing Reactor -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 31 2.4 L 31 27.4 A 5 2 0 0 1 19 27.4 L 19 2.4 A 5 2 0 0 1 31 2.4 Z"/>
+    <path d="M 26 32.4 L 50 32.4 L 50 77.4 L 25 96.4 L 0 77.4 L 0 32.4 L 24 32.4 M 19 2.4 L 31 2.4 M 19 27.4 L 31 27.4 M 24 29.4 L 24 56.9 M 26 29.4 L 26 56.9 M 0 77.4 L 50 77.4"/>
+    <ellipse cx="30.0" cy="57.4" rx="5.0" ry="1.0"/>
+    <ellipse cx="20.0" cy="57.4" rx="5.0" ry="1.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="25.0" cy="96.4" r="2" data-name="S"/>
+    <circle cx="0.0" cy="48.2" r="2" data-name="W"/>
+    <circle cx="50.0" cy="48.2" r="2" data-name="E"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="10.0" height="20.0" viewBox="0 0 10.0 20.0">
+  <!-- Shape: Vent (Cover) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 5 3 L 0 13 L 10 13 Z M 5 20 L 5 13"/>
+    <path d="M 0 5 L 5 0 L 10 5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

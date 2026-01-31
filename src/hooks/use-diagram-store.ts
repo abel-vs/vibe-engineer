@@ -1,8 +1,15 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
-import { selectTargetHandle, recalculateEdgeHandles } from "@/lib/edge-routing";
+import { recalculateEdgeHandles, selectTargetHandle } from "@/lib/edge-routing";
 import type { DiagramMode } from "@/lib/modes";
 import type { DiagramStyle } from "@/lib/styles";
-import type { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange, ReactFlowInstance } from "@xyflow/react";
+import type {
+  Edge,
+  Node,
+  OnConnect,
+  OnEdgesChange,
+  OnNodesChange,
+  ReactFlowInstance,
+} from "@xyflow/react";
 import { addEdge, applyEdgeChanges, applyNodeChanges } from "@xyflow/react";
 import { create } from "zustand";
 
@@ -64,10 +71,18 @@ export interface DiagramState {
   canRedo: () => boolean;
 
   // Load/save
-  loadDiagram: (nodes: Node[], edges: Edge[], mode: DiagramMode, style?: DiagramStyle) => void;
+  loadDiagram: (
+    nodes: Node[],
+    edges: Edge[],
+    mode: DiagramMode,
+    style?: DiagramStyle
+  ) => void;
 
   // Layout
-  organizeLayout: (direction?: LayoutOptions["direction"], pinnedNodeIds?: Set<string>) => void;
+  organizeLayout: (
+    direction?: LayoutOptions["direction"],
+    pinnedNodeIds?: Set<string>
+  ) => void;
 
   // Viewport control
   zoomToNode: (nodeId: string) => void;
@@ -102,13 +117,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   onNodesChange: (changes) => {
     // Check if this is a meaningful change (not just selection)
     const hasMeaningfulChange = changes.some(
-      (c) => c.type === "remove" || c.type === "position" || c.type === "dimensions"
+      (c) =>
+        c.type === "remove" || c.type === "position" || c.type === "dimensions"
     );
 
     if (hasMeaningfulChange) {
       // Save to history before applying changes
       const { nodes, edges, past } = get();
-      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+        -MAX_HISTORY_SIZE
+      );
       set({ past: newPast, future: [] });
     }
 
@@ -146,7 +164,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     if (hasMeaningfulChange) {
       // Save to history before applying changes
       const { nodes, edges, past } = get();
-      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+        -MAX_HISTORY_SIZE
+      );
       set({ past: newPast, future: [] });
     }
 
@@ -168,19 +188,30 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   onConnect: (connection) => {
     // Save to history before adding edge
     const { nodes, edges, past, mode } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
 
-    // For BFD/PFD: enforce routing rules (exit right, enter based on geometry)
+    // Get the source and target nodes to check their types
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
+
+    // Check if either node is a draw.io node (has type starting with "drawio_")
+    const isDrawioSource = sourceNode?.type?.startsWith("drawio_");
+    const isDrawioTarget = targetNode?.type?.startsWith("drawio_");
+
     let sourceHandle = connection.sourceHandle ?? null;
     let targetHandle = connection.targetHandle ?? null;
 
-    if ((mode === "bfd" || mode === "pfd") && connection.source && connection.target) {
-      const sourceNode = nodes.find((n) => n.id === connection.source);
-      const targetNode = nodes.find((n) => n.id === connection.target);
-      if (sourceNode && targetNode) {
+    // For BFD/PFD with non-draw.io nodes: enforce routing rules (exit right, enter based on geometry)
+    // For draw.io nodes: preserve the actual handle IDs from the connection
+    if ((mode === "bfd" || mode === "pfd") && sourceNode && targetNode) {
+      if (!isDrawioSource && !isDrawioTarget) {
+        // Legacy behavior for non-draw.io nodes
         sourceHandle = "right";
         targetHandle = selectTargetHandle(sourceNode, targetNode);
       }
+      // For draw.io nodes, keep the handle IDs from the connection as-is
     }
 
     const newEdge: Edge = {
@@ -200,31 +231,41 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   setNodes: (nodes) => {
     const { nodes: currentNodes, edges, past } = get();
-    const newPast = [...past, cloneSnapshot(currentNodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(currentNodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({ nodes, past: newPast, future: [] });
   },
 
   setEdges: (edges) => {
     const { nodes, edges: currentEdges, past } = get();
-    const newPast = [...past, cloneSnapshot(nodes, currentEdges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, currentEdges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({ edges, past: newPast, future: [] });
   },
 
   addNode: (node) => {
     const { nodes, edges, past } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({ nodes: [...nodes, node], past: newPast, future: [] });
   },
 
   addEdgeAction: (edge) => {
     const { nodes, edges, past } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({ edges: [...edges, edge], past: newPast, future: [] });
   },
 
   removeNode: (nodeId) => {
     const { nodes, edges, past, selectedNodeIds } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({
       nodes: nodes.filter((n) => n.id !== nodeId),
       edges: edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
@@ -236,7 +277,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   removeEdge: (edgeId) => {
     const { nodes, edges, past, selectedEdgeIds } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({
       edges: edges.filter((e) => e.id !== edgeId),
       selectedEdgeIds: selectedEdgeIds.filter((id) => id !== edgeId),
@@ -247,7 +290,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   updateNode: (nodeId, updates) => {
     const { nodes, edges, past } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({
       nodes: nodes.map((n) => (n.id === nodeId ? { ...n, ...updates } : n)),
       past: newPast,
@@ -257,7 +302,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   updateEdge: (edgeId, updates) => {
     const { nodes, edges, past } = get();
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
     set({
       edges: edges.map((e) => (e.id === edgeId ? { ...e, ...updates } : e)),
       past: newPast,
@@ -291,7 +338,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     const { nodes, edges, past } = get();
     // Only save to history if there's something to clear
     if (nodes.length > 0 || edges.length > 0) {
-      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+      const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+        -MAX_HISTORY_SIZE
+      );
       set({
         nodes: [],
         edges: [],
@@ -309,7 +358,10 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
     const previous = past[past.length - 1];
     const newPast = past.slice(0, -1);
-    const newFuture = [cloneSnapshot(nodes, edges), ...future].slice(0, MAX_HISTORY_SIZE);
+    const newFuture = [cloneSnapshot(nodes, edges), ...future].slice(
+      0,
+      MAX_HISTORY_SIZE
+    );
 
     set({
       nodes: previous.nodes,
@@ -327,7 +379,9 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
     const next = future[0];
     const newFuture = future.slice(1);
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
 
     set({
       nodes: next.nodes,
@@ -362,13 +416,20 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     if (nodes.length === 0) return;
 
     // Save to history before organizing
-    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(-MAX_HISTORY_SIZE);
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
+      -MAX_HISTORY_SIZE
+    );
 
     // Use provided pinnedNodeIds or fall back to store's pinned nodes
     const effectivePinnedIds = pinnedNodeIds ?? storePinnedIds;
 
     // Apply auto-layout respecting pinned nodes
-    const layoutedNodes = getLayoutedNodes(nodes, edges, { direction }, effectivePinnedIds);
+    const layoutedNodes = getLayoutedNodes(
+      nodes,
+      edges,
+      { direction },
+      effectivePinnedIds
+    );
 
     set({
       nodes: layoutedNodes,

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="36.0" height="93.4" viewBox="0 0 36.0 93.4">
+  <!-- Shape: Turbine Agitator -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 24 2.4 L 24 27.4 A 5 2 0 0 1 12 27.4 L 12 2.4 A 5 2 0 0 1 24 2.4 Z M 12 2.4 L 24 2.4 M 12 27.4 L 24 27.4"/>
+    <rect x="17" y="29.9" width="2" height="57.5"/>
+    <rect x="8" y="87.4" width="20" height="2"/>
+    <rect x="0" y="83.4" width="8" height="10"/>
+    <rect x="28" y="83.4" width="8" height="10"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

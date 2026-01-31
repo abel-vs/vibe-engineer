@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="40.0" viewBox="0 0 80.0 40.0">
+  <!-- Shape: Injector -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="40" height="40"/>
+    <path d="M 40 10 L 80 0 L 80 40 L 40 30 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="20.0" r="2" data-name="W"/>
+    <circle cx="80.0" cy="20.0" r="2" data-name="E"/>
+    <circle cx="40.0" cy="40.0" r="2" data-name="S"/>
+  </g>
+</svg>

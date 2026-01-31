@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="103.54" height="186.77" viewBox="0 0 103.54 186.77">
+  <!-- Shape: Sump Pump -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 96.77 156.77 A 20 20 0 0 1 96.77 186.77 L 6.77 186.77 A 20 20 0 0 1 6.77 156.77 Z M 36.77 6.77 A 20 20 0 0 1 66.77 6.77 L 66.77 36.77 A 20 20 0 0 1 36.77 36.77 Z M 76.77 148.27 L 96.77 148.27 M 86.77 148.27 L 86.77 156.77 M 36.77 36.77 L 66.77 36.77 M 36.77 6.77 L 66.77 6.77"/>
+    <rect x="49.77" y="43.27" width="4" height="113.5"/>
+    <rect x="16.77" y="75.77" width="70" height="14"/>
+    <path d="M 16.77 82.77 L 86.77 82.77"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="86.9736" cy="147.5483" r="2" data-name="E"/>
+    <circle cx="51.77" cy="186.77" r="2" data-name="S"/>
+  </g>
+</svg>

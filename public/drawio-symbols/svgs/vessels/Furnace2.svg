@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="100.0" viewBox="0 0 80.0 100.0">
+  <!-- Shape: Furnace2 -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 15 100 L 0 85 L 0 0 L 80 0 L 80 85 L 65 100 Z"/>
+    <path d="M 10 0 L 10 80 L 20 90 L 60 90 L 70 80 L 70 0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

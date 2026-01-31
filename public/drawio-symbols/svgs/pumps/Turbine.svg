@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="98.0" height="60.0" viewBox="0 0 98.0 60.0">
+  <!-- Shape: Turbine -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 22 L 9 22 L 9 15 L 89 0 L 89 22 L 98 22 L 98 38 L 89 38 L 89 60 L 9 45 L 9 38 L 0 38 Z M 9 22 L 9 38 M 89 22 L 89 38"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="49.0" cy="7.199999999999999" r="2" data-name="N"/>
+    <circle cx="49.0" cy="52.8" r="2" data-name="S"/>
+    <circle cx="0.0" cy="30.0" r="2" data-name="W"/>
+    <circle cx="98.0" cy="30.0" r="2" data-name="E"/>
+    <circle cx="8.82" cy="15.0" r="2" data-name="NW"/>
+    <circle cx="8.82" cy="45.0" r="2" data-name="SW"/>
+    <circle cx="89.18" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="89.18" cy="60.0" r="2" data-name="SE"/>
+  </g>
+</svg>

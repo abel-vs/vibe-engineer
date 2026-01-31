@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="120.0" viewBox="0 0 100.0 120.0">
+  <!-- Shape: Cooling Tower (Wet, Natural Draught) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 120 L 0 100 L 25 0 L 75 0 L 100 100 L 100 120 Z"/>
+    <path d="M 100 100 L 0 100 M 14 45 L 50 45 L 50 55 M 40 55 L 50 45 L 60 55"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="14.000000000000002" cy="45.0" r="2" data-name="W"/>
+    <circle cx="0.0" cy="110.4" r="2" data-name="SW"/>
+    <circle cx="100.0" cy="110.4" r="2" data-name="SE"/>
+  </g>
+</svg>

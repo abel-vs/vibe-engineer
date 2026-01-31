@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240.0" height="80.0" viewBox="0 0 240.0 80.0">
+  <!-- Shape: Conveyor (Belt, Closed, Reversible)2 -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="240" height="80"/>
+    <rect x="45" y="15" width="150" height="50"/>
+    <ellipse cx="45.0" cy="40.0" rx="25.0" ry="25.0"/>
+    <ellipse cx="195.0" cy="40.0" rx="25.0" ry="25.0"/>
+    <path d="M 105 40 L 135 40"/>
+    <path d="M 135 35 L 135 45 L 151.2 40 Z M 105 35 L 105 45 L 90 40 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="120.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="0.0" cy="40.0" r="2" data-name="W"/>
+    <circle cx="240.0" cy="40.0" r="2" data-name="E"/>
+  </g>
+</svg>

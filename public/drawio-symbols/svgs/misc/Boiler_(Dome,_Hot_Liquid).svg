@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="120.0" viewBox="0 0 100.0 120.0">
+  <!-- Shape: Boiler (Dome, Hot Liquid) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="20" width="100" height="100"/>
+    <path d="M 30 20 A 20 20 0 0 1 70 20 M 100 20 L 0 120"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="50.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="120.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="72.0" r="2" data-name="W"/>
+    <circle cx="100.0" cy="72.0" r="2" data-name="E"/>
+  </g>
+</svg>

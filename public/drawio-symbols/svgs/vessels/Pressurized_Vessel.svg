@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="200.0" viewBox="0 0 100.0 200.0">
+  <!-- Shape: Pressurized Vessel -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 15 A 50 15 0 0 1 100 15 L 100 185 A 50 15 0 0 1 0 185 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

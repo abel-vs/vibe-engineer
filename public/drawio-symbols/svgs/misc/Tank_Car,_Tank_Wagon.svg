@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="126.67" height="80.0" viewBox="0 0 126.67 80.0">
+  <!-- Shape: Tank Car, Tank Wagon -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 13.33 60 A 50 50 0 0 1 13.33 0 L 113.33 0 A 50 50 0 0 1 113.33 60 Z"/>
+    <ellipse cx="28.33" cy="70.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="98.33" cy="70.0" rx="10.0" ry="10.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

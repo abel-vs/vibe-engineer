@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20.0" height="80.0" viewBox="0 0 20.0 80.0">
+  <!-- Shape: Open Figure 8 Blind2 -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="10.0" cy="30.0" rx="10.0" ry="10.0"/>
+    <path d="M 10 40 L 10 80"/>
+    <ellipse cx="10.0" cy="10.0" rx="10.0" ry="10.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="10.0" cy="80.0" r="2" data-name="S"/>
+  </g>
+</svg>

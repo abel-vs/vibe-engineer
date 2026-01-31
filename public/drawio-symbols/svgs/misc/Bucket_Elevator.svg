@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="65.0" height="200.0" viewBox="0 0 65.0 200.0">
+  <!-- Shape: Bucket Elevator -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 25 0 L 45 0 L 45 185 L 65 185 L 45 200 L 25 200 L 25 15 L 0 15 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20.0" height="20.0" viewBox="0 0 20.0 20.0">
+  <!-- Shape: Hose Connection -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 20 0 L 10 0 L 10 20 L 20 20 M 0 10 L 10 10"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="10.0" r="2" data-name="W"/>
+  </g>
+</svg>

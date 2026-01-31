@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="90.0" height="80.56" viewBox="0 0 90.0 80.56">
+  <!-- Shape: Compressor and Silencers -->
+  <!-- Category: compressors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 39 74.56 L 35 80.56 L 55 80.56 L 51 74.56 M 20 5.56 L 20 70.56 A 9 5 0 0 1 0 70.56 L 0 5.56 A 9 5 0 0 1 20 5.56 Z M 70 5.56 L 70 70.56 A 9 5 0 0 1 90 70.56 L 90 5.56 A 9 5 0 0 1 70 5.56 Z"/>
+    <path d="M 55 35.56 L 55 70.56 A 9 5 0 0 1 35 70.56 L 35 35.56 A 9 5 0 0 1 55 35.56 Z"/>
+    <ellipse cx="45.0" cy="43.56" rx="8.0" ry="8.0"/>
+    <ellipse cx="45.0" cy="63.56" rx="8.0" ry="8.0"/>
+    <rect x="0" y="0" width="10" height="10"/>
+    <path d="M 20 53.56 L 35 53.56 M 55 53.56 L 70 53.56"/>
+    <path d="M 27.5 45.56 L 27.5 61.56 M 62.5 45.56 L 62.5 61.56"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.0" cy="29.8072" r="2" data-name="N"/>
+    <circle cx="45.0" cy="80.56" r="2" data-name="S"/>
+    <circle cx="0.0" cy="40.28" r="2" data-name="W"/>
+    <circle cx="90.0" cy="40.28" r="2" data-name="E"/>
+    <circle cx="9.9" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="9.9" cy="76.1292" r="2" data-name="SW"/>
+    <circle cx="80.1" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="80.1" cy="76.1292" r="2" data-name="SE"/>
+  </g>
+</svg>

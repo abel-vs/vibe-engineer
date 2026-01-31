@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="91.54" height="30.0" viewBox="0 0 91.54 30.0">
+  <!-- Shape: Drum or Condenser -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 5.77 30 L 85.77 30 A 5 13 0 0 1 85.77 0 L 5.77 0 A 5 13 0 0 1 5.77 30 Z M 5.77 0 L 5.77 30 M 85.77 0 L 85.77 30"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.77" cy="0.0" r="2" data-name="N"/>
+    <circle cx="45.77" cy="30.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="91.54" cy="15.0" r="2" data-name="E"/>
+    <circle cx="5.4924" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="5.4924" cy="30.0" r="2" data-name="SW"/>
+    <circle cx="86.0476" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="86.0476" cy="30.0" r="2" data-name="SE"/>
+  </g>
+</svg>

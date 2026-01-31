@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="65.5" height="106.0" viewBox="0 0 65.5 106.0">
+  <!-- Shape: Air Separator -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="28" y="0" width="10" height="106"/>
+    <path d="M 53 23 L 61.5 23 M 61.5 13 L 61.5 33 M 65.5 13 L 65.5 33 M 13 83 L 4.5 83 M 4.5 73 L 4.5 93 M 0 73 L 0 93 M 53 13 L 53 93 A 13 5 0 0 1 13 93 L 13 13 A 13 5 0 0 1 53 13 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="82.68" r="2" data-name="W"/>
+    <circle cx="65.5" cy="23.32" r="2" data-name="E"/>
+  </g>
+</svg>

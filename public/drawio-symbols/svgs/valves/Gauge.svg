@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="65.0" height="90.0" viewBox="0 0 65.0 90.0">
+  <!-- Shape: Gauge -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="15.0" cy="15.0" rx="15.0" ry="15.0"/>
+    <path d="M 20 55 L 10 55 L 20 75 L 10 75 Z M 30 35 L 30 45 L 50 35 L 50 45 Z"/>
+    <path d="M 15 90 L 15 75 M 15 55 L 15 30 M 30 40 L 15 40 M 65 40 L 50 40"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="15.08" cy="90.0" r="2" data-name="S"/>
+    <circle cx="65.0" cy="39.96" r="2" data-name="E"/>
+  </g>
+</svg>

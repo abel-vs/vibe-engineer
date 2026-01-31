@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="75.0" height="60.0" viewBox="0 0 75.0 60.0">
+  <!-- Shape: Rotameter -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 51.5 9 L 75 30 L 51.5 51"/>
+    <ellipse cx="30.0" cy="30.0" rx="30.0" ry="30.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="29.25" cy="0.0" r="2" data-name="N"/>
+    <circle cx="29.25" cy="60.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="30.0" r="2" data-name="W"/>
+    <circle cx="75.0" cy="30.0" r="2" data-name="E"/>
+  </g>
+</svg>

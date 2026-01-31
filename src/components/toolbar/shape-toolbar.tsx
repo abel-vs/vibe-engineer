@@ -16,11 +16,21 @@ import {
   type DexpiSymbol,
 } from "@/lib/dexpi-config";
 import {
+  loadShapesData,
+  getOrderedCategories as getDrawioOrderedCategories,
+  getCategoryDisplayName as getDrawioCategoryDisplayName,
+  getShapesByCategory as getDrawioShapesByCategory,
+  getSvgPath as getDrawioSvgPath,
+  type DrawioShapesData,
+  type DrawioShape,
+} from "@/lib/drawio-pid-config";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface ShapeItem {
   type: string;
@@ -366,6 +376,56 @@ const DraggableShape = memo(function DraggableShape({ item, style }: DraggableSh
   );
 });
 
+// Utility to process SVG content for proper scaling
+function processSvgForPreview(svgText: string): string {
+  // Extract width and height from inline style or attributes
+  let width = 42;
+  let height = 42;
+
+  // Try to extract from style attribute
+  const styleMatch = svgText.match(/style="[^"]*width:\s*(\d+(?:\.\d+)?)/);
+  const styleHeightMatch = svgText.match(/style="[^"]*height:\s*(\d+(?:\.\d+)?)/);
+  if (styleMatch) width = parseFloat(styleMatch[1]);
+  if (styleHeightMatch) height = parseFloat(styleHeightMatch[1]);
+
+  // Try to extract from width/height attributes if not in style
+  const widthAttrMatch = svgText.match(/<svg[^>]*\swidth="(\d+(?:\.\d+)?)"/);
+  const heightAttrMatch = svgText.match(/<svg[^>]*\sheight="(\d+(?:\.\d+)?)"/);
+  if (widthAttrMatch) width = parseFloat(widthAttrMatch[1]);
+  if (heightAttrMatch) height = parseFloat(heightAttrMatch[1]);
+
+  // Check if viewBox exists
+  const hasViewBox = /viewBox\s*=/.test(svgText);
+
+  let processed = svgText;
+
+  // Add viewBox if missing
+  if (!hasViewBox) {
+    processed = processed.replace(/<svg/, `<svg viewBox="0 0 ${width} ${height}"`);
+  }
+
+  // Remove inline width/height from style attribute to let CSS take over
+  processed = processed.replace(
+    /style="([^"]*)"/,
+    (match, styleContent) => {
+      const cleanedStyle = styleContent
+        .replace(/width:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/height:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/left:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/top:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/position:\s*\w+;?\s*/gi, "")
+        .trim();
+      return cleanedStyle ? `style="${cleanedStyle}"` : "";
+    }
+  );
+
+  // Remove width/height attributes from svg tag
+  processed = processed.replace(/<svg([^>]*)\swidth="[\d.]+"/i, "<svg$1");
+  processed = processed.replace(/<svg([^>]*)\sheight="[\d.]+"/i, "<svg$1");
+
+  return processed;
+}
+
 // SVG Preview component for symbols
 interface SymbolSvgPreviewProps {
   path: string;
@@ -386,7 +446,7 @@ const SymbolSvgPreview = memo(function SymbolSvgPreview({ path, className }: Sym
       .then((text) => {
         const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
         if (svgMatch) {
-          setSvgContent(svgMatch[0]);
+          setSvgContent(processSvgForPreview(svgMatch[0]));
         }
       })
       .catch(() => {
@@ -491,7 +551,7 @@ const DraggableDexpiCategory = memo(function DraggableDexpiCategory({ item }: Dr
       .then((text) => {
         const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
         if (svgMatch) {
-          setSvgContent(svgMatch[0]);
+          setSvgContent(processSvgForPreview(svgMatch[0]));
         }
       })
       .catch(() => {
@@ -660,6 +720,277 @@ function getDexpiCategoryItems(): DexpiCategoryItem[] {
   }));
 }
 
+// Draw.io P&ID types
+interface DrawioCategoryItem {
+  categoryName: string;
+  nodeType: string;
+  label: string;
+  shapeCount: number;
+}
+
+// Draw.io SVG Preview component
+interface DrawioSvgPreviewProps {
+  path: string;
+  className?: string;
+}
+
+const DrawioSvgPreview = memo(function DrawioSvgPreview({ path, className }: DrawioSvgPreviewProps) {
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!path) return;
+
+    fetch(path)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load SVG");
+        return res.text();
+      })
+      .then((text) => {
+        // Hide connection points group
+        let cleaned = text.replace(
+          /<g class="connection-points"[^>]*>[\s\S]*?<\/g>/gi,
+          ""
+        );
+        setSvgContent(processSvgForPreview(cleaned));
+      })
+      .catch(() => {
+        // Silently fail
+      });
+  }, [path]);
+
+  if (!svgContent) {
+    return <div className={cn("bg-gray-100 animate-pulse rounded", className)} />;
+  }
+
+  return (
+    <div
+      className={cn("toolbar-svg-preview flex items-center justify-center", className)}
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
+  );
+});
+
+// Draw.io shape picker item
+interface DrawioShapePickerItemProps {
+  shape: DrawioShape;
+  categoryName: string;
+  onSelect: (shape: DrawioShape) => void;
+}
+
+const DrawioShapePickerItem = memo(function DrawioShapePickerItem({
+  shape,
+  categoryName,
+  onSelect,
+}: DrawioShapePickerItemProps) {
+  const svgPath = getDrawioSvgPath(categoryName, shape.name);
+
+  const handleDragStart = (event: React.DragEvent) => {
+    const nodeType = `drawio_${categoryName}`;
+    event.dataTransfer.setData("application/reactflow/type", nodeType);
+    event.dataTransfer.setData("application/reactflow/drawioCategory", categoryName);
+    event.dataTransfer.setData("application/reactflow/drawioShapeName", shape.name);
+    event.dataTransfer.setData("application/reactflow/drawioShape", JSON.stringify(shape));
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onClick={() => onSelect(shape)}
+      className={cn(
+        "flex flex-col items-center gap-1 p-1.5 rounded cursor-pointer",
+        "border border-transparent hover:border-blue-300 hover:bg-blue-50",
+        "transition-all duration-150"
+      )}
+      title={shape.name}
+    >
+      <DrawioSvgPreview path={svgPath} className="w-10 h-10" />
+      <span className="text-[8px] text-gray-600 text-center leading-tight w-full line-clamp-2">
+        {shape.name}
+      </span>
+    </div>
+  );
+});
+
+// Draw.io category draggable item
+interface DraggableDrawioCategoryProps {
+  item: DrawioCategoryItem;
+  shapesData: DrawioShapesData;
+}
+
+const DraggableDrawioCategory = memo(function DraggableDrawioCategory({
+  item,
+  shapesData,
+}: DraggableDrawioCategoryProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const { addNode, zoomToNode } = useDiagramStore();
+
+  // Get all shapes for this category
+  const shapes = useMemo(
+    () => getDrawioShapesByCategory(shapesData, item.categoryName),
+    [shapesData, item.categoryName]
+  );
+
+  // Get first shape for preview
+  const firstShape = shapes[0];
+  const previewPath = firstShape
+    ? getDrawioSvgPath(item.categoryName, firstShape.name)
+    : "";
+
+  // Filter shapes based on search query
+  const filteredShapes = useMemo(() => {
+    if (!searchQuery.trim()) return shapes;
+    const query = searchQuery.toLowerCase();
+    return shapes.filter((shape) => shape.name.toLowerCase().includes(query));
+  }, [shapes, searchQuery]);
+
+  const onDragStart = (event: React.DragEvent) => {
+    setIsDragging(true);
+    if (firstShape) {
+      const nodeType = `drawio_${item.categoryName}`;
+      event.dataTransfer.setData("application/reactflow/type", nodeType);
+      event.dataTransfer.setData("application/reactflow/drawioCategory", item.categoryName);
+      event.dataTransfer.setData("application/reactflow/drawioShapeName", firstShape.name);
+      event.dataTransfer.setData("application/reactflow/drawioShape", JSON.stringify(firstShape));
+      event.dataTransfer.effectAllowed = "move";
+    }
+  };
+
+  const onDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Handle selecting a shape from the dropdown
+  const handleSelectShape = useCallback(
+    (shape: DrawioShape) => {
+      const nodeType = `drawio_${item.categoryName}`;
+      const nodeId = `${nodeType}_${Date.now()}`;
+
+      const newNode = {
+        id: nodeId,
+        type: nodeType,
+        position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 200 },
+        data: {
+          category: item.categoryName,
+          shapeName: shape.name,
+          shape: shape,
+        },
+      };
+
+      addNode(newNode);
+      setIsOpen(false);
+      setSearchQuery("");
+
+      // Zoom to the newly added node
+      setTimeout(() => {
+        zoomToNode(nodeId);
+      }, 100);
+    },
+    [item.categoryName, addNode, zoomToNode]
+  );
+
+  // Handle click
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsOpen(true);
+    }
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <div
+          draggable
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onClick={handleClick}
+          className={cn(
+            "relative flex flex-col items-center gap-1 p-1.5 rounded cursor-pointer",
+            "hover:bg-gray-50",
+            "transition-all duration-150",
+            isOpen && "bg-blue-50 ring-1 ring-blue-200"
+          )}
+          title={`Click to browse ${item.shapeCount} shapes, or drag to add default`}
+        >
+          {/* Shape count badge */}
+          <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full min-w-[16px] text-center z-10">
+            {item.shapeCount}
+          </div>
+
+          {/* SVG Preview */}
+          <div className="w-12 h-12 flex items-center justify-center p-1">
+            {previewPath ? (
+              <DrawioSvgPreview path={previewPath} className="w-full h-full" />
+            ) : (
+              <div className="w-8 h-8 bg-gray-100 animate-pulse rounded" />
+            )}
+          </div>
+
+          {/* Label */}
+          <span className="text-[9px] text-gray-600 text-center leading-tight w-full line-clamp-2">
+            {item.label}
+          </span>
+        </div>
+      </PopoverTrigger>
+
+      <PopoverContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="w-[320px] p-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {/* Header with search */}
+        <div className="p-3 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">{item.label}</h3>
+          <Input
+            placeholder="Search shapes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 text-sm"
+            autoFocus
+          />
+          <p className="text-[10px] text-gray-400 mt-1.5">
+            {filteredShapes.length} of {shapes.length} shapes
+          </p>
+        </div>
+
+        {/* Shape grid */}
+        <div className="max-h-[300px] overflow-y-auto p-2">
+          {filteredShapes.length > 0 ? (
+            <div className="grid grid-cols-4 gap-1">
+              {filteredShapes.map((shape) => (
+                <DrawioShapePickerItem
+                  key={shape.name}
+                  shape={shape}
+                  categoryName={item.categoryName}
+                  onSelect={handleSelectShape}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-sm text-gray-400">
+              No shapes match &ldquo;{searchQuery}&rdquo;
+            </div>
+          )}
+        </div>
+
+        {/* Footer hint */}
+        <div className="px-3 py-2 border-t border-gray-100 bg-gray-50/50">
+          <p className="text-[9px] text-gray-400 text-center">
+            Click to add or drag to canvas
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+});
+
 export function ShapeToolbar() {
   const { mode, style } = useDiagramStore();
   const shapes = shapesByMode[mode];
@@ -669,29 +1000,114 @@ export function ShapeToolbar() {
   // For PFD mode, use DEXPI categories
   const isPfdMode = mode === "pfd";
 
+  // Symbol library toggle: "dexpi" (Visual Paradigm) or "drawio"
+  const [symbolLibrary, setSymbolLibrary] = useState<"dexpi" | "drawio">("drawio");
+
+  // Draw.io shapes data (loaded async)
+  const [drawioData, setDrawioData] = useState<DrawioShapesData | null>(null);
+  const [drawioLoading, setDrawioLoading] = useState(false);
+
+  // Load draw.io data when needed
+  useEffect(() => {
+    if (isPfdMode && symbolLibrary === "drawio" && !drawioData && !drawioLoading) {
+      setDrawioLoading(true);
+      loadShapesData()
+        .then((data) => {
+          setDrawioData(data);
+        })
+        .catch((err) => {
+          console.error("Failed to load draw.io shapes:", err);
+        })
+        .finally(() => {
+          setDrawioLoading(false);
+        });
+    }
+  }, [isPfdMode, symbolLibrary, drawioData, drawioLoading]);
+
+  // Get draw.io category items
+  const drawioCategoryItems = useMemo((): DrawioCategoryItem[] => {
+    if (!drawioData) return [];
+    return getDrawioOrderedCategories(drawioData).map((categoryName) => ({
+      categoryName,
+      nodeType: `drawio_${categoryName}`,
+      label: getDrawioCategoryDisplayName(categoryName),
+      shapeCount: getDrawioShapesByCategory(drawioData, categoryName).length,
+    }));
+  }, [drawioData]);
+
+  // Total shape counts
+  const dexpiTotalSymbols = dexpiCategories.reduce((sum, c) => sum + c.symbolCount, 0);
+  const drawioTotalShapes = drawioData?.metadata.total_shapes ?? 0;
+
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-100 w-[180px]">
+    <div className="flex flex-col h-full bg-white border-r border-gray-100 w-[208px]">
       <div className="px-2 py-2 border-b border-gray-100">
         <h3 className="text-xs font-semibold text-gray-700">
           {isPfdMode ? "Equipment" : "Shapes"}
         </h3>
         <p className="text-[10px] text-gray-400 mt-0.5">
           {modeConfig.name}
-          {isPfdMode && (
-            <span className="text-blue-500 ml-1">
-              · {dexpiCategories.reduce((sum, c) => sum + c.symbolCount, 0)}
-            </span>
-          )}
         </p>
+
+        {/* Symbol library toggle for PFD mode */}
+        {isPfdMode && (
+          <ToggleGroup
+            type="single"
+            value={symbolLibrary}
+            onValueChange={(val) => val && setSymbolLibrary(val as "dexpi" | "drawio")}
+            className="mt-2 w-full"
+          >
+            <ToggleGroupItem
+              value="drawio"
+              className="flex-1 text-[10px] h-7 data-[state=on]:bg-green-100 data-[state=on]:text-green-700"
+              title="Draw.io P&ID symbols with connection points"
+            >
+              Draw.io ({drawioTotalShapes})
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="dexpi"
+              className="flex-1 text-[10px] h-7 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700"
+              title="Visual Paradigm DEXPI symbols"
+            >
+              DEXPI ({dexpiTotalSymbols})
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
+
       <div className="flex-1 overflow-y-auto p-1">
         {isPfdMode ? (
-          <div className="grid grid-cols-2 gap-0.5">
-            {dexpiCategories.map((item) => (
-              <DraggableDexpiCategory key={item.categoryName} item={item} />
-            ))}
-          </div>
+          symbolLibrary === "drawio" ? (
+            // Draw.io symbols
+            drawioLoading ? (
+              <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+                Loading...
+              </div>
+            ) : drawioData ? (
+              <div className="grid grid-cols-2 gap-0.5">
+                {drawioCategoryItems.map((item) => (
+                  <DraggableDrawioCategory
+                    key={item.categoryName}
+                    item={item}
+                    shapesData={drawioData}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+                Failed to load
+              </div>
+            )
+          ) : (
+            // DEXPI symbols
+            <div className="grid grid-cols-2 gap-0.5">
+              {dexpiCategories.map((item) => (
+                <DraggableDexpiCategory key={item.categoryName} item={item} />
+              ))}
+            </div>
+          )
         ) : (
+          // Non-PFD mode: basic shapes
           <div className="grid grid-cols-2 gap-0.5">
             {shapes.map((item) => (
               <DraggableShape key={item.type} item={item} style={style} />
@@ -699,6 +1115,7 @@ export function ShapeToolbar() {
           </div>
         )}
       </div>
+
       <div className="px-2 py-1.5 border-t border-gray-100 bg-gray-50/50">
         <p className="text-[9px] text-gray-400 text-center">
           Drag to canvas

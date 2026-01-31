@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="25.0" viewBox="0 0 50.0 25.0">
+  <!-- Shape: Flow Nozzle -->
+  <!-- Category: flow_sensors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 0 A 50 10 0 0 1 50 7 L 50 18 A 50 10 0 0 1 0 25 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="12.5" r="2" data-name="W"/>
+    <circle cx="25.0" cy="5.875" r="2" data-name="N"/>
+    <circle cx="50.0" cy="12.5" r="2" data-name="E"/>
+  </g>
+</svg>

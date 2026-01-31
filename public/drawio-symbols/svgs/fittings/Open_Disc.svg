@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="40.0" height="140.0" viewBox="0 0 40.0 140.0">
+  <!-- Shape: Open Disc -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="20.0" cy="20.0" rx="20.0" ry="20.0"/>
+    <path d="M 20 40 L 20 140"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

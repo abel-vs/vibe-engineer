@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="130.0" height="100.0" viewBox="0 0 130.0 100.0">
+  <!-- Shape: Combustion Chamber -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="130" height="100"/>
+    <rect x="0" y="90" width="130" height="10"/>
+    <path d="M 25 90 L 65 15 L 105 90 Z M 40 90 L 65 45 L 90 90"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="65.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="0.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="65.0" cy="100.0" r="2" data-name="S"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="60.0" viewBox="0 0 100.0 60.0">
+  <!-- Shape: Mill, Pulverizer (Impact) -->
+  <!-- Category: crushers_grinding -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 0 L 100 0 L 80 60 L 20 60 Z"/>
+    <path d="M 25 0 L 8 25 M 75 0 L 92 25 M 30 10 L 43 23 M 70 10 L 57 23 M 43 37 L 30 50 M 57 37 L 70 50"/>
+    <ellipse cx="50.0" cy="30.0" rx="10.0" ry="10.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="50.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="60.0" r="2" data-name="S"/>
+  </g>
+</svg>

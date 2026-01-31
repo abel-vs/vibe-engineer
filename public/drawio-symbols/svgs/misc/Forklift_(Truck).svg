@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="140.0" height="100.0" viewBox="0 0 140.0 100.0">
+  <!-- Shape: Forklift (Truck) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="140" height="100"/>
+    <path d="M 85 30 L 85 80 L 110 80 M 30 55 L 80 55 L 70 20 L 50 20 L 50 55"/>
+    <ellipse cx="40.0" cy="70.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="70.0" cy="70.0" rx="10.0" ry="10.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

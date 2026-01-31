@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="85.0" height="90.0" viewBox="0 0 85.0 90.0">
+  <!-- Shape: Cooler -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="40.0" cy="45.0" rx="40.0" ry="40.0"/>
+    <path d="M 10 0 L 10 90 M 85 15 L 50 15 L 50 35 L 65 35 L 65 60 L 50 60 L 50 80 L 85 80"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

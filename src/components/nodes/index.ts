@@ -1,9 +1,14 @@
-import { playgroundNodeTypes } from "./playground-nodes";
-import { bfdNodeTypes } from "./bfd-nodes";
-import { pfdNodeTypes } from "./pfd-nodes";
-import { createDexpiNodeType, DexpiNodeComponent } from "./dexpi-node";
-import { DEXPI_CATEGORIES, categoryToNodeType } from "@/lib/dexpi-config";
+import { categoryToNodeType, DEXPI_CATEGORIES } from "@/lib/dexpi-config";
+import { CATEGORY_ORDER } from "@/lib/drawio-pid-config";
 import type { DiagramMode } from "@/lib/modes";
+import { bfdNodeTypes } from "./bfd-nodes";
+import { createDexpiNodeType, DexpiNodeComponent } from "./dexpi-node";
+import {
+  createDrawioPidNodeType,
+  DrawioPidNodeComponent,
+} from "./drawio-pid-node";
+import { pfdNodeTypes } from "./pfd-nodes";
+import { playgroundNodeTypes } from "./playground-nodes";
 
 // Generate DEXPI node types dynamically for all categories
 export const dexpiNodeTypes: Record<string, typeof DexpiNodeComponent> = {};
@@ -14,11 +19,26 @@ DEXPI_CATEGORIES.forEach((categoryName) => {
   dexpiNodeTypes[nodeType] = createDexpiNodeType(categoryName);
 });
 
+// Generate Draw.io P&ID node types for all categories
+export const drawioPidNodeTypes: Record<string, typeof DrawioPidNodeComponent> =
+  {};
+
+// Create a node type for each draw.io category
+// Using "drawio_" prefix to distinguish from DEXPI types
+CATEGORY_ORDER.forEach((categoryName) => {
+  const nodeType = `drawio_${categoryName}`;
+  drawioPidNodeTypes[nodeType] = createDrawioPidNodeType(categoryName);
+});
+
+// Also add a generic drawio_pid type
+drawioPidNodeTypes["drawio_pid"] = DrawioPidNodeComponent;
+
 export const allNodeTypes = {
   ...playgroundNodeTypes,
   ...bfdNodeTypes,
   ...pfdNodeTypes,
   ...dexpiNodeTypes,
+  ...drawioPidNodeTypes,
 };
 
 export function getNodeTypesForMode(mode: DiagramMode) {
@@ -28,11 +48,17 @@ export function getNodeTypesForMode(mode: DiagramMode) {
     case "bfd":
       return bfdNodeTypes;
     case "pfd":
-      // PFD mode now uses DEXPI node types
-      return { ...pfdNodeTypes, ...dexpiNodeTypes };
+      // PFD mode now uses DEXPI and Draw.io P&ID node types
+      return { ...pfdNodeTypes, ...dexpiNodeTypes, ...drawioPidNodeTypes };
     default:
       return allNodeTypes;
   }
 }
 
-export { playgroundNodeTypes, bfdNodeTypes, pfdNodeTypes, dexpiNodeTypes };
+export {
+  bfdNodeTypes,
+  dexpiNodeTypes,
+  drawioPidNodeTypes,
+  pfdNodeTypes,
+  playgroundNodeTypes,
+};

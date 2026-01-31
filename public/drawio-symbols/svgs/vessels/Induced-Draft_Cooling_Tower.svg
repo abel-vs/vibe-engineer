@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="98.0" height="70.0" viewBox="0 0 98.0 70.0">
+  <!-- Shape: Induced-Draft Cooling Tower -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 24 70 L 19 60 L 24 60 L 0 10 L 34 10 L 34 0 L 64 0 L 64 10 L 98 10 L 74 60 L 79 60 L 74 70 Z M 34 10 L 64 10 M 24 60 L 74 60"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="49.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="49.0" cy="70.0" r="2" data-name="S"/>
+    <circle cx="11.76" cy="35.0" r="2" data-name="W"/>
+    <circle cx="86.24" cy="35.0" r="2" data-name="E"/>
+    <circle cx="0.0" cy="10.149999999999999" r="2" data-name="NW"/>
+    <circle cx="24.009999999999998" cy="70.0" r="2" data-name="SW"/>
+    <circle cx="98.0" cy="10.149999999999999" r="2" data-name="NE"/>
+    <circle cx="73.99" cy="70.0" r="2" data-name="SE"/>
+  </g>
+</svg>

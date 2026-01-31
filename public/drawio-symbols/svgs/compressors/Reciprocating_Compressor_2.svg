@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="65.0" viewBox="0 0 50.0 65.0">
+  <!-- Shape: Reciprocating Compressor 2 -->
+  <!-- Category: compressors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="50" height="50"/>
+    <path d="M 0 23 L 50 23 M 0 27 L 50 27 M 25 27 L 25 65"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="25.0" cy="65.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="24.7" r="2" data-name="W"/>
+    <circle cx="50.0" cy="24.7" r="2" data-name="E"/>
+  </g>
+</svg>

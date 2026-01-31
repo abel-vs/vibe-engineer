@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="35.0" height="95.0" viewBox="0 0 35.0 95.0">
+  <!-- Shape: Gas Bottle -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 10 20 L 10 7.5 A 7.5 7.5 0 0 1 25 7.5 L 25 20 Z"/>
+    <path d="M 0 25 A 17.5 10 0 0 1 35 25 L 35 95 L 0 95 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

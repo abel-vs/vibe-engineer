@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="62.0" height="100.0" viewBox="0 0 62.0 100.0">
+  <!-- Shape: Barrel, Drum -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="1" y="0" width="60" height="100"/>
+    <rect x="0" y="0" width="62" height="2"/>
+    <rect x="0" y="32" width="62" height="2"/>
+    <rect x="0" y="66" width="62" height="2"/>
+    <rect x="0" y="98" width="62" height="2"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="31.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="31.0" cy="100.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="62.0" cy="50.0" r="2" data-name="E"/>
+  </g>
+</svg>

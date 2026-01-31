@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="55.0" viewBox="0 0 100.0 55.0">
+  <!-- Shape: Gas Compressor -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 30 L 100 0 L 100 55 L 0 55 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="55.00000000000001" cy="55.0" r="2" data-name="S"/>
+  </g>
+</svg>

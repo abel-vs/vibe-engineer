@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="140.0" viewBox="0 0 80.0 140.0">
+  <!-- Shape: Vent -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 40 40 L 40 140 M 0 40 L 40 0 L 80 40"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="14.0" height="97.0" viewBox="0 0 14.0 97.0">
+  <!-- Shape: Tower -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 14 3.5 L 14 93.5 A 5 2.5 0 0 1 0 93.5 L 0 3.5 A 5 2.5 0 0 1 14 3.5 Z M 0 3.5 L 14 3.5 M 0 93.5 L 14 93.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="7.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="7.0" cy="97.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="48.5" r="2" data-name="W"/>
+    <circle cx="14.0" cy="48.5" r="2" data-name="E"/>
+    <circle cx="0.0" cy="3.3950000000000005" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="93.605" r="2" data-name="SW"/>
+    <circle cx="14.0" cy="3.3950000000000005" r="2" data-name="NE"/>
+    <circle cx="14.0" cy="93.605" r="2" data-name="SE"/>
+  </g>
+</svg>

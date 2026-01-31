@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160.0" height="20.0" viewBox="0 0 160.0 20.0">
+  <!-- Shape: Roller Conveyor -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="10" width="160" height="10"/>
+    <ellipse cx="20.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="50.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="80.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="110.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="140.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <rect x="0" y="10" width="160" height="10"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

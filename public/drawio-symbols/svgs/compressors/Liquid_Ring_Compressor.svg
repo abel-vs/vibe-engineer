@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="90.0" height="90.0" viewBox="0 0 90.0 90.0">
+  <!-- Shape: Liquid Ring Compressor -->
+  <!-- Category: compressors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="45.0" cy="45.0" rx="45.0" ry="45.0"/>
+    <rect x="0" y="0" width="10" height="10"/>
+    <path d="M 45 5 A 30 30 0 0 1 45 45 A 30 30 0 0 1 45 85 M 73.3 16.7 A 30 30 0 0 1 45 45 A 30 30 0 0 1 16.7 73.3 M 85 45 A 30 30 0 0 1 45 45 A 30 30 0 0 1 5 45 M 73.3 73.3 A 30 30 0 0 1 45 45 A 30 30 0 0 1 16.5 16.5"/>
+    <rect x="0" y="0" width="10" height="10"/>
+    <ellipse cx="45.0" cy="45.0" rx="3.0" ry="3.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="45.0" cy="90.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="45.0" r="2" data-name="W"/>
+    <circle cx="90.0" cy="45.0" r="2" data-name="E"/>
+    <circle cx="13.049999999999999" cy="13.049999999999999" r="2" data-name="NW"/>
+    <circle cx="13.049999999999999" cy="76.95" r="2" data-name="SW"/>
+    <circle cx="76.95" cy="13.049999999999999" r="2" data-name="NE"/>
+    <circle cx="76.95" cy="76.95" r="2" data-name="SE"/>
+  </g>
+</svg>

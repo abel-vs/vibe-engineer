@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="24.5" viewBox="0 0 50.0 24.5">
+  <!-- Shape: Excess Flow Valve -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="4.5" width="50" height="20"/>
+    <path d="M 5 1.5 L 40 1.5 M 3 4.5 L 3 24.5 M 0 14.5 L 3 14.5 M 3 4.5 L 50 24.5 M 50 4.5 L 3 24.5"/>
+    <path d="M 40 0 L 45 1.5 L 40 3 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="14.455" r="2" data-name="W"/>
+    <circle cx="50.0" cy="14.455" r="2" data-name="E"/>
+  </g>
+</svg>

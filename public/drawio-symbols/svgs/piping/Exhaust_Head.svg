@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="40.0" viewBox="0 0 50.0 40.0">
+  <!-- Shape: Exhaust Head -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 0 L 50 0 L 50 20 L 25 40 L 0 20 Z M 0 20 L 50 20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="10.0" r="2" data-name="W"/>
+    <circle cx="50.0" cy="10.0" r="2" data-name="E"/>
+  </g>
+</svg>

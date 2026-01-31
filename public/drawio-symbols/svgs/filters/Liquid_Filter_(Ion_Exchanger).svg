@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="100.0" viewBox="0 0 50.0 100.0">
+  <!-- Shape: Liquid Filter (Ion Exchanger) -->
+  <!-- Category: filters -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="50" height="100"/>
+    <path d="M 0 20 L 50 20 M 0 80 L 50 80"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="25.0" cy="100.0" r="2" data-name="S"/>
+  </g>
+</svg>

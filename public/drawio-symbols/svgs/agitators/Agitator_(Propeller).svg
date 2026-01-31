@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="92.74" height="132.12" viewBox="0 0 92.74 132.12">
+  <!-- Shape: Agitator (Propeller) -->
+  <!-- Category: agitators -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 46.37 0 L 46.37 120 M 76.37 110 A 11 11 0 0 1 76.37 130 L 16.37 110 A 11 11 0 0 1 16.37 130 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="46.37" cy="0.0" r="2" data-name="N"/>
+  </g>
+</svg>

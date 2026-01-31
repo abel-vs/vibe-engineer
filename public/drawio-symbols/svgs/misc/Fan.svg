@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="100.0" viewBox="0 0 100.0 100.0">
+  <!-- Shape: Fan -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="50.0" cy="50.0" rx="50.0" ry="50.0"/>
+    <path d="M 30 4.5 L 97 33 M 30 95.5 L 97 67 M 42.28 36.55 A 15 3 0 0 1 49.75 49.9 A 15 3 0 0 1 37.72 40.45 A 15 3 0 0 1 30.25 27.1 A 15 3 0 0 1 42.28 36.55 Z M 37.7 59.73 A 15 3 0 0 1 49.66 50.19 A 15 3 0 0 1 42.3 63.6 A 15 3 0 0 1 30.34 73.14 A 15 3 0 0 1 37.7 59.73 Z"/>
+    <ellipse cx="65.0" cy="50.0" rx="15.0" ry="3.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="50.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="100.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="100.0" cy="50.0" r="2" data-name="E"/>
+    <circle cx="14.499999999999998" cy="14.499999999999998" r="2" data-name="NW"/>
+    <circle cx="14.499999999999998" cy="85.5" r="2" data-name="SW"/>
+    <circle cx="85.5" cy="14.499999999999998" r="2" data-name="NE"/>
+    <circle cx="85.5" cy="85.5" r="2" data-name="SE"/>
+  </g>
+</svg>

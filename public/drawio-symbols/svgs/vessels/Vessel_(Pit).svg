@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="95.38" height="55.0" viewBox="0 0 95.38 55.0">
+  <!-- Shape: Vessel (Pit) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 7.69 40 A 5 13 0 0 1 7.69 0 L 87.69 0 A 5 13 0 0 1 87.69 40 L 42.69 40 L 42.69 50 A 10 5 0 0 1 22.69 50 L 22.69 40 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

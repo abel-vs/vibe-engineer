@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="70.0" height="60.0" viewBox="0 0 70.0 60.0">
+  <!-- Shape: Pressure Reducing Valve -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 20 L 20 30 L 0 40 Z M 70 0 L 70 60 L 20 30 Z"/>
+    <ellipse cx="20.0" cy="30.0" rx="2.0" ry="2.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

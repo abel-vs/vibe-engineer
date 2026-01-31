@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180.0" height="30.0" viewBox="0 0 180.0 30.0">
+  <!-- Shape: Hose -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 15 A 15 15 0 0 1 30 15 A 15 15 0 0 1 60 15 A 15 15 0 0 1 90 15 A 15 15 0 0 1 120 15 A 15 15 0 0 1 150 15 A 15 15 0 0 1 180 15"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="180.0" cy="15.0" r="2" data-name="E"/>
+  </g>
+</svg>

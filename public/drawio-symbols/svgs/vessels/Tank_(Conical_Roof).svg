@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="90.0" viewBox="0 0 100.0 90.0">
+  <!-- Shape: Tank (Conical Roof) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 20 L 0 90 L 100 90 L 100 20 L 50 0 Z M 0 20 L 100 20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

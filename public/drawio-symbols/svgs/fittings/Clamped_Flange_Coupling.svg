@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="100.0" viewBox="0 0 50.0 100.0">
+  <!-- Shape: Clamped Flange Coupling -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 15 L 0 0 L 50 0 L 50 15 M 0 85 L 0 100 L 50 100 L 50 85 M 10 10 L 10 90 M 40 10 L 40 90"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="10.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="40.0" cy="50.0" r="2" data-name="E"/>
+  </g>
+</svg>

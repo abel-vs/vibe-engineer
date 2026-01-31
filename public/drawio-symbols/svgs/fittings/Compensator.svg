@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="40.0" height="80.0" viewBox="0 0 40.0 80.0">
+  <!-- Shape: Compensator -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 20 0 A 50 50 0 0 1 20 80 A 50 50 0 0 1 20 0 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="40.0" r="2" data-name="W"/>
+    <circle cx="40.0" cy="40.0" r="2" data-name="E"/>
+  </g>
+</svg>

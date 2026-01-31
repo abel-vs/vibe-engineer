@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="120.0" viewBox="0 0 80.0 120.0">
+  <!-- Shape: Gravity Separator, Settling Chamber2 -->
+  <!-- Category: separators -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 0 L 80 0 L 80 80 L 40 120 L 0 80 Z M 40 10 L 40 65"/>
+    <path d="M 38 65 L 42 65 L 40 70 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="12.0" r="2" data-name="W"/>
+    <circle cx="80.0" cy="12.0" r="2" data-name="E"/>
+    <circle cx="40.0" cy="120.0" r="2" data-name="S"/>
+  </g>
+</svg>

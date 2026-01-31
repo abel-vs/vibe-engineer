@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="30.0" viewBox="0 0 50.0 30.0">
+  <!-- Shape: Positive Displacement -->
+  <!-- Category: flow_sensors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="50" height="30"/>
+    <ellipse cx="12.5" cy="15.0" rx="12.5" ry="12.5"/>
+    <ellipse cx="37.5" cy="15.0" rx="12.5" ry="12.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="15.0" r="2" data-name="E"/>
+  </g>
+</svg>

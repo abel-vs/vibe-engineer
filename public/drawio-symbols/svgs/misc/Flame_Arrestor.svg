@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="40.0" viewBox="0 0 100.0 40.0">
+  <!-- Shape: Flame Arrestor -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 20 0 L 80 0 L 88.5 20 L 80 40 L 20 40 L 11.5 20 Z"/>
+    <path d="M 0 10 L 0 30 M 3 10 L 3 30 M 3 20 L 11.5 20 M 100 10 L 100 30 M 97 10 L 97 30 M 97 20 L 88.5 20 M 20 0 L 20 40 M 30 0 L 30 40 M 40 0 L 40 40 M 50 0 L 50 40 M 60 0 L 60 40 M 70 0 L 70 40 M 80 0 L 80 40"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="20.0" r="2" data-name="W"/>
+    <circle cx="100.0" cy="20.0" r="2" data-name="E"/>
+  </g>
+</svg>

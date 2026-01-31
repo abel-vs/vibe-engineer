@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="40.0" height="59.0" viewBox="0 0 40.0 59.0">
+  <!-- Shape: Relief PRV -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 20 A 20 20 0 0 1 40 20 Z M 20 20 L 20 59"/>
+    <rect x="20" y="20" width="20" height="8"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="20.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="20.0" cy="59.0" r="2" data-name="S"/>
+  </g>
+</svg>

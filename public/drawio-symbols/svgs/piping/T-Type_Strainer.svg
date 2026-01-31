@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20.0" height="34.0" viewBox="0 0 20.0 34.0">
+  <!-- Shape: T-Type Strainer -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="10.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <path d="M 10 20 L 10 30 M 0 30 L 20 30 M 0 34 L 20 34"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="10.0" cy="34.0" r="2" data-name="S"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="98.0" height="89.0" viewBox="0 0 98.0 89.0">
+  <!-- Shape: Hydraulic Valve -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 89 L 0 30 L 98 89 L 98 30 Z"/>
+    <rect x="19" y="0" width="60" height="30"/>
+    <path d="M 49 15 L 49 59 M 19 15 L 79 15"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="49.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="49.0" cy="59.63" r="2" data-name="S"/>
+    <circle cx="0.0" cy="59.63" r="2" data-name="W"/>
+    <circle cx="98.0" cy="59.63" r="2" data-name="E"/>
+  </g>
+  <g class="text-elements">
+    <text x="49.0" y="25.0" text-anchor="middle" font-family="sans-serif" font-size="18">H</text>
+  </g>
+</svg>

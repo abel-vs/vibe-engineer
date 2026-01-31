@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="99.0" height="99.0" viewBox="0 0 99.0 99.0">
+  <!-- Shape: Forced-Draft Cooling Tower -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 99 L 0 89.5 L 19.5 89.5 L 19.5 0 L 79.5 0 L 79.5 89.5 L 99 89.5 L 99 99 Z"/>
+    <path d="M 9.5 89.5 L 9.5 64.5 L 19.5 64.5 M 89.5 89.5 L 89.5 64.5 L 79.5 64.5 M 19.5 89.5 L 79.5 89.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="49.5" cy="0.0" r="2" data-name="N"/>
+    <circle cx="49.5" cy="99.0" r="2" data-name="S"/>
+    <circle cx="19.305" cy="49.5" r="2" data-name="W"/>
+    <circle cx="79.69500000000001" cy="49.5" r="2" data-name="E"/>
+    <circle cx="19.305" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="99.0" r="2" data-name="SW"/>
+    <circle cx="79.69500000000001" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="99.0" cy="99.0" r="2" data-name="SE"/>
+  </g>
+</svg>

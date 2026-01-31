@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240.0" height="80.0" viewBox="0 0 240.0 80.0">
+  <!-- Shape: Conveyor (Chain, Closed) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="240" height="80"/>
+    <rect x="45" y="15" width="150" height="50"/>
+    <rect x="0" y="0" width="10" height="10"/>
+    <ellipse cx="45.0" cy="40.0" rx="25.0" ry="25.0"/>
+    <ellipse cx="195.0" cy="40.0" rx="25.0" ry="25.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.6" cy="0.0" r="2" data-name="N"/>
+    <circle cx="194.4" cy="80.0" r="2" data-name="S"/>
+  </g>
+</svg>

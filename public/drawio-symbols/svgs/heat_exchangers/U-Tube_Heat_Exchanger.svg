@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="91.75" height="30.0" viewBox="0 0 91.75 30.0">
+  <!-- Shape: U-Tube Heat Exchanger -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 15 24 L 15 30 L 0 30 L 0 0 L 15 0 L 15 6 L 85 6 A 6 8 0 0 1 85 24 L 15 24 Z M 15 6 L 15 24 M 0 15 L 15 15"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.875" cy="6.0" r="2" data-name="N"/>
+    <circle cx="45.875" cy="24.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="91.75" cy="15.0" r="2" data-name="E"/>
+    <circle cx="0.0" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="30.0" r="2" data-name="SW"/>
+    <circle cx="85.3275" cy="6.0" r="2" data-name="NE"/>
+    <circle cx="85.3275" cy="24.0" r="2" data-name="SE"/>
+  </g>
+</svg>

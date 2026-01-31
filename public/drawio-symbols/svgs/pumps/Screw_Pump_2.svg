@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="123.77" height="40.0" viewBox="0 0 123.77 40.0">
+  <!-- Shape: Screw Pump 2 -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 75 20 L 80 20 M 15 10 L 15 0 M 60 30 L 60 40 M 87 5 A 20 20 0 0 1 87 35 L 117 35 A 20 20 0 0 1 117 5 Z M 87 5 L 87 35 M 117 5 L 117 35"/>
+    <rect x="0" y="10" width="75" height="20"/>
+    <path d="M 4.5 20 L 10 14 L 21 26 L 32 14 L 43 26 L 54 14 L 65 26 L 70.5 20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="14.8524" cy="0.0" r="2" data-name="N"/>
+    <circle cx="60.02845" cy="40.0" r="2" data-name="S"/>
+  </g>
+</svg>

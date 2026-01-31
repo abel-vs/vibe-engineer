@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="120.0" viewBox="0 0 80.0 120.0">
+  <!-- Shape: Thin-Film Evaporator -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 10 L 80 10 L 80 80 L 40 120 L 0 80 Z"/>
+    <path d="M 25 30 L 25 95 M 55 30 L 55 95 M 25 40 L 55 40 M 25 85 L 55 85 M 40 0 L 40 40 M 0 30 L 15 30 L 15 95 M 80 30 L 65 30 L 65 95"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

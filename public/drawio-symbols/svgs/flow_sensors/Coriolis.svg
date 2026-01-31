@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="50.0" viewBox="0 0 50.0 50.0">
+  <!-- Shape: Coriolis -->
+  <!-- Category: flow_sensors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="50" height="50"/>
+    <path d="M 5 25 L 12.5 25 L 17.5 18 L 27.5 32 L 32.5 25 L 40 25 M 10 25 L 17.5 25 L 22.5 18 L 32.5 32 L 37.5 25 L 45 25"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="25.0" r="2" data-name="W"/>
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="25.0" r="2" data-name="E"/>
+  </g>
+</svg>

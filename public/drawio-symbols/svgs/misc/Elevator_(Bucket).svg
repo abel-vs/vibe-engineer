@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160.0" height="250.0" viewBox="0 0 160.0 250.0">
+  <!-- Shape: Elevator (Bucket) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="160" height="250"/>
+    <rect x="60" y="40" width="40" height="180"/>
+    <path d="M 100 40 A 40 40 0 0 1 140 80 L 100 80 Z M 60 180 L 60 220 A 40 40 0 0 1 20 180 Z"/>
+    <ellipse cx="80.0" cy="40.0" rx="20.0" ry="20.0"/>
+    <ellipse cx="80.0" cy="220.0" rx="20.0" ry="20.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="125.0" r="2" data-name="W"/>
+    <circle cx="160.0" cy="125.0" r="2" data-name="E"/>
+  </g>
+</svg>

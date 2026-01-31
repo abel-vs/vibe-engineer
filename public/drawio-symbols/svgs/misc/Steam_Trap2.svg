@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="52.48" height="52.48" viewBox="0 0 52.48 52.48">
+  <!-- Shape: Steam Trap2 -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="25.0" cy="25.0" rx="25.0" ry="25.0"/>
+    <path d="M 42.7 7.3 A 25 25 0 0 1 7.3 42.7 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="26.24" r="2" data-name="W"/>
+    <circle cx="50.118399999999994" cy="26.24" r="2" data-name="E"/>
+  </g>
+</svg>

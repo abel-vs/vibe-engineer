@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="98.0" height="98.0" viewBox="0 0 98.0 98.0">
+  <!-- Shape: Four Way Valve -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 19 0 L 79 0 L 19 98 L 79 98 L 49 49 L 0 19 L 0 79 L 98 19 L 98 79 L 49 49 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="49.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="49.0" cy="98.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="49.0" r="2" data-name="W"/>
+    <circle cx="98.0" cy="49.0" r="2" data-name="E"/>
+  </g>
+</svg>

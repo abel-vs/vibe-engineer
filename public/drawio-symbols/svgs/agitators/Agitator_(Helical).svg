@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="130.0" viewBox="0 0 80.0 130.0">
+  <!-- Shape: Agitator (Helical) -->
+  <!-- Category: agitators -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 40 0 L 40 120 M 0 70 L 80 90 L 0 110 L 80 130"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="40.0" cy="0.0" r="2" data-name="N"/>
+  </g>
+</svg>

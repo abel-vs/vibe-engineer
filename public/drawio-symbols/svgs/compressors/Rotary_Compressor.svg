@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="42.0" height="91.0" viewBox="0 0 42.0 91.0">
+  <!-- Shape: Rotary Compressor -->
+  <!-- Category: compressors -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 7.5 82 L 0 91 L 42 91 L 34.4 82"/>
+    <path d="M 41 10 L 41 75 A 20 10 0 0 1 1 75 L 1 10 A 20 10 0 0 1 41 10 Z"/>
+    <ellipse cx="21.0" cy="23.0" rx="16.0" ry="16.0"/>
+    <ellipse cx="21.0" cy="60.0" rx="16.0" ry="16.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="21.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="21.0" cy="91.0" r="2" data-name="S"/>
+    <circle cx="0.84" cy="45.5" r="2" data-name="W"/>
+    <circle cx="41.16" cy="45.5" r="2" data-name="E"/>
+    <circle cx="0.84" cy="9.1" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="91.0" r="2" data-name="SW"/>
+    <circle cx="41.16" cy="9.1" r="2" data-name="NE"/>
+    <circle cx="42.0" cy="91.0" r="2" data-name="SE"/>
+  </g>
+</svg>

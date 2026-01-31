@@ -82,6 +82,11 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
       const dexpiCategory = event.dataTransfer.getData("application/reactflow/dexpiCategory");
       const symbolIndexStr = event.dataTransfer.getData("application/reactflow/symbolIndex");
       const dexpiSubclass = event.dataTransfer.getData("application/reactflow/dexpiSubclass");
+      
+      // Draw.io P&ID specific data
+      const drawioCategory = event.dataTransfer.getData("application/reactflow/drawioCategory");
+      const drawioShapeName = event.dataTransfer.getData("application/reactflow/drawioShapeName");
+      const drawioShapeData = event.dataTransfer.getData("application/reactflow/drawioShape");
 
       if (!type || !reactFlowInstance.current || !reactFlowWrapper.current) {
         return;
@@ -93,11 +98,25 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         y: event.clientY - bounds.top,
       });
 
-      // Build node data, including DEXPI-specific fields if present
+      // Build node data, including DEXPI-specific or Draw.io fields if present
       const nodeData: Record<string, unknown> = {};
 
+      // For Draw.io P&ID nodes
+      if (drawioCategory && drawioShapeName) {
+        nodeData.category = drawioCategory;
+        nodeData.shapeName = drawioShapeName;
+        // Parse shape data if provided (for connection points)
+        if (drawioShapeData) {
+          try {
+            nodeData.shape = JSON.parse(drawioShapeData);
+          } catch {
+            // Ignore parse errors
+          }
+        }
+        // Label is intentionally not set - show nothing by default
+      }
       // For DEXPI nodes, don't set a default label - show nothing unless user provides one
-      if (dexpiCategory) {
+      else if (dexpiCategory) {
         nodeData.dexpiCategory = dexpiCategory;
         // Use provided symbol index or default to 0
         nodeData.symbolIndex = symbolIndexStr ? parseInt(symbolIndexStr, 10) : 0;
@@ -189,7 +208,7 @@ export function DiagramCanvas({ onNodeSelect, onEdgeSelect }: DiagramCanvasProps
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
-        snapToGrid
+        snapToGrid={mode === "bfd"}
         snapGrid={[styleConfig.canvas.gridGap, styleConfig.canvas.gridGap]}
         deleteKeyCode={["Backspace", "Delete"]}
         multiSelectionKeyCode="Shift"

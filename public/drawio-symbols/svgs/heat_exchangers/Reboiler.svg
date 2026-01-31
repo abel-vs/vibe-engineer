@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="91.5" height="33.0" viewBox="0 0 91.5 33.0">
+  <!-- Shape: Reboiler -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 4.5 15 L 16.5 15 L 16.5 30 L 4.5 30 A 3 5 0 0 1 4.5 15 M 19.5 15 L 26.5 15 L 41.5 0 L 86.5 0 A 5 15 0 0 1 86.5 30 L 19.5 30 Z M 4.5 15 L 4.5 30 M 41.5 0 L 41.5 30 M 86.5 0 L 86.5 30"/>
+    <rect x="16.5" y="12" width="3" height="21"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="41.175000000000004" cy="0.0" r="2" data-name="N"/>
+    <circle cx="45.75" cy="30.03" r="2" data-name="S"/>
+    <circle cx="0.0" cy="22.506" r="2" data-name="W"/>
+    <circle cx="91.5" cy="15.015" r="2" data-name="E"/>
+    <circle cx="4.575" cy="15.015" r="2" data-name="NW"/>
+    <circle cx="4.575" cy="30.03" r="2" data-name="SW"/>
+    <circle cx="86.4675" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="86.4675" cy="30.03" r="2" data-name="SE"/>
+  </g>
+</svg>

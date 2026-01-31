@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50.0" height="40.0" viewBox="0 0 50.0 40.0">
+  <!-- Shape: Duplex Strainer -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="25.0" cy="30.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="25.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <path d="M 0 20 L 50 20 M 50 10 L 50 30 M 0 10 L 0 30"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="20.0" r="2" data-name="W"/>
+    <circle cx="50.0" cy="20.0" r="2" data-name="E"/>
+  </g>
+</svg>

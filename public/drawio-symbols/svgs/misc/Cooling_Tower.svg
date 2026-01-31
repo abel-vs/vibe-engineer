@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="120.0" viewBox="0 0 100.0 120.0">
+  <!-- Shape: Cooling Tower -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 120 L 0 100 L 25 0 L 75 0 L 100 100 L 100 120 Z M 100 100 L 0 100"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="110.4" r="2" data-name="SW"/>
+    <circle cx="100.0" cy="110.4" r="2" data-name="SE"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="50.0" viewBox="0 0 100.0 50.0">
+  <!-- Shape: Open Bulk Storage -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 10 50 L 50 0 L 90 50 Z"/>
+    <path d="M 0 50 L 100 50 M 34 20 L 50 0 L 66 20 M 26 30 L 10 50 L 42 50 M 74 30 L 90 50 L 58 50"/>
+    <ellipse cx="32.0" cy="22.5" rx="0.5" ry="0.5"/>
+    <ellipse cx="30.1" cy="25.0" rx="0.5" ry="0.5"/>
+    <ellipse cx="28.1" cy="27.5" rx="0.5" ry="0.5"/>
+    <ellipse cx="68.0" cy="22.5" rx="0.5" ry="0.5"/>
+    <ellipse cx="70.0" cy="25.0" rx="0.5" ry="0.5"/>
+    <ellipse cx="72.0" cy="27.5" rx="0.5" ry="0.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

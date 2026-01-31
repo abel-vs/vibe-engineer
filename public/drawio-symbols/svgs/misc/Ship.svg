@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="105.0" height="60.0" viewBox="0 0 105.0 60.0">
+  <!-- Shape: Ship -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 40 L 70 40 L 70 35 L 105 30 L 95 60 L 5 60 Z M 25 20 L 35 20 L 35 40 L 15 40 L 15 30 L 25 30 Z M 35 0 L 35 20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

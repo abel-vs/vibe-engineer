@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="100.0" viewBox="0 0 80.0 100.0">
+  <!-- Shape: Bag Filling Machine -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="80" height="100"/>
+    <rect x="10" y="20" width="25" height="35"/>
+    <rect x="45" y="20" width="25" height="35"/>
+    <path d="M 75 80 L 20 80 M 22.5 19.5 L 15 10 L 30 10 Z M 22.5 10 L 22.5 20 M 57.5 19.5 L 50 10 L 65 10 Z M 57.5 10 L 57.5 20"/>
+    <path d="M 20 77 L 20 83 L 9 80 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

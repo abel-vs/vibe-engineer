@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="85.0" viewBox="0 0 100.0 85.0">
+  <!-- Shape: Knife Valve -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="35" y="15" width="30" height="70"/>
+    <path d="M 0 45 L 35 45 M 65 45 L 100 45 M 30 0 L 70 0 M 50 0 L 50 60 M 60 50 L 50 80 L 40 50 L 50 60 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="50.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="85.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="45.050000000000004" r="2" data-name="W"/>
+    <circle cx="100.0" cy="45.050000000000004" r="2" data-name="E"/>
+  </g>
+</svg>

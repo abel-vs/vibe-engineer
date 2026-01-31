@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="100.0" viewBox="0 0 100.0 100.0">
+  <!-- Shape: Generator (AC) -->
+  <!-- Category: engines -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="50.0" cy="50.0" rx="50.0" ry="50.0"/>
+    <path d="M 20 80 A 18 18 0 0 1 50 80 A 18 18 0 0 1 80 80"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="50.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="50.0" cy="100.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="100.0" cy="50.0" r="2" data-name="E"/>
+  </g>
+</svg>

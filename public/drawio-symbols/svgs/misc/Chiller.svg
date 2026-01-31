@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="156.69" height="115.5" viewBox="0 0 156.69 115.5">
+  <!-- Shape: Chiller -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 149 12.5 A 5 13 0 0 1 149 52.5 L 19 52.5 A 5 13 0 0 1 19 12.5 Z"/>
+    <path d="M 149 72.5 A 5 13 0 0 1 149 112.5 L 19 112.5 A 5 13 0 0 1 19 72.5 Z"/>
+    <path d="M 4 79.5 L 13 79.5 M 4 105.5 L 13 105.5 M 4 69.5 L 4 89.5 M 0 69.5 L 0 89.5 M 4 95.5 L 4 115.5 M 0 95.5 L 0 115.5 M 139 12.5 L 139 4 M 129 4 L 149 4 M 129 0 L 149 0 M 29 12.5 L 29 4 M 19 4 L 39 4 M 19 0 L 39 0"/>
+    <rect x="34" y="52.5" width="10" height="20"/>
+    <rect x="119" y="52.5" width="10" height="20"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="138.67065" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="28.2042" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="79.695" r="2" data-name="W"/>
+    <circle cx="0.0" cy="105.6825" r="2" data-name="SW"/>
+  </g>
+</svg>

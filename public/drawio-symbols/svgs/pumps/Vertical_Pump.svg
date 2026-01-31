@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="120.0" height="146.77" viewBox="0 0 120.0 146.77">
+  <!-- Shape: Vertical Pump -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 45 6.77 A 20 20 0 0 1 75 6.77 L 75 96.77 A 20 20 0 0 1 45 96.77 Z M 105 116.77 A 20 20 0 0 1 105 146.77 L 15 146.77 A 20 20 0 0 1 15 116.77 Z M 111.5 131.77 L 120 131.77 M 120 121.77 L 120 141.77 M 0 131.77 L 8.5 131.77 M 0 121.77 L 0 141.77 M 45 96.77 L 75 96.77 M 45 6.77 L 75 6.77"/>
+    <rect x="58" y="103.27" width="4" height="13.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="132.09300000000002" r="2" data-name="W"/>
+    <circle cx="120.0" cy="132.09300000000002" r="2" data-name="E"/>
+  </g>
+</svg>

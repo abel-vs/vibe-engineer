@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="120.0" height="80.0" viewBox="0 0 120.0 80.0">
+  <!-- Shape: Loading Arm -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 10 70 L 60 10 L 110 70"/>
+    <ellipse cx="10.0" cy="70.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="60.0" cy="10.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="110.0" cy="70.0" rx="10.0" ry="10.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="70.4" r="2" data-name="W"/>
+    <circle cx="120.0" cy="70.4" r="2" data-name="E"/>
+    <circle cx="110.4" cy="80.0" r="2" data-name="S"/>
+    <circle cx="117.6" cy="76.8" r="2" data-name="SE"/>
+  </g>
+</svg>

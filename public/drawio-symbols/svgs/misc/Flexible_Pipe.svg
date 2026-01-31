@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60.0" height="16.0" viewBox="0 0 60.0 16.0">
+  <!-- Shape: Flexible Pipe -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 8 A 5 8 0 0 1 10 8 A 5 8 0 0 1 20 8 A 5 8 0 0 1 30 8 A 5 8 0 0 1 40 8 A 5 8 0 0 1 50 8 A 5 8 0 0 1 60 8"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="8.0" r="2" data-name="W"/>
+    <circle cx="60.0" cy="8.0" r="2" data-name="E"/>
+  </g>
+</svg>

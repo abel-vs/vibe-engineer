@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="19.0" height="80.0" viewBox="0 0 19.0 80.0">
+  <!-- Shape: Vent Silencer -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 2 0 L 17 10 L 17 80 L 2 80 Z"/>
+    <rect x="0" y="25" width="19" height="50"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="52.0" r="2" data-name="W"/>
+    <circle cx="9.5" cy="80.0" r="2" data-name="E"/>
+    <circle cx="19.0" cy="52.0" r="2" data-name="S"/>
+  </g>
+</svg>

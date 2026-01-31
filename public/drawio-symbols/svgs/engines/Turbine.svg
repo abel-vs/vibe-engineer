@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="70.0" height="100.0" viewBox="0 0 70.0 100.0">
+  <!-- Shape: Turbine -->
+  <!-- Category: engines -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 35 L 60 0 L 60 100 L 0 65 Z M 70 50 L 60 50"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="35.0" r="2" data-name="N"/>
+    <circle cx="60.199999999999996" cy="100.0" r="2" data-name="S"/>
+  </g>
+</svg>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="120.0" viewBox="0 0 80.0 120.0">
+  <!-- Shape: Separator (Venturi Scrubber) -->
+  <!-- Category: separators -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 0 L 80 0 L 80 80 L 40 120 L 0 80 Z"/>
+    <path d="M 30 10 L 40 0.5 L 50 10 M 40 0.5 L 40 10 M 15 80 L 25 65 L 40 65 L 60 80 M 15 40 L 25 55 L 40 55 L 60 40"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="40.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="40.0" cy="120.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="60.0" r="2" data-name="W"/>
+    <circle cx="80.0" cy="60.0" r="2" data-name="E"/>
+  </g>
+</svg>

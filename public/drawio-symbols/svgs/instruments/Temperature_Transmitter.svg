@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96.0" height="96.0" viewBox="0 0 96.0 96.0">
+  <!-- Shape: Temperature Transmitter -->
+  <!-- Category: instruments -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="48.0" cy="48.0" rx="48.0" ry="48.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="48.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="48.0" cy="96.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="48.0" r="2" data-name="W"/>
+    <circle cx="96.0" cy="48.0" r="2" data-name="E"/>
+    <circle cx="13.919999999999998" cy="13.919999999999998" r="2" data-name="NW"/>
+    <circle cx="13.919999999999998" cy="82.08" r="2" data-name="SW"/>
+    <circle cx="82.08" cy="13.919999999999998" r="2" data-name="NE"/>
+    <circle cx="82.08" cy="82.08" r="2" data-name="SE"/>
+  </g>
+  <g class="text-elements">
+    <text x="48.0" y="68.0" text-anchor="middle" font-family="sans-serif" font-size="40">TT</text>
+  </g>
+</svg>

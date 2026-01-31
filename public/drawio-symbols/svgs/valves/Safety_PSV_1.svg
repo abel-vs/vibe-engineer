@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="55.5" height="94.5" viewBox="0 0 55.5 94.5">
+  <!-- Shape: Safety PSV 1 -->
+  <!-- Category: valves -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 94.5 L 21 60 L 55.5 39 L 55.5 81 L 21 60 L 42 94.5 Z M 21 61 L 21 0 M 6 39 L 36 19 M 6 32 L 36 12 M 6 25 L 36 5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="21.09" cy="94.5" r="2" data-name="S"/>
+    <circle cx="55.5" cy="60.480000000000004" r="2" data-name="E"/>
+    <circle cx="21.09" cy="60.480000000000004" r="2" data-name="center"/>
+  </g>
+</svg>

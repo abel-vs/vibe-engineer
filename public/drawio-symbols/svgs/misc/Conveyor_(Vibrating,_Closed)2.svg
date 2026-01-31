@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="240.0" height="80.0" viewBox="0 0 240.0 80.0">
+  <!-- Shape: Conveyor (Vibrating, Closed)2 -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="240" height="80"/>
+    <path d="M 140 30 L 120 30 M 100 50 L 120 50"/>
+    <path d="M 120 25 L 120 35 L 100 30 Z M 120 45 L 120 55 L 140 50 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="24.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="225.6" cy="80.0" r="2" data-name="S"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="150.0" height="50.0" viewBox="0 0 150.0 50.0">
+  <!-- Shape: Container (Solids, Liquids, Gases) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="150" height="50"/>
+    <path d="M 10 0 L 10 10 L 0 10 M 0 40 L 10 40 L 10 50 M 140 0 L 140 10 L 150 10 M 140 50 L 140 40 L 150 40 M 10 10 L 140 40 M 10 40 L 140 10"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

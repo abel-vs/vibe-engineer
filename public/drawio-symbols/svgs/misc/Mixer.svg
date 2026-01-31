@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="100.0" viewBox="0 0 80.0 100.0">
+  <!-- Shape: Mixer -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 80 0 L 80 60 A 40 40 0 0 1 0 60 L 0 0 Z"/>
+    <path d="M 43.09 60.64 A 15 3 0 0 1 40.06 75.63 A 15 3 0 0 1 37.09 60.63 A 15 3 0 0 1 40.13 45.63 A 15 3 0 0 1 43.09 60.64 Z M 53.6 37.94 A 15 3 0 0 1 40.23 45.38 A 15 3 0 0 1 49.71 33.38 A 15 3 0 0 1 63.08 25.94 A 15 3 0 0 1 53.6 37.94 Z M 30.42 33.32 A 15 3 0 0 1 39.94 45.29 A 15 3 0 0 1 26.55 37.9 A 15 3 0 0 1 17.03 25.92 A 15 3 0 0 1 30.42 33.32 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

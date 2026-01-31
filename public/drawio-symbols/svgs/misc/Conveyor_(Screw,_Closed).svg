@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="220.0" height="80.0" viewBox="0 0 220.0 80.0">
+  <!-- Shape: Conveyor (Screw, Closed) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="10" y="0" width="210" height="80"/>
+    <path d="M 35 40 L 50 15 L 80 65 L 95 40 M 0 40 L 205 40 M 130 40 L 145 15 L 175 65 L 190 40"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="22.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="206.79999999999998" cy="80.0" r="2" data-name="S"/>
+  </g>
+</svg>

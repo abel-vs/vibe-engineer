@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="140.0" height="100.0" viewBox="0 0 140.0 100.0">
+  <!-- Shape: Silencer -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="0" y="0" width="140" height="100"/>
+    <path d="M 35 50 L 35 100 M 70 0 L 70 50 M 105 50 L 105 100"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="50.0" r="2" data-name="W"/>
+    <circle cx="140.0" cy="50.0" r="2" data-name="E"/>
+  </g>
+</svg>

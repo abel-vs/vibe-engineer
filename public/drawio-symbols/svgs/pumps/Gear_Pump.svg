@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="57.0" height="91.0" viewBox="0 0 57.0 91.0">
+  <!-- Shape: Gear Pump -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 15 82 L 7.5 91 L 49.5 91 L 41.9 82"/>
+    <path d="M 48.5 10 L 48.5 75 A 20 10 0 0 1 8.5 75 L 8.5 10 A 20 10 0 0 1 48.5 10 Z"/>
+    <ellipse cx="28.5" cy="23.0" rx="16.0" ry="16.0"/>
+    <ellipse cx="28.5" cy="60.0" rx="16.0" ry="16.0"/>
+    <path d="M 57 31.5 L 57 51.5 M 48.5 41.5 L 57 41.5 M 0 32 L 0 52 M 0 41.5 L 8.5 41.5"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="28.5" cy="0.0" r="2" data-name="N"/>
+    <circle cx="28.5" cy="91.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="45.5" r="2" data-name="W"/>
+    <circle cx="57.0" cy="45.5" r="2" data-name="E"/>
+    <circle cx="12.254999999999999" cy="9.1" r="2" data-name="NW"/>
+    <circle cx="11.4" cy="91.0" r="2" data-name="SW"/>
+    <circle cx="44.745000000000005" cy="9.1" r="2" data-name="NE"/>
+    <circle cx="45.6" cy="91.0" r="2" data-name="SE"/>
+  </g>
+</svg>

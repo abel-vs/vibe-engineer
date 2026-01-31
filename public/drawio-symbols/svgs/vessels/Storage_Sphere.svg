@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80.0" height="100.0" viewBox="0 0 80.0 100.0">
+  <!-- Shape: Storage Sphere -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="34" y="78" width="12" height="12"/>
+    <rect x="18" y="0" width="12" height="12"/>
+    <rect x="50" y="0" width="12" height="12"/>
+    <path d="M 0 45 L 0 100 L 80 100 L 80 45 M 15 0 L 33 0 M 47 0 L 65 0 M 31 90 L 49 90"/>
+    <ellipse cx="40.0" cy="45.0" rx="40.0" ry="40.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

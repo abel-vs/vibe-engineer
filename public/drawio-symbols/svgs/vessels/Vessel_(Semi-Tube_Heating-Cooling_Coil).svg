@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="110.0" height="70.0" viewBox="0 0 110.0 70.0">
+  <!-- Shape: Vessel (Semi-Tube Heating-Cooling Coil) -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="5" y="0" width="100" height="70"/>
+    <path d="M 5 20 A 5 5 0 0 1 5 30 Z M 5 50 A 5 5 0 0 1 5 60 Z M 105 10 A 5 5 0 0 1 105 20 Z M 105 40 A 5 5 0 0 1 105 50 Z"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

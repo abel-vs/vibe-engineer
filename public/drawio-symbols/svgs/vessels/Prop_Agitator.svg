@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20.0" height="88.4" viewBox="0 0 20.0 88.4">
+  <!-- Shape: Prop Agitator -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 16 2.4 L 16 27.4 A 5 2 0 0 1 4 27.4 L 4 2.4 A 5 2 0 0 1 16 2.4 Z M 4 2.4 L 16 2.4 M 4 27.4 L 16 27.4"/>
+    <rect x="9" y="29.9" width="2" height="57.5"/>
+    <ellipse cx="15.0" cy="87.4" rx="5.0" ry="1.0"/>
+    <ellipse cx="5.0" cy="87.4" rx="5.0" ry="1.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+  </g>
+</svg>

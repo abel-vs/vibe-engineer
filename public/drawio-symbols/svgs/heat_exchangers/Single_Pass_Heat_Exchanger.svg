@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="90.0" height="30.0" viewBox="0 0 90.0 30.0">
+  <!-- Shape: Single Pass Heat Exchanger -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 0 30 L 15 30 L 15 24 L 75 24 L 75 30 L 90 30 L 90 0 L 75 0 L 75 6 L 15 6 L 15 0 L 0 0 Z M 15 6 L 15 24 M 75 6 L 75 24"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="45.0" cy="6.0" r="2" data-name="N"/>
+    <circle cx="45.0" cy="24.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="90.0" cy="15.0" r="2" data-name="E"/>
+    <circle cx="0.0" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="0.0" cy="30.0" r="2" data-name="SW"/>
+    <circle cx="90.0" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="90.0" cy="30.0" r="2" data-name="SE"/>
+  </g>
+</svg>

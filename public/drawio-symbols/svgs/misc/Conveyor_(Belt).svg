@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200.0" height="50.0" viewBox="0 0 200.0 50.0">
+  <!-- Shape: Conveyor (Belt) -->
+  <!-- Category: misc -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <rect x="25" y="0" width="150" height="50"/>
+    <ellipse cx="25.0" cy="25.0" rx="25.0" ry="25.0"/>
+    <ellipse cx="175.0" cy="25.0" rx="25.0" ry="25.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="25.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="200.0" cy="25.0" r="2" data-name="S"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60.0" height="60.0" viewBox="0 0 60.0 60.0">
+  <!-- Shape: Shell and Tube Heat Exchanger 2 -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="30.0" cy="30.0" rx="30.0" ry="30.0"/>
+    <path d="M 7.5 10 L 45 10 L 15 30 L 45 50 L 7.5 50"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="30.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="30.0" cy="60.0" r="2" data-name="S"/>
+    <circle cx="0.0" cy="30.0" r="2" data-name="W"/>
+    <circle cx="60.0" cy="30.0" r="2" data-name="E"/>
+    <circle cx="8.7" cy="8.7" r="2" data-name="NW"/>
+    <circle cx="8.7" cy="51.3" r="2" data-name="SW"/>
+    <circle cx="51.3" cy="8.7" r="2" data-name="NE"/>
+    <circle cx="51.3" cy="51.3" r="2" data-name="SE"/>
+  </g>
+</svg>

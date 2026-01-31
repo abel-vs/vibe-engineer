@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="5.0" height="50.0" viewBox="0 0 5.0 50.0">
+  <!-- Shape: Single Flange -->
+  <!-- Category: fittings -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 2.5 0 L 2.5 50"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="2.5" cy="25.0" r="2" data-name="W"/>
+  </g>
+</svg>

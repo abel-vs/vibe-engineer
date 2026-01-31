@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="30.0" height="30.0" viewBox="0 0 30.0 30.0">
+  <!-- Shape: Cone Strainer -->
+  <!-- Category: piping -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="15.0" cy="15.0" rx="15.0" ry="15.0"/>
+    <path d="M 24 3 L 0 15 L 24 27"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="0.0" cy="15.0" r="2" data-name="W"/>
+    <circle cx="30.0" cy="15.0" r="2" data-name="E"/>
+  </g>
+</svg>

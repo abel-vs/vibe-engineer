@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="60.0" height="69.0" viewBox="0 0 60.0 69.0">
+  <!-- Shape: Peristaltic -->
+  <!-- Category: pumps -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 12 56 L 0 69 L 60 69 L 48 56"/>
+    <ellipse cx="30.0" cy="32.0" rx="30.0" ry="30.0"/>
+    <ellipse cx="30.0" cy="12.0" rx="10.0" ry="10.0"/>
+    <ellipse cx="13.6" cy="43.5" rx="10.0" ry="10.0"/>
+    <ellipse cx="46.4" cy="43.5" rx="10.0" ry="10.0"/>
+    <path d="M 21.3 7.2 L 4.6 39 M 38.7 7.2 L 55.4 39 M 13.6 53.5 L 46.4 53.5 M 20 0 L 20 12 M 40 0 L 40 12"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="30.0" cy="69.0" r="2" data-name="S"/>
+  </g>
+</svg>

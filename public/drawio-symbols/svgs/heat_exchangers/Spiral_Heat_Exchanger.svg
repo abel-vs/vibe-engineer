@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100.0" height="95.0" viewBox="0 0 100.0 95.0">
+  <!-- Shape: Spiral Heat Exchanger -->
+  <!-- Category: heat_exchangers -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <ellipse cx="50.0" cy="50.0" rx="45.0" ry="45.0"/>
+    <ellipse cx="50.0" cy="50.0" rx="35.0" ry="35.0"/>
+    <ellipse cx="60.0" cy="50.0" rx="3.0" ry="3.0"/>
+    <ellipse cx="40.0" cy="50.0" rx="3.0" ry="3.0"/>
+    <path d="M 0 50 L 40 50 M 0 45 L 0 55 M 60 50 L 100 50 M 100 45 L 100 55 M 70 0 L 80 0 M 20 0 L 30 0 M 25 0 L 25 20 L 38 48 M 75 0 L 75 20 L 62 48"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="25.0" cy="0.0" r="2" data-name="NW"/>
+    <circle cx="75.0" cy="0.0" r="2" data-name="NE"/>
+    <circle cx="0.0" cy="49.875" r="2" data-name="W"/>
+    <circle cx="100.0" cy="49.875" r="2" data-name="E"/>
+  </g>
+</svg>

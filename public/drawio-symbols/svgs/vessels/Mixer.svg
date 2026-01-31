@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="20.0" height="88.4" viewBox="0 0 20.0 88.4">
+  <!-- Shape: Mixer -->
+  <!-- Category: vessels -->
+  <g class="shape-content" stroke="black" fill="none" stroke-width="1">
+    <path d="M 16 2.4 L 16 27.4 A 5 2 0 0 1 4 27.4 L 4 2.4 A 5 2 0 0 1 16 2.4 Z"/>
+    <rect x="9" y="29.9" width="2" height="57.5"/>
+    <path d="M 4 2.4 L 16 2.4 M 4 27.4 L 16 27.4"/>
+    <ellipse cx="15.0" cy="87.4" rx="5.0" ry="1.0"/>
+    <ellipse cx="5.0" cy="87.4" rx="5.0" ry="1.0"/>
+  </g>
+  <g class="connection-points" fill="red" opacity="0.5">
+    <circle cx="10.0" cy="0.0" r="2" data-name="N"/>
+    <circle cx="10.0" cy="87.516" r="2" data-name="S"/>
+    <circle cx="4.0" cy="15.028000000000002" r="2" data-name="W"/>
+    <circle cx="16.0" cy="15.028000000000002" r="2" data-name="E"/>
+    <circle cx="0.0" cy="87.516" r="2" data-name="SW"/>
+    <circle cx="20.0" cy="87.516" r="2" data-name="SE"/>
+  </g>
+</svg>
