@@ -57,12 +57,13 @@ export function nodeTypeToCategory(nodeType: string): string | undefined {
   if (DEXPI_MAPPING.categories[nodeType]) {
     return nodeType;
   }
-  
+
   // Try to find by case-insensitive match
   const lowerNodeType = nodeType.toLowerCase();
   return DEXPI_CATEGORIES.find(
-    (cat) => cat.toLowerCase() === lowerNodeType || 
-             categoryToNodeType(cat) === lowerNodeType
+    (cat) =>
+      cat.toLowerCase() === lowerNodeType ||
+      categoryToNodeType(cat) === lowerNodeType
   );
 }
 
@@ -84,13 +85,18 @@ export function getSymbolCount(categoryName: string): number {
 }
 
 // Get default symbol (index 0) for a category
-export function getDefaultSymbol(categoryName: string): DexpiSymbol | undefined {
+export function getDefaultSymbol(
+  categoryName: string
+): DexpiSymbol | undefined {
   const symbols = getCategorySymbols(categoryName);
   return symbols[0];
 }
 
 // Get a specific symbol by category and index
-export function getSymbol(categoryName: string, index: number): DexpiSymbol | undefined {
+export function getSymbol(
+  categoryName: string,
+  index: number
+): DexpiSymbol | undefined {
   const symbols = getCategorySymbols(categoryName);
   return symbols[index];
 }
@@ -139,7 +145,7 @@ export function getParentClass(categoryName: string): string {
 // Group categories by parent class
 export function getCategoriesByParentClass(): Record<string, string[]> {
   const grouped: Record<string, string[]> = {};
-  
+
   for (const [name, category] of Object.entries(DEXPI_MAPPING.categories)) {
     const parent = category.parent_class;
     if (!grouped[parent]) {
@@ -147,12 +153,50 @@ export function getCategoriesByParentClass(): Record<string, string[]> {
     }
     grouped[parent].push(name);
   }
-  
+
   return grouped;
 }
 
-// Get all node types for PFD mode (lowercase category names)
+// PFD equipment categories (no valves, no instruments per engineering standards)
+// PFD shows actual equipment with operating conditions but NOT instrumentation
+export const PFD_EQUIPMENT_CATEGORIES = [
+  "Vessels",
+  "Separators",
+  "Pumps",
+  "Pumps_ISO",
+  "Pumps_DIN",
+  "Compressors",
+  "Compressors_ISO",
+  "Heat_Exchangers",
+  "Mixers",
+  "Agitators",
+  "Filters",
+  "Centrifuges",
+  "Driers",
+  "Crushers_Grinding",
+  "Feeders",
+  "Shaping_Machines",
+  "Engines",
+  "Apparatus_Elements",
+  "Misc",
+];
+
+// P&ID adds valves, instruments, fittings, piping details to PFD equipment
+export const PID_ONLY_CATEGORIES = [
+  "Valves",
+  "Instruments",
+  "Flow_Sensors",
+  "Fittings",
+  "Piping",
+];
+
+// Get node types for PFD mode (equipment only, no valves/instruments)
 export function getPfdNodeTypes(): string[] {
+  return PFD_EQUIPMENT_CATEGORIES.map(categoryToNodeType);
+}
+
+// Get all node types for P&ID mode (full DEXPI equipment including valves and instruments)
+export function getPidNodeTypes(): string[] {
   return DEXPI_CATEGORIES.map(categoryToNodeType);
 }
 
@@ -199,12 +243,107 @@ export const TOOLBAR_CATEGORY_ORDER = [
 // Get ordered categories for toolbar
 export function getOrderedCategories(): string[] {
   // Return categories in toolbar order, filtering out any that don't exist
-  const ordered = TOOLBAR_CATEGORY_ORDER.filter((cat) => 
-    DEXPI_MAPPING.categories[cat] !== undefined
+  const ordered = TOOLBAR_CATEGORY_ORDER.filter(
+    (cat) => DEXPI_MAPPING.categories[cat] !== undefined
   );
-  
+
   // Add any categories not in the order list at the end
   const remaining = DEXPI_CATEGORIES.filter((cat) => !ordered.includes(cat));
-  
+
   return [...ordered, ...remaining];
+}
+
+// ============================================
+// SIMPLIFIED PFD MODE - One symbol per category
+// ============================================
+// PFD mode uses generic equipment symbols (one per type)
+// Specific details are added via labels/properties
+
+export interface SimplifiedPfdEquipment {
+  nodeType: string;
+  label: string;
+  description: string;
+  category: string;
+  symbolIndex: number; // Index of the representative symbol in the category
+}
+
+// Define simplified PFD equipment with one representative DEXPI symbol per category
+export const SIMPLIFIED_PFD_EQUIPMENT: SimplifiedPfdEquipment[] = [
+  {
+    nodeType: "pfd_vessel",
+    label: "Vessel",
+    description: "Tanks, reactors, columns, drums",
+    category: "Vessels",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_pump",
+    label: "Pump",
+    description: "All pump types",
+    category: "Pumps_ISO",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_compressor",
+    label: "Compressor",
+    description: "Compressors and blowers",
+    category: "Compressors_ISO",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_exchanger",
+    label: "Heat Exchanger",
+    description: "Heat exchangers, coolers, condensers",
+    category: "Heat_Exchangers",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_separator",
+    label: "Separator",
+    description: "Separators, cyclones, scrubbers",
+    category: "Separators",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_mixer",
+    label: "Mixer",
+    description: "Mixers and blenders",
+    category: "Mixers",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_filter",
+    label: "Filter",
+    description: "Filters and strainers",
+    category: "Filters",
+    symbolIndex: 0,
+  },
+  {
+    nodeType: "pfd_agitator",
+    label: "Agitator",
+    description: "Agitators and stirrers",
+    category: "Agitators",
+    symbolIndex: 0,
+  },
+];
+
+// Get simplified PFD node types
+export function getSimplifiedPfdNodeTypes(): string[] {
+  return SIMPLIFIED_PFD_EQUIPMENT.map((eq) => eq.nodeType);
+}
+
+// Get the DEXPI symbol path for a simplified PFD node type
+export function getSimplifiedPfdSymbolPath(nodeType: string): string {
+  const equipment = SIMPLIFIED_PFD_EQUIPMENT.find(
+    (eq) => eq.nodeType === nodeType
+  );
+  if (!equipment) return "";
+  return getSymbolPath(equipment.category, equipment.symbolIndex);
+}
+
+// Get equipment info for a simplified PFD node type
+export function getSimplifiedPfdEquipment(
+  nodeType: string
+): SimplifiedPfdEquipment | undefined {
+  return SIMPLIFIED_PFD_EQUIPMENT.find((eq) => eq.nodeType === nodeType);
 }

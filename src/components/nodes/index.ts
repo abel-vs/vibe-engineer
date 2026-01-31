@@ -7,7 +7,7 @@ import {
   createDrawioPidNodeType,
   DrawioPidNodeComponent,
 } from "./drawio-pid-node";
-import { pfdNodeTypes } from "./pfd-nodes";
+import { pfdNodeTypes, pfdSimplifiedNodeTypes } from "./pfd-nodes";
 import { playgroundNodeTypes } from "./playground-nodes";
 
 // Generate DEXPI node types dynamically for all categories
@@ -37,6 +37,7 @@ export const allNodeTypes = {
   ...playgroundNodeTypes,
   ...bfdNodeTypes,
   ...pfdNodeTypes,
+  ...pfdSimplifiedNodeTypes,
   ...dexpiNodeTypes,
   ...drawioPidNodeTypes,
 };
@@ -48,17 +49,15 @@ export function getNodeTypesForMode(mode: DiagramMode) {
     case "bfd":
       return bfdNodeTypes;
     case "pfd":
-      // PFD mode now uses DEXPI and Draw.io P&ID node types
+      // PFD mode uses simplified generic equipment symbols
+      return pfdSimplifiedNodeTypes;
+    case "pid":
+      // P&ID mode uses full DEXPI and Draw.io P&ID node types (including valves/instruments)
       return { ...pfdNodeTypes, ...dexpiNodeTypes, ...drawioPidNodeTypes };
     default:
       return allNodeTypes;
   }
 }
 
-export {
-  bfdNodeTypes,
-  dexpiNodeTypes,
-  drawioPidNodeTypes,
-  pfdNodeTypes,
-  playgroundNodeTypes,
-};
+export { bfdNodeTypes, pfdNodeTypes, pfdSimplifiedNodeTypes, playgroundNodeTypes };
+// dexpiNodeTypes and drawioPidNodeTypes are already exported inline above

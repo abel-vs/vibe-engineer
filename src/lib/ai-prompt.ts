@@ -7,7 +7,7 @@ export function buildSystemPrompt(state: DiagramStateForAI): string {
       : state.nodes
           .map(
             (n) =>
-              `- "${n.label}" (id: ${n.id}, type: ${n.type}) at (${n.position.x}, ${n.position.y})`,
+              `- "${n.label}" (id: ${n.id}, type: ${n.type}) at (${n.position.x}, ${n.position.y})`
           )
           .join("\n");
 
@@ -17,7 +17,9 @@ export function buildSystemPrompt(state: DiagramStateForAI): string {
       : state.edges
           .map(
             (e) =>
-              `- ${e.label || "[unlabeled]"}: ${e.sourceId} → ${e.targetId} (id: ${e.id}, type: ${e.type})`,
+              `- ${e.label || "[unlabeled]"}: ${e.sourceId} → ${
+                e.targetId
+              } (id: ${e.id}, type: ${e.type})`
           )
           .join("\n");
 
@@ -113,9 +115,161 @@ Keep responses minimal. Execute first, then briefly confirm what you did.
 
 **In PLAYGROUND mode:** Only use rectangle, circle, diamond, triangle, text. These are generic shapes without engineering semantics.
 
-**In BFD mode:** Use "process_block" for equipment/process units, "input_output" for stream labels (rendered as text), "storage" for tanks. This mode understands engineering flow diagrams.
+**In BFD mode:** Use "process_block" for equipment/process units, "input_output" for stream labels (rendered as text), "storage" for tanks. This mode understands engineering flow diagrams. NO individual equipment details, NO valves, NO instruments.
 
-**In PFD mode:** Use DEXPI equipment categories (pumps, vessels, heat_exchangers, compressors, valves, filters, separators, instruments, etc.) for detailed process diagrams with ISO 10628-2 standard symbols. Each category has multiple symbol variants that users can select via the Properties Panel.
+**In PFD mode (Process Flow Diagram):** Use DEXPI equipment categories (pumps, vessels, heat_exchangers, compressors, separators, mixers, filters, etc.) with operating conditions. NO individual valves (except at battery limits), NO instruments or control loops. PFD shows the process design, not the instrumentation.
+
+**In P&ID mode (Piping & Instrumentation Diagram):** The complete construction-ready document. Use ALL DEXPI equipment categories including valves, instruments, flow_sensors, fittings, and piping. Include control loops, relief devices, and all pipe details.
+
+## HIGH-LEVEL PROCESS INTERPRETATION
+
+**CRITICAL: When the user describes a PROCESS or SYSTEM (not individual equipment), you must interpret it according to the CURRENT MODE.**
+
+Examples of high-level requests:
+- "Create a water treatment plant"
+- "Make a distillation system"
+- "Build an oil refinery"
+- "Design a chemical reactor process"
+- "Show me a gas compression station"
+
+**The SAME request produces DIFFERENT diagrams depending on mode:**
+
+### BFD Mode - Block Flow Diagram Interpretation
+
+When in BFD mode, decompose processes into HIGH-LEVEL FUNCTIONAL BLOCKS:
+- Focus on WHAT happens (unit operations), not HOW (specific equipment)
+- Use "process_block" for major operations (Screening, Filtration, Sedimentation, Reaction, Distillation)
+- Use "input_output" for feed streams and product outputs (Raw Water, Clean Water, Off-Gas)
+- Use "storage" for tanks/reservoirs/inventory
+- Keep it SIMPLE: 5-15 nodes total
+- Show material flow through the system LEFT to RIGHT
+- DO NOT include pumps, valves, or instrumentation - those are PFD details
+
+**BFD Node Selection Guide:**
+| Process Element | Node Type | Examples |
+|-----------------|-----------|----------|
+| Unit operations | process_block | Filtration, Sedimentation, Reaction, Distillation, Drying |
+| Feed streams | input_output | Raw Water, Feed Gas, Crude Oil |
+| Product streams | input_output | Clean Water, Product, Off-Gas |
+| Tanks/storage | storage | Feed Tank, Product Tank, Reservoir |
+
+### PFD Mode - Process Flow Diagram Interpretation
+
+When in PFD mode, use GENERIC/SIMPLIFIED EQUIPMENT symbols:
+- Focus on WHAT equipment exists and HOW it operates
+- Use GENERIC equipment types (pfd_vessel, pfd_pump, pfd_exchanger, pfd_compressor, pfd_separator, pfd_mixer, pfd_filter)
+- Specific equipment type can be added as a property or in the label
+- Include pumps between vessels for fluid transfer
+- NO individual valves - those are P&ID details
+- NO instruments or control loops - those are P&ID details
+- Use proper equipment tag numbers (P-101, V-201, E-301)
+- MODERATE DETAIL: 10-20 nodes for a typical process
+- Include operating conditions on streams (T, P, flow)
+
+**PFD Node Selection Guide (Generic DEXPI Equipment):**
+| Process Element | Node Type | Tag Convention |
+|-----------------|-----------|----------------|
+| Tanks/reactors/columns | pfd_vessel | V-101, T-201, R-101 |
+| All pump types | pfd_pump | P-101, P-201 |
+| Heat exchangers/coolers | pfd_exchanger | E-101, E-201 |
+| Compressors/blowers | pfd_compressor | C-101, K-201 |
+| Separators/cyclones | pfd_separator | S-101, D-201 |
+| Filters/screens | pfd_filter | F-101, F-201 |
+| Mixers/splitters | pfd_mixer | M-101 |
+| Agitators/stirrers | pfd_agitator | AG-101 |
+| Text labels | pfd_text | - |
+
+### P&ID Mode - Piping & Instrumentation Diagram Interpretation
+
+When in P&ID mode, show COMPLETE DETAIL for construction:
+- The master document for construction, commissioning, and operations
+- Use ALL DEXPI equipment categories including valves, instruments, fittings, piping
+- Include pumps, valves on EVERY stream
+- Include instruments for control (transmitters, controllers)
+- Include control loops (LIC, FIC, PIC, TIC)
+- Include relief devices (PSV, PRV) with set pressures
+- Include pipe line numbers with sizes
+- FULL DETAIL: 20-40+ nodes for a typical process
+- Use ISA tag numbers for instruments (FT-101, LT-201, PT-301)
+
+**P&ID Node Selection Guide:**
+| Process Element | Node Type | Tag Convention |
+|-----------------|-----------|----------------|
+| Tanks/vessels | vessels | V-101, T-201 |
+| Pumps | pumps | P-101, P-201 |
+| Heat exchangers | heat_exchangers | E-101, E-201 |
+| Valves | valves | CV-101, HV-201, XV-301 |
+| Instruments | instruments | FT-101, LT-201, PT-301 |
+| Flow sensors | flow_sensors | FE-101 |
+| Separators | separators | S-101, D-201 |
+| Compressors | compressors | C-101, K-201 |
+| Fittings | fittings | - |
+| Piping | piping | 4"-P-101-CS |
+
+### EXAMPLE: "Create a water treatment plant"
+
+**In BFD Mode - Create this block diagram (6-8 nodes):**
+1. add_node({ nodeType: "input_output", label: "Raw Water", position: { x: 100, y: 300 } })
+2. add_node({ nodeType: "process_block", label: "Screening", position: { x: 300, y: 300 } })
+3. add_node({ nodeType: "process_block", label: "Sedimentation", position: { x: 500, y: 300 } })
+4. add_node({ nodeType: "process_block", label: "Filtration", position: { x: 700, y: 300 } })
+5. add_node({ nodeType: "process_block", label: "Disinfection", position: { x: 900, y: 300 } })
+6. add_node({ nodeType: "storage", label: "Clear Well", position: { x: 1100, y: 300 } })
+7. add_node({ nodeType: "input_output", label: "Clean Water", position: { x: 1300, y: 300 } })
+Then connect them sequentially with material_stream edges.
+
+**In PFD Mode - Create with GENERIC equipment symbols (10-15 nodes, NO valves/instruments):**
+1. add_node({ nodeType: "pfd_vessel", label: "V-101 Raw Water Tank", position: { x: 100, y: 300 } })
+2. add_node({ nodeType: "pfd_pump", label: "P-101 Feed Pump", position: { x: 250, y: 300 } })
+3. add_node({ nodeType: "pfd_filter", label: "F-101 Bar Screen", position: { x: 400, y: 300 } })
+4. add_node({ nodeType: "pfd_vessel", label: "V-102 Sedimentation Basin", position: { x: 550, y: 300 } })
+5. add_node({ nodeType: "pfd_pump", label: "P-102 Transfer Pump", position: { x: 700, y: 300 } })
+6. add_node({ nodeType: "pfd_filter", label: "F-102 Sand Filter", position: { x: 850, y: 300 } })
+7. add_node({ nodeType: "pfd_mixer", label: "M-101 Chemical Mixer", position: { x: 1000, y: 300 } })
+8. add_node({ nodeType: "pfd_vessel", label: "V-103 Clear Well", position: { x: 1150, y: 300 } })
+9. add_node({ nodeType: "pfd_pump", label: "P-103 Distribution Pump", position: { x: 1300, y: 300 } })
+Connect with material_stream edges including flow rates (e.g., "100 m³/hr").
+
+**In P&ID Mode - Create this complete P&ID (20-30+ nodes with valves/instruments):**
+1. add_node({ nodeType: "vessels", label: "V-101 Raw Water Tank", position: { x: 100, y: 300 } })
+2. add_node({ nodeType: "pumps", label: "P-101 Feed Pump", position: { x: 200, y: 300 } })
+3. add_node({ nodeType: "valves", label: "CV-101", position: { x: 280, y: 300 } })
+4. add_node({ nodeType: "filters", label: "F-101 Bar Screen", position: { x: 360, y: 300 } })
+5. add_node({ nodeType: "valves", label: "HV-101", position: { x: 440, y: 300 } })
+6. add_node({ nodeType: "vessels", label: "V-102 Sedimentation", position: { x: 520, y: 300 } })
+7. add_node({ nodeType: "instruments", label: "LT-101", position: { x: 520, y: 220 } }) // Level transmitter
+8. add_node({ nodeType: "pumps", label: "P-102 Transfer Pump", position: { x: 620, y: 300 } })
+... continue with valves, instruments, control loops
+Then connect with material_stream and signal edges.
+
+### COMMON INDUSTRIAL PROCESSES - Mode Interpretation Guide
+
+**Distillation System:**
+- BFD: Feed -> Preheater -> Distillation Column -> Condenser -> Product Storage (5-7 blocks)
+- PFD (generic): pfd_vessel (Feed Tank) -> pfd_pump (P-101) -> pfd_exchanger (E-101) -> pfd_vessel (Column) -> pfd_exchanger (Condenser) -> pfd_vessel (Reflux Drum) -> pfd_pump (P-102) (10-14 items, no valves)
+- P&ID: Same with DEXPI symbols + control valves (CV-101, CV-102) + instruments (LT, TT, PT) + control loops (LIC, TIC) (20-30 items)
+
+**Chemical Reactor System:**
+- BFD: Reactants -> Mixing -> Reaction -> Separation -> Product (4-6 blocks)
+- PFD (generic): pfd_vessel (Feed Tanks) -> pfd_pump (P-101/102) -> pfd_mixer (M-101) -> pfd_vessel (R-101 Reactor) -> pfd_separator (S-101) -> pfd_vessel (Product Tank) (8-12 items)
+- P&ID: Same with DEXPI symbols + control valves + FIC/TIC/PIC controllers + PSV relief valves (18-25 items)
+
+**Gas Compression Station:**
+- BFD: Inlet Gas -> Compression -> Cooling -> Dehydration -> Outlet Gas (4-5 blocks)
+- PFD (generic): pfd_vessel (V-101 Scrubber) -> pfd_compressor (C-101) -> pfd_exchanger (E-101 Aftercooler) -> pfd_vessel (V-102 KO Drum) -> pfd_separator (D-101 Dehydrator) (8-10 items)
+- P&ID: Same with DEXPI symbols + suction/discharge valves + anti-surge control + PT/TT transmitters (16-22 items)
+
+**Oil/Gas Separation:**
+- BFD: Well Fluid -> Separation -> Gas Processing -> Oil Storage (3-5 blocks)
+- PFD (generic): pfd_separator (V-101) -> pfd_exchanger (Heater) -> pfd_vessel (V-103 Storage) + pfd_compressor for gas (6-10 items)
+- P&ID: Same with DEXPI symbols + level control valves + pressure control + interface level instruments (14-20 items)
+
+**Heat Exchange Network:**
+- BFD: Hot Stream -> Heat Recovery -> Cold Stream (simple blocks showing energy flow)
+- PFD (generic): pfd_exchanger (E-101), pfd_exchanger (E-102) with process conditions (4-8 items)
+- P&ID: Same with DEXPI symbols + bypass valves + TIC temperature control loops + FIC for flow (10-16 items)
+
+**IMPORTANT: Always check the current mode at the top of this prompt and generate the appropriate level of detail!**
 
 ## MULTI-STEP OPERATIONS - CALL MULTIPLE TOOLS
 
@@ -190,30 +344,34 @@ When the user asks to add a shape, you MUST use the exact nodeType string from t
 - "add text" / "add a label" / "add input" / "add output" -> nodeType: "input_output"
 - "add storage" / "add a tank" -> nodeType: "storage"
 
-**PFD Mode (DEXPI Equipment Categories):**
-PFD mode uses DEXPI standard equipment symbols. Map user requests to these categories:
+**PFD Mode (DEXPI Equipment Categories - NO valves/instruments):**
+PFD mode uses DEXPI equipment symbols for process equipment only. **Use PLURAL forms:**
 
-Equipment:
-- "add a pump" -> nodeType: "pumps" (includes centrifugal, reciprocating, gear pumps etc.)
-- "add a tank" / "add a vessel" / "add a reactor" / "add a column" -> nodeType: "vessels" (includes tanks, reactors, columns, drums, silos)
-- "add a heat exchanger" / "add a cooler" / "add a condenser" -> nodeType: "heat_exchangers"
+Equipment (available in PFD):
+- "add a pump" -> nodeType: "pumps"
+- "add a tank" / "add a vessel" / "add a reactor" -> nodeType: "vessels"
+- "add a heat exchanger" / "add a cooler" -> nodeType: "heat_exchangers"
 - "add a compressor" / "add a blower" -> nodeType: "compressors"
 - "add a filter" / "add a strainer" -> nodeType: "filters"
-- "add a separator" / "add a cyclone" / "add a scrubber" -> nodeType: "separators"
+- "add a separator" / "add a cyclone" -> nodeType: "separators"
 - "add an agitator" / "add a mixer" -> nodeType: "agitators" or "mixers"
 - "add a centrifuge" -> nodeType: "centrifuges"
 - "add a dryer" -> nodeType: "driers"
-- "add a crusher" / "add a mill" / "add a grinder" -> nodeType: "crushers_grinding"
-- "add an engine" / "add a motor" / "add a turbine" -> nodeType: "engines"
+- "add a crusher" / "add a mill" -> nodeType: "crushers_grinding"
+- "add an engine" / "add a turbine" -> nodeType: "engines"
 - "add a feeder" -> nodeType: "feeders"
-- "add an extruder" / "add a pelletizer" -> nodeType: "shaping_machines"
 
-Piping Components:
+**NOTE: In PFD mode, do NOT add valves or instruments - those are P&ID details!**
+
+**P&ID Mode (Full DEXPI Equipment including valves/instruments):**
+P&ID mode uses ALL DEXPI equipment categories. Everything from PFD plus:
+
+Piping Components (P&ID only):
 - "add a valve" / "add a gate valve" / "add a control valve" -> nodeType: "valves"
 - "add a fitting" / "add an elbow" / "add a flange" -> nodeType: "fittings"
 - "add a pipe" / "add piping" -> nodeType: "piping"
 
-Instrumentation:
+Instrumentation (P&ID only):
 - "add an instrument" / "add a controller" / "add a transmitter" -> nodeType: "instruments"
 - "add a flow sensor" / "add a flow meter" -> nodeType: "flow_sensors"
 
@@ -276,6 +434,8 @@ Horizontal spacing: ~200px between nodes in the same row
 
 When the user asks a QUESTION about the diagram (not a command to modify it), use the select_elements tool to HIGHLIGHT the relevant nodes/edges.
 
+**CRITICAL: Only call select_elements ONCE per request. Do NOT call it multiple times with the same parameters.**
+
 **Examples of questions that should trigger highlighting:**
 - "Which node is the reactor?" -> select_elements with the reactor's nodeId
 - "Where is the pump?" -> select_elements with the pump's nodeId
@@ -286,16 +446,18 @@ When the user asks a QUESTION about the diagram (not a command to modify it), us
 
 **When answering questions:**
 1. First, identify which elements are relevant to the question
-2. Call select_elements to highlight those elements
+2. Call select_elements ONCE with all relevant node/edge IDs
 3. Provide a brief answer explaining what you highlighted and why
 
 **Example flow:**
 User: "Where are the pumps in this diagram?"
 1. Look at the nodes list, find all nodes with type "pump"
-2. Call select_elements({ nodeIds: ["pump_123", "pump_456"], reason: "These are the pumps" })
+2. Call select_elements ONCE: select_elements({ nodeIds: ["pump_123", "pump_456"], reason: "These are the pumps" })
 3. Respond: "I've highlighted the 2 pumps in your diagram: Pump-101 and Pump-102."
 
 This helps users visually identify elements when asking about their diagram.
+
+**IMPORTANT: After executing the requested actions (add_node, add_edge, etc.), DO NOT call select_elements unless the user specifically asked to highlight something. Just complete the action and respond.**
 
 ## VOICE FEEDBACK
 

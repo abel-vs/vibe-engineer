@@ -292,15 +292,21 @@ export function CommandMenu() {
   // Add Node - select equipment type view
   if (view === "addNode") {
     const availableNodeTypes = MODES[mode].availableNodeTypes;
-    const isPfdMode = mode === "pfd";
+    // Only P&ID mode shows detailed DEXPI categories
+    const isPidMode = mode === "pid";
     
-    // Get ordered categories for PFD mode
-    const orderedCategories = isPfdMode 
+    // Get ordered categories for P&ID mode only
+    const orderedCategories = isPidMode 
       ? getOrderedCategories().filter((cat) => availableNodeTypes.includes(categoryToNodeType(cat)))
       : [];
     
-    // Format node type for display (non-PFD modes)
+    // Format node type for display
     const formatNodeType = (nodeType: string): string => {
+      // Handle pfd_ prefix specially
+      if (nodeType.startsWith("pfd_")) {
+        const name = nodeType.slice(4); // Remove "pfd_" prefix
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }
       return nodeType
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -320,8 +326,8 @@ export function CommandMenu() {
         <CommandInput placeholder="Search equipment to add..." />
         <CommandList className="max-h-[400px]">
           <CommandEmpty>No equipment found.</CommandEmpty>
-          {isPfdMode ? (
-            // PFD mode: show each category with its symbol variants
+          {isPidMode ? (
+            // P&ID mode: show each category with its symbol variants
             orderedCategories.map((category) => {
               const nodeType = categoryToNodeType(category);
               const symbols = getCategorySymbols(category);
@@ -347,8 +353,8 @@ export function CommandMenu() {
               );
             })
           ) : (
-            // Other modes: flat list
-            <CommandGroup heading="Shapes">
+            // Other modes (Playground, BFD, PFD): flat list of shapes
+            <CommandGroup heading={mode === "pfd" ? "Equipment" : "Shapes"}>
               {availableNodeTypes.map((nodeType) => (
                 <CommandItem
                   key={nodeType}
@@ -456,33 +462,66 @@ export function CommandMenu() {
           <>
             <CommandSeparator />
             <CommandGroup heading="Saved Designs">
-              {savedDesigns.map((design) => (
-                <CommandItem
-                  key={design.id}
-                  onSelect={() => handleLoadDesign(design)}
-                  className="flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <FileText className="h-4 w-4 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="truncate">{design.name}</span>
+              {/* Group designs by mode */}
+              {(() => {
+                // Define mode order and display info
+                const modeOrder: Array<{ id: string; label: string; badgeClass: string }> = [
+                  { id: "playground", label: "Playground", badgeClass: "bg-gray-100 text-gray-700" },
+                  { id: "bfd", label: "BFD", badgeClass: "bg-blue-100 text-blue-700" },
+                  { id: "pfd", label: "PFD", badgeClass: "bg-green-100 text-green-700" },
+                  { id: "pid", label: "P&ID", badgeClass: "bg-orange-100 text-orange-700" },
+                ];
+                
+                // Group designs by mode
+                const designsByMode = savedDesigns.reduce((acc, design) => {
+                  const modeKey = design.mode || "playground";
+                  if (!acc[modeKey]) acc[modeKey] = [];
+                  acc[modeKey].push(design);
+                  return acc;
+                }, {} as Record<string, SavedDiagram[]>);
+                
+                return modeOrder
+                  .filter((m) => designsByMode[m.id]?.length > 0)
+                  .map((modeInfo) => (
+                    <div key={modeInfo.id} className="mb-1">
+                      {/* Mode header with badge */}
+                      <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${modeInfo.badgeClass}`}>
+                          {modeInfo.label}
+                        </span>
+                        <span className="text-muted-foreground/60">
+                          {designsByMode[modeInfo.id].length} {designsByMode[modeInfo.id].length === 1 ? "design" : "designs"}
+                        </span>
+                      </div>
+                      {/* Designs in this mode */}
+                      {designsByMode[modeInfo.id].map((design) => (
+                        <CommandItem
+                          key={design.id}
+                          onSelect={() => handleLoadDesign(design)}
+                          className="flex items-center justify-between group ml-2"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileText className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{design.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {design.nodes.length} nodes
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleDeleteDesign(e, design.id)}
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </CommandItem>
+                      ))}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {design.mode.toUpperCase()} • {design.nodes.length} nodes
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDeleteDesign(e, design.id)}
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CommandItem>
-              ))}
+                  ));
+              })()}
             </CommandGroup>
           </>
         )}

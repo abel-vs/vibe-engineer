@@ -1,22 +1,23 @@
 "use client";
 
 import {
-  ToggleGroup,
-  ToggleGroupItem,
+    ToggleGroup,
+    ToggleGroupItem,
 } from "@/components/ui/toggle-group";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { MODES, type DiagramMode } from "@/lib/modes";
-import { Shapes, Boxes, Settings } from "lucide-react";
+import { Boxes, Cog, Shapes, Workflow } from "lucide-react";
 
 const modeIcons: Record<DiagramMode, React.ComponentType<{ className?: string }>> = {
   playground: Shapes,
   bfd: Boxes,
-  pfd: Settings,
+  pfd: Workflow,
+  pid: Cog,
 };
 
 export function ModeSwitcher() {
@@ -36,11 +37,20 @@ export function ModeSwitcher() {
     >
       {Object.values(MODES).map((modeConfig) => {
         const Icon = modeIcons[modeConfig.id];
+        const isPlayground = modeConfig.id === "playground";
+        
         return (
           <Tooltip key={modeConfig.id}>
             <TooltipTrigger asChild>
-              <ToggleGroupItem value={modeConfig.id} aria-label={modeConfig.name}>
+              <ToggleGroupItem 
+                value={modeConfig.id} 
+                aria-label={modeConfig.name}
+                className={isPlayground ? "" : "gap-1.5 px-2.5"}
+              >
                 <Icon className="h-4 w-4" />
+                {!isPlayground && (
+                  <span className="text-xs font-medium">{modeConfig.shortName}</span>
+                )}
               </ToggleGroupItem>
             </TooltipTrigger>
             <TooltipContent>

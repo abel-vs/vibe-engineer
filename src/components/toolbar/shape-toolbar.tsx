@@ -9,10 +9,12 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import {
+    SIMPLIFIED_PFD_EQUIPMENT,
     categoryToNodeType,
     getCategoryDisplayName,
     getCategorySymbols,
     getOrderedCategories,
+    getSimplifiedPfdSymbolPath,
     getSymbolCount,
     getSymbolPath,
     getSymbolPathFromSymbol,
@@ -48,6 +50,102 @@ interface DexpiCategoryItem {
   symbolCount: number;
   defaultSymbolPath: string;
 }
+
+// ==================================
+// SVG Preview Utilities (moved early for pfdSimplifiedShapes)
+// ==================================
+
+// Utility to process SVG content for proper scaling
+function processSvgForPreview(svgText: string): string {
+  // Extract width and height from inline style or attributes
+  let width = 42;
+  let height = 42;
+
+  // Try to extract from style attribute
+  const styleMatch = svgText.match(/style="[^"]*width:\s*(\d+(?:\.\d+)?)/);
+  const styleHeightMatch = svgText.match(/style="[^"]*height:\s*(\d+(?:\.\d+)?)/);
+  if (styleMatch) width = parseFloat(styleMatch[1]);
+  if (styleHeightMatch) height = parseFloat(styleHeightMatch[1]);
+
+  // Try to extract from width/height attributes if not in style
+  const widthAttrMatch = svgText.match(/<svg[^>]*\swidth="(\d+(?:\.\d+)?)"/);
+  const heightAttrMatch = svgText.match(/<svg[^>]*\sheight="(\d+(?:\.\d+)?)"/);
+  if (widthAttrMatch) width = parseFloat(widthAttrMatch[1]);
+  if (heightAttrMatch) height = parseFloat(heightAttrMatch[1]);
+
+  // Check if viewBox exists
+  const hasViewBox = /viewBox\s*=/.test(svgText);
+
+  let processed = svgText;
+
+  // Add viewBox if missing
+  if (!hasViewBox) {
+    processed = processed.replace(/<svg/, `<svg viewBox="0 0 ${width} ${height}"`);
+  }
+
+  // Remove inline width/height from style attribute to let CSS take over
+  processed = processed.replace(
+    /style="([^"]*)"/,
+    (match, styleContent) => {
+      const cleanedStyle = styleContent
+        .replace(/width:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/height:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/left:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/top:\s*[\d.]+px;?\s*/gi, "")
+        .replace(/position:\s*\w+;?\s*/gi, "")
+        .trim();
+      return cleanedStyle ? `style="${cleanedStyle}"` : "";
+    }
+  );
+
+  // Remove width/height attributes from svg tag
+  processed = processed.replace(/<svg([^>]*)\swidth="[\d.]+"/i, "<svg$1");
+  processed = processed.replace(/<svg([^>]*)\sheight="[\d.]+"/i, "<svg$1");
+
+  return processed;
+}
+
+// SVG Preview component for symbols
+interface SymbolSvgPreviewProps {
+  path: string;
+  className?: string;
+}
+
+const SymbolSvgPreview = memo(function SymbolSvgPreview({ path, className }: SymbolSvgPreviewProps) {
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!path) return;
+
+    fetch(path)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load SVG");
+        return res.text();
+      })
+      .then((text) => {
+        const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
+        if (svgMatch) {
+          setSvgContent(processSvgForPreview(svgMatch[0]));
+        }
+      })
+      .catch(() => {
+        // Silently fail
+      });
+  }, [path]);
+
+  if (!svgContent) {
+    return <div className={cn("bg-gray-100 animate-pulse rounded", className)} />;
+  }
+
+  return (
+    <div
+      className={cn("toolbar-svg-preview flex items-center justify-center", className)}
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
+  );
+});
+
+// ==================================
 
 const playgroundShapes: ShapeItem[] = [
   {
@@ -332,10 +430,40 @@ const pfdShapes: ShapeItem[] = [
   },
 ];
 
+// Simplified PFD shapes - using DEXPI SVG symbols (one per category)
+// This component renders the DEXPI SVG preview for simplified PFD shapes
+const SimplifiedPfdIcon = memo(function SimplifiedPfdIcon({ nodeType }: { nodeType: string }) {
+  const symbolPath = getSimplifiedPfdSymbolPath(nodeType);
+  return <SymbolSvgPreview path={symbolPath} className="w-8 h-8" />;
+});
+
+// Generate simplified PFD shapes from the config
+const pfdSimplifiedShapes: ShapeItem[] = [
+  // Generate shapes from SIMPLIFIED_PFD_EQUIPMENT config
+  ...SIMPLIFIED_PFD_EQUIPMENT.map((equipment) => ({
+    type: equipment.nodeType,
+    label: equipment.label,
+    renderIcon: () => <SimplifiedPfdIcon nodeType={equipment.nodeType} />,
+    colorfulBg: "bg-gray-50",
+  })),
+  // Add text label (doesn't use DEXPI)
+  {
+    type: "pfd_text",
+    label: "Label",
+    renderIcon: (style: DiagramStyle) => (
+      <span className={cn("text-sm font-medium", style === "engineering" ? "text-black" : "text-gray-600")}>
+        Aa
+      </span>
+    ),
+    colorfulBg: "bg-gray-50",
+  },
+];
+
 const shapesByMode: Record<DiagramMode, ShapeItem[]> = {
   playground: playgroundShapes,
   bfd: bfdShapes,
-  pfd: pfdShapes,
+  pfd: pfdSimplifiedShapes, // PFD uses simplified generic shapes
+  pid: pfdShapes, // P&ID uses legacy shapes, with DEXPI/Draw.io equipment
 };
 
 interface DraggableShapeProps {
@@ -373,96 +501,6 @@ const DraggableShape = memo(function DraggableShape({ item, style }: DraggableSh
         {item.label}
       </span>
     </div>
-  );
-});
-
-// Utility to process SVG content for proper scaling
-function processSvgForPreview(svgText: string): string {
-  // Extract width and height from inline style or attributes
-  let width = 42;
-  let height = 42;
-
-  // Try to extract from style attribute
-  const styleMatch = svgText.match(/style="[^"]*width:\s*(\d+(?:\.\d+)?)/);
-  const styleHeightMatch = svgText.match(/style="[^"]*height:\s*(\d+(?:\.\d+)?)/);
-  if (styleMatch) width = parseFloat(styleMatch[1]);
-  if (styleHeightMatch) height = parseFloat(styleHeightMatch[1]);
-
-  // Try to extract from width/height attributes if not in style
-  const widthAttrMatch = svgText.match(/<svg[^>]*\swidth="(\d+(?:\.\d+)?)"/);
-  const heightAttrMatch = svgText.match(/<svg[^>]*\sheight="(\d+(?:\.\d+)?)"/);
-  if (widthAttrMatch) width = parseFloat(widthAttrMatch[1]);
-  if (heightAttrMatch) height = parseFloat(heightAttrMatch[1]);
-
-  // Check if viewBox exists
-  const hasViewBox = /viewBox\s*=/.test(svgText);
-
-  let processed = svgText;
-
-  // Add viewBox if missing
-  if (!hasViewBox) {
-    processed = processed.replace(/<svg/, `<svg viewBox="0 0 ${width} ${height}"`);
-  }
-
-  // Remove inline width/height from style attribute to let CSS take over
-  processed = processed.replace(
-    /style="([^"]*)"/,
-    (match, styleContent) => {
-      const cleanedStyle = styleContent
-        .replace(/width:\s*[\d.]+px;?\s*/gi, "")
-        .replace(/height:\s*[\d.]+px;?\s*/gi, "")
-        .replace(/left:\s*[\d.]+px;?\s*/gi, "")
-        .replace(/top:\s*[\d.]+px;?\s*/gi, "")
-        .replace(/position:\s*\w+;?\s*/gi, "")
-        .trim();
-      return cleanedStyle ? `style="${cleanedStyle}"` : "";
-    }
-  );
-
-  // Remove width/height attributes from svg tag
-  processed = processed.replace(/<svg([^>]*)\swidth="[\d.]+"/i, "<svg$1");
-  processed = processed.replace(/<svg([^>]*)\sheight="[\d.]+"/i, "<svg$1");
-
-  return processed;
-}
-
-// SVG Preview component for symbols
-interface SymbolSvgPreviewProps {
-  path: string;
-  className?: string;
-}
-
-const SymbolSvgPreview = memo(function SymbolSvgPreview({ path, className }: SymbolSvgPreviewProps) {
-  const [svgContent, setSvgContent] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!path) return;
-
-    fetch(path)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load SVG");
-        return res.text();
-      })
-      .then((text) => {
-        const svgMatch = text.match(/<svg[^>]*>[\s\S]*<\/svg>/i);
-        if (svgMatch) {
-          setSvgContent(processSvgForPreview(svgMatch[0]));
-        }
-      })
-      .catch(() => {
-        // Silently fail
-      });
-  }, [path]);
-
-  if (!svgContent) {
-    return <div className={cn("bg-gray-100 animate-pulse rounded", className)} />;
-  }
-
-  return (
-    <div
-      className={cn("toolbar-svg-preview flex items-center justify-center", className)}
-      dangerouslySetInnerHTML={{ __html: svgContent }}
-    />
   );
 });
 
@@ -997,8 +1035,9 @@ export function ShapeToolbar() {
   const modeConfig = MODES[mode];
   const dexpiCategories = getDexpiCategoryItems();
 
-  // For PFD mode, use DEXPI categories
-  const isPfdMode = mode === "pfd";
+  // Only P&ID mode uses the detailed DEXPI/Draw.io equipment categories
+  // PFD mode uses simplified generic shapes
+  const isPidMode = mode === "pid";
 
   // Symbol library toggle: "dexpi" (Visual Paradigm) or "drawio"
   const [symbolLibrary, setSymbolLibrary] = useState<"dexpi" | "drawio">("drawio");
@@ -1007,9 +1046,9 @@ export function ShapeToolbar() {
   const [drawioData, setDrawioData] = useState<DrawioShapesData | null>(null);
   const [drawioLoading, setDrawioLoading] = useState(false);
 
-  // Load draw.io data when needed
+  // Load draw.io data when needed (only for P&ID mode)
   useEffect(() => {
-    if (isPfdMode && symbolLibrary === "drawio" && !drawioData && !drawioLoading) {
+    if (isPidMode && symbolLibrary === "drawio" && !drawioData && !drawioLoading) {
       setDrawioLoading(true);
       loadShapesData()
         .then((data) => {
@@ -1022,7 +1061,7 @@ export function ShapeToolbar() {
           setDrawioLoading(false);
         });
     }
-  }, [isPfdMode, symbolLibrary, drawioData, drawioLoading]);
+  }, [isPidMode, symbolLibrary, drawioData, drawioLoading]);
 
   // Get draw.io category items
   const drawioCategoryItems = useMemo((): DrawioCategoryItem[] => {
@@ -1043,14 +1082,14 @@ export function ShapeToolbar() {
     <div className="flex flex-col h-full bg-white border-r border-gray-100 w-[208px]">
       <div className="px-2 py-2 border-b border-gray-100">
         <h3 className="text-xs font-semibold text-gray-700">
-          {isPfdMode ? "Equipment" : "Shapes"}
+          {isPidMode ? "Equipment" : "Shapes"}
         </h3>
         <p className="text-[10px] text-gray-400 mt-0.5">
           {modeConfig.name}
         </p>
 
-        {/* Symbol library toggle for PFD mode */}
-        {isPfdMode && (
+        {/* Symbol library toggle for P&ID mode only */}
+        {isPidMode && (
           <ToggleGroup
             type="single"
             value={symbolLibrary}
@@ -1076,7 +1115,7 @@ export function ShapeToolbar() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-1">
-        {isPfdMode ? (
+        {isPidMode ? (
           symbolLibrary === "drawio" ? (
             // Draw.io symbols
             drawioLoading ? (
