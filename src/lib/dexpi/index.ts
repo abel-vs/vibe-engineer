@@ -7,49 +7,50 @@
 
 // Types
 export type {
-  DexpiDocument,
-  ProcessModel,
-  ProcessStep,
-  ProcessConnection,
-  ExternalPort,
-  Port,
-  Parameter,
-  StreamProperties,
-  PhysicalQuantity,
-  LayoutInfo,
-  DexpiProcessStepType,
   DexpiConnectionType,
+  DexpiDocument,
   DexpiFlowType,
+  DexpiProcessStepType,
+  ExternalPort,
+  InlineComponent,
+  LayoutInfo,
+  Parameter,
+  PhysicalQuantity,
+  Port,
   PortDirection,
+  ProcessConnection,
+  ProcessModel,
   ProcessModelMetadata,
+  ProcessStep,
+  StreamProperties,
 } from "./types";
 
-export { DEXPI_NAMESPACE, DEXPI_VERSION, APPLICATION_SOURCE } from "./types";
+export { APPLICATION_SOURCE, DEXPI_NAMESPACE, DEXPI_VERSION } from "./types";
 
 // Mappings
 export {
-  nodeTypeToDexpi,
-  dexpiToNodeType,
-  edgeTypeToDexpi,
-  dexpiToEdgeType,
-  streamTypeToDexpiFlow,
-  dexpiFlowToStreamType,
-  detectModeFromNodeTypes,
-  detectModeFromDexpiTypes,
-  isNodeTypeSupported,
-  isEdgeTypeSupported,
   BFD_NODE_TYPES,
   PFD_NODE_TYPES,
   componentClassToNodeType,
+  detectModeFromDexpiTypes,
+  detectModeFromNodeTypes,
+  dexpiFlowToStreamType,
+  dexpiToEdgeType,
+  dexpiToNodeType,
+  edgeTypeToDexpi,
   getNodeTypeFromComponentClass,
+  isEdgeTypeSupported,
+  isNodeTypeSupported,
+  nodeTypeToDexpi,
+  streamTypeToDexpiFlow,
 } from "./mapping";
 
 // Export (React Flow -> DEXPI)
 export {
-  reactFlowToDexpi,
-  reactFlowToProcessModel,
   canExportToDexpi,
   getExportWarnings,
+  reactFlowToDexpi,
+  reactFlowToProcessModel,
 } from "./to-dexpi";
 export type { ConvertOptions } from "./to-dexpi";
 
@@ -71,6 +72,6 @@ export {
   validateDexpi1x,
 } from "./proteus-parser";
 export type {
-  DexpiVersionInfo,
   Dexpi1xValidationResult,
+  DexpiVersionInfo,
 } from "./proteus-parser";

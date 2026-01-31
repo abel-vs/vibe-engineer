@@ -102,6 +102,15 @@ export function getInlineNodeType(category: InlineCategory): string {
   return category.toLowerCase();
 }
 
+// Check if a node type is an inline component
+// Edges with inline components as TARGETS should NOT have arrows
+// Edges with inline components as SOURCES but equipment as TARGETS should show arrows
+export function isInlineNodeType(nodeType: string): boolean {
+  // Node types are lowercase versions of categories (e.g., "valves", "instruments")
+  const normalizedType = nodeType.toLowerCase();
+  return INLINE_CATEGORIES.some((cat) => cat.toLowerCase() === normalizedType);
+}
+
 // Get symbol count for inline categories
 export function getInlineSymbolCount(): number {
   return INLINE_CATEGORIES.reduce((total, category) => {

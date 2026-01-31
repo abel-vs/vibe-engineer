@@ -89,7 +89,7 @@ export interface ProcessModelMetadata {
 export interface ProcessStep {
   id: string;
   type: DexpiProcessStepType;
-  name: string;
+  name?: string;
   description?: string;
   ports: Port[];
   parameters?: Parameter[];
@@ -109,6 +109,8 @@ export interface Port {
   flowType: DexpiFlowType;
   // Reference to the step this port belongs to
   stepId?: string;
+  // Nozzle-specific metadata for P&ID display
+  nozzlePosition?: { x: number; y: number };
 }
 
 /**
@@ -120,6 +122,28 @@ export interface ExternalPort {
   direction: PortDirection;
   flowType: DexpiFlowType;
   layout?: LayoutInfo;
+}
+
+/**
+ * Inline Component - valves, instruments, fittings placed on pipes
+ * These are rendered ON the edge rather than as separate nodes
+ */
+export interface InlineComponent {
+  id: string;
+  // Component classification (e.g., "GlobeValve", "CheckValve", "ControlValve")
+  componentClass: string;
+  // DEXPI category for symbol lookup (e.g., "Valves", "Instruments")
+  category: string;
+  // Index of the specific symbol within the category
+  symbolIndex: number;
+  // Label/tag name if any
+  label?: string;
+  // Position along the pipe path (0-1, where 0 is start, 1 is end)
+  position: number;
+  // Original position in DEXPI coordinates (for reference)
+  originalPosition?: { x: number; y: number };
+  // Rotation angle in degrees (0 = horizontal right, 90 = vertical down)
+  rotation: number;
 }
 
 /**
@@ -135,6 +159,8 @@ export interface ProcessConnection {
   properties?: StreamProperties;
   // Store original React Flow edge type for round-trip
   originalEdgeType?: string;
+  // Inline components (valves, instruments) placed along this connection
+  inlineComponents?: InlineComponent[];
 }
 
 /**
