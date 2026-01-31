@@ -216,30 +216,38 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
           </TooltipContent>
         </Tooltip>
 
-        {/* Label - only shown if provided, positioned below the node */}
-        {displayLabel && (
-          <div className="text-center mt-1 max-w-[100px]">
-            <div className="font-medium text-gray-900 text-xs leading-tight truncate">
-              {displayLabel}
-            </div>
-          </div>
-        )}
-
-        {/* Description if provided */}
-        {data?.description && (
-          <div className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[100px] text-center">
-            {data.description}
-          </div>
-        )}
-
-        {/* Properties - shown below label if any */}
-        {hasProperties && (
-          <div className="mt-1 text-center">
-            {Object.entries(properties).map(([key, value]) => (
-              <div key={key} className="text-[9px] text-gray-600">
-                <span className="font-medium">{key}:</span> {value}
+        {/* 
+          NOTE: These "below-node" details are positioned absolutely so they do NOT
+          participate in React Flow's node dimension measurement. Otherwise, feeding
+          measured height back into the symbol size (via props.height) can cause an
+          infinite growth loop.
+        */}
+        {(displayLabel || data?.description || hasProperties) && (
+          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
+            {/* Label - only shown if provided */}
+            {displayLabel && (
+              <div className="font-medium text-gray-900 text-xs leading-tight truncate">
+                {displayLabel}
               </div>
-            ))}
+            )}
+
+            {/* Description if provided */}
+            {data?.description && (
+              <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                {data.description}
+              </div>
+            )}
+
+            {/* Properties - shown below label if any */}
+            {hasProperties && (
+              <div className="mt-1">
+                {Object.entries(properties).map(([key, value]) => (
+                  <div key={key} className="text-[9px] text-gray-600">
+                    <span className="font-medium">{key}:</span> {value}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
