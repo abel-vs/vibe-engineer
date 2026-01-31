@@ -2,7 +2,7 @@
 
 import { STYLES } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { Handle, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type EngineeringNodeData = {
@@ -30,12 +30,10 @@ function snapToGrid(value: number, gridSize: number): number {
   return Math.ceil(value / gridSize) * gridSize;
 }
 
-export const EngineeringNodeComponent = memo(function EngineeringNodeComponent({
-  id,
-  data,
-  selected,
-  originalType,
-}: EngineeringNodeComponentProps) {
+export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
+  props: EngineeringNodeComponentProps
+) {
+  const { id, data, selected, originalType } = props;
   const properties = data?.properties ?? {};
   const hasProperties = Object.keys(properties).length > 0;
   const edges = useEdges();
@@ -76,17 +74,28 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent({
     return connected;
   }, [edges, id]);
 
+  // Support resizing from props
+  const propsWidth = (props as EngineeringNodeComponentProps & { width?: number }).width;
+  const propsHeight = (props as EngineeringNodeComponentProps & { height?: number }).height;
+
   return (
     <div
       className={cn(
-        "engineering-node bg-white border-2 border-black shadow-none text-center",
+        "engineering-node bg-white border-2 border-black shadow-none text-center min-w-[80px] min-h-[40px]",
         selected && "border-blue-500 ring-2 ring-blue-200"
       )}
       style={{
-        width: snappedWidth ? `${snappedWidth}px` : 'auto',
-        height: snappedHeight ? `${snappedHeight}px` : 'auto',
+        width: propsWidth ?? (snappedWidth ? `${snappedWidth}px` : 'auto'),
+        height: propsHeight ?? (snappedHeight ? `${snappedHeight}px` : 'auto'),
       }}
     >
+      <NodeResizer
+        minWidth={80}
+        minHeight={40}
+        isVisible={selected}
+        lineClassName="!border-blue-500"
+        handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
+      />
       {/* Render handles for each position - using type="source" with ConnectionMode.Loose 
           allows bidirectional connections */}
       {HANDLE_POSITIONS.map(({ position, id: handleId }) => (

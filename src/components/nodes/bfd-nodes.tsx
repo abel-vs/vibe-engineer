@@ -2,7 +2,7 @@
 
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { cn } from "@/lib/utils";
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, NodeResizer, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { EngineeringNodeComponent } from "./engineering-node";
 
@@ -26,10 +26,18 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
   return (
     <div
       className={cn(
-        "px-6 py-4 rounded-lg border-2 bg-blue-50 shadow-md min-w-[140px] text-center",
+        "px-6 py-4 rounded-lg border-2 bg-blue-50 shadow-md min-w-[140px] min-h-[50px] text-center",
         selected ? "border-blue-600 shadow-lg ring-2 ring-blue-300" : "border-blue-400"
       )}
+      style={{ width: props.width, height: props.height }}
     >
+      <NodeResizer
+        minWidth={140}
+        minHeight={50}
+        isVisible={selected}
+        lineClassName="!border-blue-600"
+        handleClassName="!w-2 !h-2 !bg-blue-600 !border-white"
+      />
       {/* Target handles (incoming) */}
       <Handle
         type="target"
@@ -49,16 +57,12 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         id="bottom-in"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="top"
-        className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
-      />
-      <div className="font-bold text-blue-900">{data.label}</div>
-      {data.description && (
-        <div className="text-xs text-blue-700 mt-1">{data.description}</div>
-      )}
+      <div className="font-bold text-blue-900 flex items-center justify-center h-full flex-col">
+        {data.label}
+        {data.description && (
+          <div className="text-xs text-blue-700 mt-1">{data.description}</div>
+        )}
+      </div>
       {/* Source handles (outgoing) */}
       <Handle
         type="source"
@@ -87,7 +91,17 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
 
   // Render as simple text element
   return (
-    <div className="relative">
+    <div 
+      className="relative min-w-[60px] min-h-[24px]"
+      style={{ width: props.width, height: props.height }}
+    >
+      <NodeResizer
+        minWidth={60}
+        minHeight={24}
+        isVisible={selected}
+        lineClassName="!border-gray-400"
+        handleClassName="!w-2 !h-2 !bg-gray-400 !border-white"
+      />
       {/* Target handles (incoming) */}
       <Handle
         type="target"
@@ -109,11 +123,11 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
       />
       <div
         className={cn(
-          "px-2 py-1 text-center",
+          "px-2 py-1 text-center h-full flex items-center justify-center",
           selected ? "bg-blue-50 rounded" : ""
         )}
       >
-        <div className="font-medium text-gray-700 text-sm whitespace-nowrap">{data.label}</div>
+        <div className="font-medium text-gray-700 text-sm">{data.label}</div>
       </div>
       {/* Source handles (outgoing) */}
       <Handle
@@ -144,11 +158,19 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
   return (
     <div
       className={cn(
-        "px-5 py-4 rounded-lg border-2 bg-amber-50 shadow-md min-w-[100px] text-center",
+        "px-5 py-4 rounded-lg border-2 bg-amber-50 shadow-md min-w-[100px] min-h-[50px] text-center",
         "border-b-4",
         selected ? "border-amber-600 shadow-lg ring-2 ring-amber-300" : "border-amber-400"
       )}
+      style={{ width: props.width, height: props.height }}
     >
+      <NodeResizer
+        minWidth={100}
+        minHeight={50}
+        isVisible={selected}
+        lineClassName="!border-amber-600"
+        handleClassName="!w-2 !h-2 !bg-amber-600 !border-white"
+      />
       {/* Target handles (incoming) */}
       <Handle
         type="target"
@@ -168,10 +190,12 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         id="bottom-in"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
-      <div className="font-semibold text-amber-900">{data.label}</div>
-      {data.description && (
-        <div className="text-xs text-amber-700 mt-1">{data.description}</div>
-      )}
+      <div className="font-semibold text-amber-900 flex items-center justify-center h-full flex-col">
+        {data.label}
+        {data.description && (
+          <div className="text-xs text-amber-700 mt-1">{data.description}</div>
+        )}
+      </div>
       {/* Source handles (outgoing) */}
       <Handle
         type="source"

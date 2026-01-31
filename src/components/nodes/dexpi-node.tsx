@@ -13,7 +13,7 @@ import {
     nodeTypeToCategory,
 } from "@/lib/dexpi-config";
 import { cn } from "@/lib/utils";
-import { Handle, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
 
 export type DexpiNodeData = {
@@ -35,12 +35,10 @@ interface DexpiNodeComponentProps extends NodeProps<DexpiNode> {
 // SVG size for the node
 const SVG_SIZE = 64;
 
-export const DexpiNodeComponent = memo(function DexpiNodeComponent({
-  id,
-  data,
-  selected,
-  type,
-}: DexpiNodeComponentProps) {
+export const DexpiNodeComponent = memo(function DexpiNodeComponent(
+  props: DexpiNodeComponentProps
+) {
+  const { id, data, selected, type } = props;
   const edges = useEdges();
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgError, setSvgError] = useState(false);
@@ -101,9 +99,22 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent({
   const properties = data?.properties ?? {};
   const hasProperties = Object.keys(properties).length > 0;
 
+  // Support resizing
+  const nodeWidth = (props as NodeProps<DexpiNode> & { width?: number }).width;
+  const nodeHeight = (props as NodeProps<DexpiNode> & { height?: number }).height;
+  const displaySize = nodeWidth || nodeHeight || SVG_SIZE;
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="dexpi-node relative flex flex-col items-center">
+        <NodeResizer
+          minWidth={48}
+          minHeight={48}
+          keepAspectRatio
+          isVisible={selected}
+          lineClassName="!border-gray-700"
+          handleClassName="!w-2 !h-2 !bg-gray-700 !border-white"
+        />
         {/* SVG Container with handles attached to edges */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -112,7 +123,7 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent({
                 "relative flex items-center justify-center",
                 selected && "ring-2 ring-blue-400 ring-offset-1 rounded"
               )}
-              style={{ width: SVG_SIZE, height: SVG_SIZE }}
+              style={{ width: displaySize, height: displaySize }}
             >
               {/* Handles positioned at the edges of the SVG */}
               <Handle

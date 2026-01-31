@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
+import { Handle, NodeResizer, Position, type NodeProps, type Node } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { EngineeringNodeComponent } from "./engineering-node";
@@ -26,16 +26,24 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
   return (
     <div
       className={cn(
-        "px-6 py-4 rounded-lg border-2 bg-white shadow-md min-w-[100px] text-center",
+        "px-6 py-4 rounded-lg border-2 bg-white shadow-md min-w-[100px] min-h-[40px] text-center",
         selected ? "border-blue-500 shadow-lg ring-2 ring-blue-200" : "border-gray-400"
       )}
+      style={{ width: props.width, height: props.height }}
     >
+      <NodeResizer
+        minWidth={100}
+        minHeight={40}
+        isVisible={selected}
+        lineClassName="!border-blue-500"
+        handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
+      />
       <Handle
         type="target"
         position={Position.Left}
         className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
       />
-      <div className="font-medium text-gray-800">{data.label}</div>
+      <div className="font-medium text-gray-800 flex items-center justify-center h-full">{data.label}</div>
       <Handle
         type="source"
         position={Position.Right}
@@ -49,6 +57,7 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
 export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
+  const size = props.width || props.height || 80;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="circle" />;
@@ -57,10 +66,19 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
   return (
     <div
       className={cn(
-        "w-20 h-20 rounded-full border-2 bg-white shadow-md flex items-center justify-center",
+        "rounded-full border-2 bg-white shadow-md flex items-center justify-center",
         selected ? "border-green-500 shadow-lg ring-2 ring-green-200" : "border-gray-400"
       )}
+      style={{ width: size, height: size, minWidth: 60, minHeight: 60 }}
     >
+      <NodeResizer
+        minWidth={60}
+        minHeight={60}
+        keepAspectRatio
+        isVisible={selected}
+        lineClassName="!border-green-500"
+        handleClassName="!w-2 !h-2 !bg-green-500 !border-white"
+      />
       <Handle
         type="target"
         position={Position.Left}
@@ -82,13 +100,22 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
 export const DiamondNode = memo(function DiamondNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
+  const size = props.width || props.height || 96;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="diamond" />;
   }
 
   return (
-    <div className="relative w-24 h-24">
+    <div className="relative" style={{ width: size, height: size, minWidth: 60, minHeight: 60 }}>
+      <NodeResizer
+        minWidth={60}
+        minHeight={60}
+        keepAspectRatio
+        isVisible={selected}
+        lineClassName="!border-orange-500"
+        handleClassName="!w-2 !h-2 !bg-orange-500 !border-white"
+      />
       <Handle
         type="target"
         position={Position.Left}
@@ -118,13 +145,22 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
 export const TriangleNode = memo(function TriangleNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
+  const width = props.width || 96;
+  const height = props.height || 80;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="triangle" />;
   }
 
   return (
-    <div className="relative w-24 h-20">
+    <div className="relative" style={{ width, height, minWidth: 60, minHeight: 50 }}>
+      <NodeResizer
+        minWidth={60}
+        minHeight={50}
+        isVisible={selected}
+        lineClassName="!border-purple-500"
+        handleClassName="!w-2 !h-2 !bg-purple-500 !border-white"
+      />
       <Handle
         type="target"
         position={Position.Left}
@@ -164,11 +200,19 @@ export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>)
   return (
     <div
       className={cn(
-        "px-3 py-2 bg-transparent",
+        "px-3 py-2 bg-transparent min-w-[50px] min-h-[24px]",
         selected && "outline outline-2 outline-blue-500 outline-dashed rounded"
       )}
+      style={{ width: props.width, height: props.height }}
     >
-      <div className="text-gray-800 font-medium">{data.label}</div>
+      <NodeResizer
+        minWidth={50}
+        minHeight={24}
+        isVisible={selected}
+        lineClassName="!border-blue-500"
+        handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
+      />
+      <div className="text-gray-800 font-medium flex items-center h-full">{data.label}</div>
     </div>
   );
 });
