@@ -53,6 +53,7 @@ import { canExportToDexpi, dexpiToReactFlow, getExportWarnings, reactFlowToDexpi
 import type { DiagramMode } from "@/lib/modes";
 import { clearAutoSave, loadWorkspace, saveDiagram, saveWorkspace, type SavedDiagram } from "@/lib/storage";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
+import { xml } from "@codemirror/lang-xml";
 import { lintGutter, linter } from "@codemirror/lint";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
@@ -72,6 +73,7 @@ export default function DiagramPage() {
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
   const [canvasResetKey, setCanvasResetKey] = useState(0);
   const [showJsonView, setShowJsonView] = useState(false);
+  const [codeViewMode, setCodeViewMode] = useState<"json" | "dexpi">("json");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -79,6 +81,7 @@ export default function DiagramPage() {
   const [jsonEditMode, setJsonEditMode] = useState(false);
   const [editableJson, setEditableJson] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [dexpiXml, setDexpiXml] = useState<string>("");
   const [newDiagramDialogOpen, setNewDiagramDialogOpen] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -127,6 +130,21 @@ export default function DiagramPage() {
       2
     );
   }, [mode, style, nodes, edges]);
+
+  // Helper to generate DEXPI XML from current state
+  const generateDexpiXml = useCallback(() => {
+    if (!canExportToDexpi(mode)) {
+      return `<!-- DEXPI export is only available for BFD and PFD modes.\nCurrent mode: ${mode.toUpperCase()} -->\n\n<!-- Switch to BFD or PFD mode to view DEXPI XML -->`;
+    }
+    try {
+      return reactFlowToDexpi(nodes, edges, mode, {
+        name: `${mode.toUpperCase()} Diagram`,
+        description: `Generated from Voice Diagram`,
+      });
+    } catch (err) {
+      return `<!-- Error generating DEXPI XML: ${err instanceof Error ? err.message : String(err)} -->`;
+    }
+  }, [mode, nodes, edges]);
 
   // Enter edit mode with current JSON
   const handleEnterEditMode = useCallback(() => {
@@ -188,6 +206,11 @@ export default function DiagramPage() {
     lintGutter(),
   ], []);
 
+  // CodeMirror extensions for XML viewing
+  const xmlExtensions = useMemo(() => [
+    xml(),
+  ], []);
+
   // Auto-save on changes - save to per-mode workspace
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
@@ -243,6 +266,67 @@ export default function DiagramPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
+
+  // Paste event handler for DEXPI XML
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      // Ignore if pasting in an input field or in JSON edit mode
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || jsonEditMode) {
+        return;
+      }
+
+      const text = e.clipboardData?.getData("text");
+      if (!text) return;
+
+      // Check if it looks like DEXPI XML
+      const trimmed = text.trim();
+      if (!trimmed.startsWith("<?xml") && !trimmed.startsWith("<DEXPI-Document")) {
+        return;
+      }
+
+      // Try to validate and parse as DEXPI
+      try {
+        const validation = validateDexpiForImport(text);
+        if (!validation.valid) {
+          console.warn("Pasted content is not valid DEXPI XML:", validation.errors);
+          return;
+        }
+
+        e.preventDefault();
+
+        // Parse DEXPI XML
+        const result = dexpiToReactFlow(text);
+
+        // Show confirmation dialog if canvas is not empty
+        if (nodes.length > 0) {
+          setImportResult({
+            success: true,
+            nodes: result.nodes,
+            edges: result.edges,
+            mode: result.mode,
+            warnings: [...(validation.warnings || []), ...result.warnings],
+          });
+          setShowImportConfirmDialog(true);
+        } else {
+          // Load directly if canvas is empty
+          loadDiagram(result.nodes, result.edges, result.mode);
+          if (result.warnings && result.warnings.length > 0) {
+            setImportResult({
+              success: true,
+              warnings: result.warnings,
+            });
+            setShowImportResultDialog(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to parse pasted DEXPI XML:", err);
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [nodes.length, jsonEditMode, loadDiagram]);
 
   const handleTranscript = useCallback(
     async (text: string) => {
@@ -949,56 +1033,87 @@ export default function DiagramPage() {
           <main className="flex-1 relative" ref={flowRef}>
             {showJsonView ? (
               <div className="w-full h-full flex flex-col bg-gray-900 relative">
+                {/* Tabs for JSON and DEXPI XML */}
+                <div className="flex items-center gap-2 px-2 pt-2 border-b border-gray-700 shrink-0">
+                  <button
+                    onClick={() => setCodeViewMode("json")}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
+                      codeViewMode === "json"
+                        ? "bg-gray-800 text-white"
+                        : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                    }`}
+                  >
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => setCodeViewMode("dexpi")}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
+                      codeViewMode === "dexpi"
+                        ? "bg-gray-800 text-white"
+                        : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                    }`}
+                    title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
+                  >
+                    DEXPI XML
+                  </button>
+                </div>
+
                 {/* Toolbar */}
-                <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0">
+                <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0 bg-gray-800">
                   <div className="flex items-center gap-2">
-                    {jsonEditMode ? (
+                    {codeViewMode === "json" && (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-400 hover:text-green-300 hover:bg-gray-800"
-                          onClick={handleApplyJson}
-                          title="Apply changes"
-                        >
-                          <Check className="w-4 h-4 mr-1" />
-                          Apply
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-400 hover:text-white hover:bg-gray-800"
-                          onClick={handleCancelEdit}
-                          title="Cancel editing"
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
+                        {jsonEditMode ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-400 hover:text-green-300 hover:bg-gray-700"
+                              onClick={handleApplyJson}
+                              title="Apply changes"
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Apply
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-white hover:bg-gray-700"
+                              onClick={handleCancelEdit}
+                              title="Cancel editing"
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-400 hover:text-white hover:bg-gray-700"
+                            onClick={handleEnterEditMode}
+                            title="Edit JSON"
+                          >
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        )}
                       </>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-400 hover:text-white hover:bg-gray-800"
-                        onClick={handleEnterEditMode}
-                        title="Edit JSON"
-                      >
-                        <Pencil className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
                     )}
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                    className="text-gray-400 hover:text-white hover:bg-gray-700"
                     onClick={() => {
-                      const jsonData = jsonEditMode ? editableJson : generateJsonString();
-                      navigator.clipboard.writeText(jsonData);
+                      const content = codeViewMode === "json"
+                        ? (jsonEditMode ? editableJson : generateJsonString())
+                        : generateDexpiXml();
+                      navigator.clipboard.writeText(content);
                       setJsonCopied(true);
                       setTimeout(() => setJsonCopied(false), 2000);
                     }}
-                    title="Copy JSON to clipboard"
+                    title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
                   >
                     {jsonCopied ? (
                       <>
@@ -1013,41 +1128,59 @@ export default function DiagramPage() {
                     )}
                   </Button>
                 </div>
-                
+
                 {/* Error message */}
-                {jsonError && (
+                {jsonError && codeViewMode === "json" && (
                   <div className="px-4 py-2 bg-red-900/50 border-b border-red-700 text-red-300 text-xs">
                     {jsonError}
                   </div>
                 )}
-                
+
                 {/* Content - CodeMirror Editor */}
                 <div className="flex-1 overflow-hidden">
-                  <CodeMirror
-                    value={jsonEditMode ? editableJson : generateJsonString()}
-                    height="100%"
-                    theme={vscodeDark}
-                    extensions={jsonExtensions}
-                    editable={jsonEditMode}
-                    readOnly={!jsonEditMode}
-                    onChange={(value) => {
-                      if (jsonEditMode) {
-                        setEditableJson(value);
-                        setJsonError(null);
-                      }
-                    }}
-                    basicSetup={{
-                      lineNumbers: true,
-                      highlightActiveLineGutter: true,
-                      highlightActiveLine: jsonEditMode,
-                      foldGutter: true,
-                      bracketMatching: true,
-                      closeBrackets: jsonEditMode,
-                      autocompletion: jsonEditMode,
-                      indentOnInput: jsonEditMode,
-                    }}
-                    className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
-                  />
+                  {codeViewMode === "json" ? (
+                    <CodeMirror
+                      value={jsonEditMode ? editableJson : generateJsonString()}
+                      height="100%"
+                      theme={vscodeDark}
+                      extensions={jsonExtensions}
+                      editable={jsonEditMode}
+                      readOnly={!jsonEditMode}
+                      onChange={(value) => {
+                        if (jsonEditMode) {
+                          setEditableJson(value);
+                          setJsonError(null);
+                        }
+                      }}
+                      basicSetup={{
+                        lineNumbers: true,
+                        highlightActiveLineGutter: true,
+                        highlightActiveLine: jsonEditMode,
+                        foldGutter: true,
+                        bracketMatching: true,
+                        closeBrackets: jsonEditMode,
+                        autocompletion: jsonEditMode,
+                        indentOnInput: jsonEditMode,
+                      }}
+                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+                    />
+                  ) : (
+                    <CodeMirror
+                      value={generateDexpiXml()}
+                      height="100%"
+                      theme={vscodeDark}
+                      extensions={xmlExtensions}
+                      editable={false}
+                      readOnly={true}
+                      basicSetup={{
+                        lineNumbers: true,
+                        highlightActiveLineGutter: true,
+                        foldGutter: true,
+                        bracketMatching: true,
+                      }}
+                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+                    />
+                  )}
                 </div>
               </div>
             ) : (

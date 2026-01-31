@@ -822,10 +822,15 @@ function formatXml(xml: string): string {
 // ============================================================================
 
 /**
- * Validate DEXPI XML structure
+ * Validate DEXPI XML structure with comprehensive checks
  */
-export function validateDexpiXml(xmlString: string): { valid: boolean; errors: string[] } {
+export function validateDexpiXml(xmlString: string): {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   try {
     const parser = new DOMParser();
@@ -835,7 +840,7 @@ export function validateDexpiXml(xmlString: string): { valid: boolean; errors: s
     const parseError = doc.querySelector("parsererror");
     if (parseError) {
       errors.push(`XML Parse Error: ${parseError.textContent}`);
-      return { valid: false, errors };
+      return { valid: false, errors, warnings };
     }
 
     const root = doc.documentElement;
@@ -845,15 +850,206 @@ export function validateDexpiXml(xmlString: string): { valid: boolean; errors: s
       errors.push(`Expected root element 'DEXPI-Document', found '${root.localName}'`);
     }
 
+    // Check namespace
+    const xmlns = root.getAttribute("xmlns");
+    if (xmlns !== DEXPI_NAMESPACE) {
+      warnings.push(
+        `DEXPI namespace mismatch: expected '${DEXPI_NAMESPACE}', found '${xmlns || "none"}'`
+      );
+    }
+
+    // Check version
+    const version = root.getAttribute("version");
+    if (!version) {
+      warnings.push("DEXPI version attribute is missing");
+    } else if (version !== DEXPI_VERSION) {
+      warnings.push(
+        `DEXPI version mismatch: expected '${DEXPI_VERSION}', found '${version}'`
+      );
+    }
+
     // Check for ProcessModel
     const processModelEl = root.querySelector('Object[type="Process/ProcessModel"]');
     if (!processModelEl) {
       errors.push("No ProcessModel object found in document");
+      return { valid: false, errors, warnings };
     }
 
-    return { valid: errors.length === 0, errors };
+    // Validate ProcessModel structure
+    const pmValidation = validateProcessModelElement(processModelEl);
+    errors.push(...pmValidation.errors);
+    warnings.push(...pmValidation.warnings);
+
+    return { valid: errors.length === 0, errors, warnings };
   } catch (e) {
     errors.push(`Validation error: ${e instanceof Error ? e.message : String(e)}`);
-    return { valid: false, errors };
+    return { valid: false, errors, warnings };
   }
+}
+
+/**
+ * Validate ProcessModel element structure
+ */
+function validateProcessModelElement(el: Element): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check ID
+  const id = el.getAttribute("id");
+  if (!id) {
+    errors.push("ProcessModel is missing required 'id' attribute");
+  }
+
+  // Check Name
+  const nameData = el.querySelector('Data[property="Name"]');
+  if (!nameData) {
+    warnings.push("ProcessModel is missing Name property");
+  }
+
+  // Check DiagramType
+  const diagramTypeData = el.querySelector('Data[property="DiagramType"]');
+  if (diagramTypeData) {
+    const diagramType = diagramTypeData.textContent?.trim();
+    if (diagramType && !["BFD", "PFD", "P&ID"].includes(diagramType)) {
+      warnings.push(
+        `DiagramType '${diagramType}' is not a standard type (expected BFD, PFD, or P&ID)`
+      );
+    }
+  }
+
+  // Validate ProcessSteps
+  const stepsContainer = getComponentsElementValidation(el, "ProcessSteps");
+  if (stepsContainer) {
+    const stepElements = getChildObjectsValidation(stepsContainer);
+    for (const stepEl of stepElements) {
+      const stepValidation = validateProcessStepElement(stepEl);
+      errors.push(...stepValidation.errors);
+      warnings.push(...stepValidation.warnings);
+    }
+  }
+
+  // Validate ProcessConnections
+  const connsContainer = getComponentsElementValidation(el, "ProcessConnections");
+  if (connsContainer) {
+    const connElements = getChildObjectsValidation(connsContainer);
+    for (const connEl of connElements) {
+      const connValidation = validateProcessConnectionElement(connEl);
+      errors.push(...connValidation.errors);
+      warnings.push(...connValidation.warnings);
+    }
+  }
+
+  return { errors, warnings };
+}
+
+/**
+ * Validate ProcessStep element
+ */
+function validateProcessStepElement(el: Element): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const id = el.getAttribute("id");
+  const type = el.getAttribute("type");
+
+  if (!id) {
+    errors.push("ProcessStep is missing required 'id' attribute");
+  }
+
+  if (!type) {
+    errors.push(`ProcessStep '${id || "unknown"}' is missing required 'type' attribute`);
+  } else if (!type.startsWith("Process/")) {
+    warnings.push(
+      `ProcessStep '${id}' has non-standard type '${type}' (should start with 'Process/')`
+    );
+  }
+
+  // Check for Name
+  const nameData = el.querySelector('Data[property="Name"]');
+  if (!nameData) {
+    warnings.push(`ProcessStep '${id}' is missing Name property`);
+  }
+
+  return { errors, warnings };
+}
+
+/**
+ * Validate ProcessConnection element
+ */
+function validateProcessConnectionElement(el: Element): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const id = el.getAttribute("id");
+  const type = el.getAttribute("type");
+
+  if (!id) {
+    errors.push("ProcessConnection is missing required 'id' attribute");
+  }
+
+  if (!type) {
+    errors.push(`ProcessConnection '${id || "unknown"}' is missing required 'type' attribute`);
+  }
+
+  // Check FromPort and ToPort
+  const fromPortData = el.querySelector('Data[property="FromPort"]');
+  const toPortData = el.querySelector('Data[property="ToPort"]');
+
+  if (!fromPortData) {
+    errors.push(`ProcessConnection '${id}' is missing FromPort property`);
+  }
+
+  if (!toPortData) {
+    errors.push(`ProcessConnection '${id}' is missing ToPort property`);
+  }
+
+  // Check FlowType
+  const flowTypeData = el.querySelector('Data[property="FlowType"]');
+  if (flowTypeData) {
+    const flowType = flowTypeData.textContent?.trim();
+    if (flowType && !["material", "energy", "utility", "information"].includes(flowType)) {
+      warnings.push(
+        `ProcessConnection '${id}' has non-standard FlowType '${flowType}'`
+      );
+    }
+  }
+
+  return { errors, warnings };
+}
+
+/**
+ * Helper: Get Components element by property name
+ */
+function getComponentsElementValidation(parent: Element, property: string): Element | null {
+  const children = parent.children;
+  const propertyLower = property.toLowerCase();
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    if (child.localName === "Components" || child.tagName.endsWith(":Components")) {
+      const propAttr = child.getAttribute("property");
+      if (propAttr && propAttr.toLowerCase() === propertyLower) {
+        return child;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Helper: Get direct child Object elements
+ */
+function getChildObjectsValidation(parent: Element): Element[] {
+  const result: Element[] = [];
+  const children = parent.children;
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    if (child.localName === "Object" || child.tagName.endsWith(":Object")) {
+      result.push(child);
+    }
+  }
+
+  return result;
 }
