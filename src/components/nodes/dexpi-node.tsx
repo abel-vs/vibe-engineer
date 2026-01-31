@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
+import { EditableLabel } from "./editable-label";
 
 export type DexpiNodeData = {
   label?: string;
@@ -222,34 +223,33 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
           measured height back into the symbol size (via props.height) can cause an
           infinite growth loop.
         */}
-        {(displayLabel || data?.description || hasProperties) && (
-          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
-            {/* Label - only shown if provided */}
-            {displayLabel && (
-              <div className="font-medium text-gray-900 text-xs leading-tight truncate">
-                {displayLabel}
-              </div>
-            )}
+        <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
+          {/* Label - always available for editing */}
+          <EditableLabel
+            nodeId={id}
+            value={displayLabel || ""}
+            className="font-medium text-gray-900 text-xs leading-tight"
+            placeholder=""
+          />
 
-            {/* Description if provided */}
-            {data?.description && (
-              <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-                {data.description}
-              </div>
-            )}
+          {/* Description if provided */}
+          {data?.description && (
+            <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+              {data.description}
+            </div>
+          )}
 
-            {/* Properties - shown below label if any */}
-            {hasProperties && (
-              <div className="mt-1">
-                {Object.entries(properties).map(([key, value]) => (
-                  <div key={key} className="text-[9px] text-gray-600">
-                    <span className="font-medium">{key}:</span> {value}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          {/* Properties - shown below label if any */}
+          {hasProperties && (
+            <div className="mt-1">
+              {Object.entries(properties).map(([key, value]) => (
+                <div key={key} className="text-[9px] text-gray-600">
+                  <span className="font-medium">{key}:</span> {value}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </TooltipProvider>
   );

@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
+import { EditableLabel } from "./editable-label";
 
 // Node data type
 export type DrawioPidNodeData = {
@@ -189,34 +190,33 @@ export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
         NOTE: Below-node text is absolutely positioned so it does NOT affect
         React Flow's node dimension measurement (prevents size feedback loops).
       */}
-      {(label || data?.description || hasProperties) && (
-        <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[160px]">
-          {/* Label - below the symbol */}
-          {label && (
-            <div className="font-medium text-gray-900 text-xs leading-tight truncate">
-              {label}
-            </div>
-          )}
+      <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[160px]">
+        {/* Label - below the symbol, always editable */}
+        <EditableLabel
+          nodeId={id}
+          value={label || ""}
+          className="font-medium text-gray-900 text-xs leading-tight"
+          placeholder=""
+        />
 
-          {/* Description if provided */}
-          {data?.description && (
-            <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-              {data.description}
-            </div>
-          )}
+        {/* Description if provided */}
+        {data?.description && (
+          <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+            {data.description}
+          </div>
+        )}
 
-          {/* Properties - shown below label if any */}
-          {hasProperties && (
-            <div className="mt-1">
-              {Object.entries(properties).map(([key, value]) => (
-                <div key={key} className="text-[9px] text-gray-600">
-                  <span className="font-medium">{key}:</span> {value}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        {/* Properties - shown below label if any */}
+        {hasProperties && (
+          <div className="mt-1">
+            {Object.entries(properties).map(([key, value]) => (
+              <div key={key} className="text-[9px] text-gray-600">
+                <span className="font-medium">{key}:</span> {value}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 });

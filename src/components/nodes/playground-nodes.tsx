@@ -4,6 +4,7 @@ import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
+import { EditableLabel } from "./editable-label";
 
 type PlaygroundNodeData = {
   label: string;
@@ -15,7 +16,7 @@ type PlaygroundNode = Node<PlaygroundNodeData>;
 
 // Rectangle Node
 export const RectangleNode = memo(function RectangleNode(props: NodeProps<PlaygroundNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
   const isEngineering = style === "engineering";
 
@@ -53,7 +54,12 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
         id="bottom"
         className={isEngineering ? "!w-1.5 !h-1.5 !bg-black !border-0 !rounded-none" : "!w-3 !h-3 !bg-blue-500 !border-2 !border-white"}
       />
-      <div className={cn("font-medium flex items-center justify-center", isEngineering ? "text-black" : "text-gray-800")}>{data.label}</div>
+      <EditableLabel
+        nodeId={id}
+        value={data.label}
+        className={cn("font-medium", isEngineering ? "text-black" : "text-gray-800")}
+        placeholder="Rectangle"
+      />
       <Handle
         type="source"
         position={Position.Right}
@@ -66,7 +72,7 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
 
 // Circle Node
 export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
   const isEngineering = style === "engineering";
 
@@ -105,9 +111,12 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
         id="bottom"
         className={isEngineering ? "!w-1.5 !h-1.5 !bg-black !border-0 !rounded-none" : "!w-3 !h-3 !bg-green-500 !border-2 !border-white"}
       />
-      <div className={cn("font-medium text-sm text-center px-1", isEngineering ? "text-black" : "text-gray-800")}>
-        {data.label}
-      </div>
+      <EditableLabel
+        nodeId={id}
+        value={data.label}
+        className={cn("font-medium text-sm text-center", isEngineering ? "text-black" : "text-gray-800")}
+        placeholder="Circle"
+      />
       <Handle
         type="source"
         position={Position.Right}
@@ -120,7 +129,7 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
 
 // Diamond Node
 export const DiamondNode = memo(function DiamondNode(props: NodeProps<PlaygroundNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
   const isEngineering = style === "engineering";
 
@@ -161,9 +170,12 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
         )}
       />
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn("font-medium text-sm text-center", isEngineering ? "text-black" : "text-gray-800")}>
-          {data.label}
-        </span>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className={cn("font-medium text-sm text-center", isEngineering ? "text-black" : "text-gray-800")}
+          placeholder="Diamond"
+        />
       </div>
       <Handle
         type="source"
@@ -177,7 +189,7 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
 
 // Triangle Node
 export const TriangleNode = memo(function TriangleNode(props: NodeProps<PlaygroundNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
   const isEngineering = style === "engineering";
 
@@ -221,7 +233,12 @@ export const TriangleNode = memo(function TriangleNode(props: NodeProps<Playgrou
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center pt-4">
-        <span className={cn("font-medium text-sm", isEngineering ? "text-black" : "text-gray-800")}>{data.label}</span>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className={cn("font-medium text-sm", isEngineering ? "text-black" : "text-gray-800")}
+          placeholder="Triangle"
+        />
       </div>
       <Handle
         type="source"
@@ -235,7 +252,7 @@ export const TriangleNode = memo(function TriangleNode(props: NodeProps<Playgrou
 
 // Text Node
 export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
   const isEngineering = style === "engineering";
 
@@ -253,7 +270,12 @@ export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>)
         lineClassName="!border-blue-500"
         handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
       />
-      <div className={cn("font-medium flex items-center", isEngineering ? "text-black" : "text-gray-800")}>{data.label}</div>
+      <EditableLabel
+        nodeId={id}
+        value={data.label}
+        className={cn("font-medium", isEngineering ? "text-black" : "text-gray-800")}
+        placeholder="Text"
+      />
     </div>
   );
 });

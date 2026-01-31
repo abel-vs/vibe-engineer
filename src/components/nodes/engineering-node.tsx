@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useMemo } from "react";
+import { EditableLabel } from "./editable-label";
 
 export type EngineeringNodeData = {
   label: string;
@@ -90,10 +91,13 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
 
       {/* Content */}
       <div className="px-3 py-2 flex flex-col justify-center">
-        {/* Label - Bold */}
-        <div className="font-bold text-black text-sm">
-          {data?.label || originalType?.toUpperCase() || "NODE"}
-        </div>
+        {/* Label - Bold, editable on double-click */}
+        <EditableLabel
+          nodeId={id}
+          value={data?.label || originalType?.toUpperCase() || "NODE"}
+          className="font-bold text-black text-sm"
+          placeholder={originalType?.toUpperCase() || "NODE"}
+        />
 
         {/* Description - Italic */}
         {data?.description && (

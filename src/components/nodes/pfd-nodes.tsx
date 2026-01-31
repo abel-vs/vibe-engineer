@@ -11,6 +11,7 @@ import { SIMPLIFIED_PFD_EQUIPMENT, getSimplifiedPfdSymbolPath } from "@/lib/dexp
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
+import { EditableLabel } from "./editable-label";
 import { EngineeringNodeComponent } from "./engineering-node";
 
 type PFDNodeData = {
@@ -23,7 +24,7 @@ type PFDNode = Node<PFDNodeData>;
 
 // Reactor - Blue rectangle
 export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -70,7 +71,12 @@ export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) 
         className="!w-3 !h-3 !bg-blue-700 !border-2 !border-white"
       />
       <div className="font-bold text-blue-900 text-sm flex items-center justify-center flex-col">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-blue-900 text-sm"
+          placeholder="Reactor"
+        />
         {data.description && (
           <div className="text-xs text-blue-700">{data.description}</div>
         )}
@@ -81,7 +87,7 @@ export const ReactorNode = memo(function ReactorNode(props: NodeProps<PFDNode>) 
 
 // Tank/Vessel - Rounded cyan rectangle
 export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -129,7 +135,12 @@ export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <div className="font-bold text-cyan-900 text-sm flex items-center justify-center flex-col">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-cyan-900 text-sm"
+          placeholder="Tank"
+        />
         {data.description && (
           <div className="text-xs text-cyan-700">{data.description}</div>
         )}
@@ -140,7 +151,7 @@ export const TankNode = memo(function TankNode(props: NodeProps<PFDNode>) {
 
 // Vessel - Similar to tank but taller
 export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -187,7 +198,12 @@ export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
         className="!w-3 !h-3 !bg-cyan-700 !border-2 !border-white"
       />
       <div className="font-bold text-cyan-900 text-sm flex items-center justify-center flex-col">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-cyan-900 text-sm"
+          placeholder="Vessel"
+        />
         {data.description && (
           <div className="text-xs text-cyan-700">{data.description}</div>
         )}
@@ -198,7 +214,7 @@ export const VesselNode = memo(function VesselNode(props: NodeProps<PFDNode>) {
 
 // Pump - Green circle
 export const PumpNode = memo(function PumpNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -245,16 +261,19 @@ export const PumpNode = memo(function PumpNode(props: NodeProps<PFDNode>) {
         id="bottom"
         className="!w-3 !h-3 !bg-green-700 !border-2 !border-white"
       />
-      <div className="font-bold text-green-900 text-xs text-center">
-        {data.label}
-      </div>
+      <EditableLabel
+        nodeId={id}
+        value={data.label}
+        className="font-bold text-green-900 text-xs text-center"
+        placeholder="Pump"
+      />
     </div>
   );
 });
 
 // Compressor - Yellow pentagon-like shape
 export const CompressorNode = memo(function CompressorNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -303,14 +322,21 @@ export const CompressorNode = memo(function CompressorNode(props: NodeProps<PFDN
         id="bottom"
         className="!w-3 !h-3 !bg-yellow-700 !border-2 !border-white"
       />
-      <div className="font-bold text-yellow-900 text-xs flex items-center justify-center">{data.label}</div>
+      <div className="font-bold text-yellow-900 text-xs flex items-center justify-center">
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-yellow-900 text-xs"
+          placeholder="Compressor"
+        />
+      </div>
     </div>
   );
 });
 
 // Heat Exchanger - Orange diamond
 export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -359,9 +385,12 @@ export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProp
         )}
       />
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="font-bold text-orange-900 text-xs text-center">
-          {data.label}
-        </span>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-orange-900 text-xs text-center"
+          placeholder="HX"
+        />
       </div>
     </div>
   );
@@ -369,7 +398,7 @@ export const HeatExchangerNode = memo(function HeatExchangerNode(props: NodeProp
 
 // Column - Tall teal rectangle
 export const ColumnNode = memo(function ColumnNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -415,14 +444,21 @@ export const ColumnNode = memo(function ColumnNode(props: NodeProps<PFDNode>) {
         id="bottom"
         className="!w-3 !h-3 !bg-teal-700 !border-2 !border-white"
       />
-      <div className="font-bold text-teal-900 text-xs flex items-center justify-center">{data.label}</div>
+      <div className="font-bold text-teal-900 text-xs flex items-center justify-center">
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-teal-900 text-xs"
+          placeholder="Column"
+        />
+      </div>
     </div>
   );
 });
 
 // Valve - Small gray square
 export const ValveNode = memo(function ValveNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -471,7 +507,12 @@ export const ValveNode = memo(function ValveNode(props: NodeProps<PFDNode>) {
         className="!w-2 !h-2 !bg-gray-700 !border-2 !border-white !-rotate-45"
       />
       <div className="font-bold text-gray-900 text-[10px] -rotate-45">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-gray-900 text-[10px]"
+          placeholder="V"
+        />
       </div>
     </div>
   );
@@ -479,7 +520,7 @@ export const ValveNode = memo(function ValveNode(props: NodeProps<PFDNode>) {
 
 // Mixer - Purple triangle pointing right
 export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -532,7 +573,12 @@ export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center pr-2">
-        <span className="font-bold text-purple-900 text-[10px]">{data.label}</span>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-purple-900 text-[10px]"
+          placeholder="Mix"
+        />
       </div>
     </div>
   );
@@ -540,7 +586,7 @@ export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
 
 // Splitter - Purple triangle pointing left (inverted mixer)
 export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -593,7 +639,12 @@ export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center pl-2">
-        <span className="font-bold text-purple-900 text-[10px]">{data.label}</span>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-purple-900 text-[10px]"
+          placeholder="Split"
+        />
       </div>
     </div>
   );
@@ -787,34 +838,33 @@ const SimplifiedPfdNodeComponent = memo(function SimplifiedPfdNodeComponent({
         </Tooltip>
 
         {/* Label and properties below the node */}
-        {(displayLabel || data?.description || hasProperties) && (
-          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
-            {/* Label - only shown if provided */}
-            {displayLabel && (
-              <div className="font-medium text-gray-900 text-xs leading-tight truncate">
-                {displayLabel}
-              </div>
-            )}
+        <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
+          {/* Label - always available for editing */}
+          <EditableLabel
+            nodeId={id}
+            value={displayLabel || ""}
+            className="font-medium text-gray-900 text-xs leading-tight"
+            placeholder=""
+          />
 
-            {/* Description if provided */}
-            {data?.description && (
-              <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-                {data.description}
-              </div>
-            )}
+          {/* Description if provided */}
+          {data?.description && (
+            <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+              {data.description}
+            </div>
+          )}
 
-            {/* Properties - shown below label if any */}
-            {hasProperties && (
-              <div className="mt-1">
-                {Object.entries(properties).map(([key, value]) => (
-                  <div key={key} className="text-[9px] text-gray-600">
-                    <span className="font-medium">{key}:</span> {value}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          {/* Properties - shown below label if any */}
+          {hasProperties && (
+            <div className="mt-1">
+              {Object.entries(properties).map(([key, value]) => (
+                <div key={key} className="text-[9px] text-gray-600">
+                  <span className="font-medium">{key}:</span> {value}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </TooltipProvider>
   );
@@ -841,7 +891,7 @@ export const PfdAgitatorNode = createSimplifiedPfdNode("pfd_agitator");
 
 // PFD Text label (doesn't use DEXPI SVG)
 export const PfdTextNode = memo(function PfdTextNode(props: NodeProps<PFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
 
   return (
     <div
@@ -852,9 +902,12 @@ export const PfdTextNode = memo(function PfdTextNode(props: NodeProps<PFDNode>) 
     >
       <Handle type="source" position={Position.Left} id="left" className="!w-2 !h-2 !bg-gray-400 !opacity-50" />
       <Handle type="source" position={Position.Right} id="right" className="!w-2 !h-2 !bg-gray-400 !opacity-50" />
-      <div className="font-medium text-gray-700 text-sm whitespace-nowrap">
-        {data.label || "Label"}
-      </div>
+      <EditableLabel
+        nodeId={id}
+        value={data.label || ""}
+        className="font-medium text-gray-700 text-sm whitespace-nowrap"
+        placeholder="Label"
+      />
     </div>
   );
 });

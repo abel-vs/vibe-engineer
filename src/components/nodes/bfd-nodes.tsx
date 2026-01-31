@@ -4,6 +4,7 @@ import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
+import { EditableLabel } from "./editable-label";
 import { EngineeringNodeComponent } from "./engineering-node";
 
 type BFDNodeData = {
@@ -16,7 +17,7 @@ type BFDNode = Node<BFDNodeData>;
 
 // Process Block - Major process unit
 export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<BFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -63,7 +64,12 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
       <div className="font-bold text-blue-900 flex items-center justify-center flex-col">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-bold text-blue-900"
+          placeholder="Process Block"
+        />
         {data.description && (
           <div className="text-xs text-blue-700 mt-1">{data.description}</div>
         )}
@@ -74,7 +80,7 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
 
 // Input/Output - Rendered as simple text label for boundary streams
 export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -122,7 +128,12 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
           selected ? "bg-blue-50 rounded" : ""
         )}
       >
-        <div className="font-medium text-gray-700 text-sm">{data.label}</div>
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-medium text-gray-700 text-sm"
+          placeholder="Label"
+        />
       </div>
     </div>
   );
@@ -130,7 +141,7 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
 
 // Storage - Tank or inventory
 export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) {
-  const { data, selected } = props;
+  const { id, data, selected } = props;
   const style = useDiagramStore((state) => state.style);
 
   if (style === "engineering") {
@@ -178,7 +189,12 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
       <div className="font-semibold text-amber-900 flex items-center justify-center flex-col">
-        {data.label}
+        <EditableLabel
+          nodeId={id}
+          value={data.label}
+          className="font-semibold text-amber-900"
+          placeholder="Storage"
+        />
         {data.description && (
           <div className="text-xs text-amber-700 mt-1">{data.description}</div>
         )}
