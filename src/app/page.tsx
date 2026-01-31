@@ -311,7 +311,7 @@ export default function DiagramPage() {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Sidebar - Shape Toolbar */}
-          <aside className="w-40 shrink-0 border-r border-gray-200 bg-white overflow-y-auto">
+          <aside className="w-52 shrink-0 border-r border-gray-200 bg-white overflow-y-auto">
             <ShapeToolbar />
           </aside>
 

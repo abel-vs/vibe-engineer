@@ -1,10 +1,10 @@
 "use client";
 
 import { useSettings } from "@/contexts/settings-context";
-import { serializeDiagramForAI } from "@/lib/diagram-state";
 import { getDefaultDirection } from "@/lib/auto-layout";
+import { serializeDiagramForAI } from "@/lib/diagram-state";
 import { selectTargetHandle } from "@/lib/edge-routing";
-import type { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import { useCallback, useState } from "react";
 import { useDiagramStore } from "./use-diagram-store";
 
@@ -46,13 +46,13 @@ interface UseVoiceCommandsOptions {
 // Helper to play audio from base64
 function playAudioFromBase64(
   base64Audio: string,
-  mimeType: string,
+  mimeType: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       console.log(
         "[Audio] Starting decode, base64 length:",
-        base64Audio.length,
+        base64Audio.length
       );
 
       // Decode base64 to binary
@@ -148,7 +148,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         data,
       });
     },
-    [onDebugLog],
+    [onDebugLog]
   );
 
   const {
@@ -211,7 +211,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             if (!nodeType) {
               console.error(
                 "[applyToolResults] add_node missing nodeType:",
-                rawArgs,
+                rawArgs
               );
               continue;
             }
@@ -227,7 +227,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               } else {
                 const rightmost = currentState.nodes.reduce(
                   (max, n) => (n.position.x > max.position.x ? n : max),
-                  currentState.nodes[0],
+                  currentState.nodes[0]
                 );
                 finalPosition = {
                   x: rightmost.position.x + 200,
@@ -254,7 +254,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             console.log(
               "[DEBUG] addNode called, checking store:",
               getStoreState().nodes.length,
-              "nodes",
+              "nodes"
             );
             log("result", `Added node: "${label}" (${nodeType})`, {
               id: nodeId,
@@ -279,7 +279,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             if (!sourceNodeId || !targetNodeId) {
               console.error(
                 "[applyToolResults] add_edge missing sourceNodeId or targetNodeId:",
-                rawArgs,
+                rawArgs
               );
               continue;
             }
@@ -291,10 +291,18 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             let sourceHandle: string | undefined;
             let targetHandle: string | undefined;
 
-            const sourceNode = currentState.nodes.find((n) => n.id === sourceNodeId);
-            const targetNode = currentState.nodes.find((n) => n.id === targetNodeId);
+            const sourceNode = currentState.nodes.find(
+              (n) => n.id === sourceNodeId
+            );
+            const targetNode = currentState.nodes.find(
+              (n) => n.id === targetNodeId
+            );
 
-            if ((currentState.mode === "bfd" || currentState.mode === "pfd") && sourceNode && targetNode) {
+            if (
+              (currentState.mode === "bfd" || currentState.mode === "pfd") &&
+              sourceNode &&
+              targetNode
+            ) {
               sourceHandle = "right";
               targetHandle = selectTargetHandle(sourceNode, targetNode);
             }
@@ -352,7 +360,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             console.log("=== UPDATE_NODE DEBUG START ===");
             console.log(
               "[DEBUG update_node] Raw args:",
-              JSON.stringify(rawArgs, null, 2),
+              JSON.stringify(rawArgs, null, 2)
             );
             console.log("[DEBUG update_node] Extracted fields:");
             console.log("  - nodeId:", nodeId);
@@ -367,15 +375,15 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             }
 
             const existingNode = currentState.nodes.find(
-              (n) => n.id === nodeId,
+              (n) => n.id === nodeId
             );
             console.log(
               "[DEBUG update_node] Existing node found:",
-              !!existingNode,
+              !!existingNode
             );
             console.log(
               "[DEBUG update_node] Existing node data:",
-              JSON.stringify(existingNode?.data, null, 2),
+              JSON.stringify(existingNode?.data, null, 2)
             );
 
             const updates: Partial<Node> = {};
@@ -386,7 +394,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
               (existingNode?.data?.properties as Record<string, string>) || {};
             console.log(
               "[DEBUG update_node] Existing properties:",
-              JSON.stringify(existingProps),
+              JSON.stringify(existingProps)
             );
 
             // Build new data object
@@ -402,11 +410,11 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
             console.log(
               "[DEBUG update_node] New data object:",
-              JSON.stringify(newData, null, 2),
+              JSON.stringify(newData, null, 2)
             );
             console.log(
               "[DEBUG update_node] Final updates to apply:",
-              JSON.stringify(updates, null, 2),
+              JSON.stringify(updates, null, 2)
             );
             console.log("=== UPDATE_NODE DEBUG END - CALLING updateNode ===");
 
@@ -417,7 +425,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             const updatedNode = verifyState.nodes.find((n) => n.id === nodeId);
             console.log(
               "[DEBUG update_node] VERIFICATION - Node after update:",
-              JSON.stringify(updatedNode?.data, null, 2),
+              JSON.stringify(updatedNode?.data, null, 2)
             );
 
             log("result", `Updated node: ${nodeId}`, updates);
@@ -501,7 +509,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             // Simple direction-based movement from current position
             if (!finalPosition && direction) {
               const currentNode = currentState.nodes.find(
-                (n) => n.id === nodeId,
+                (n) => n.id === nodeId
               );
               if (currentNode) {
                 switch (direction) {
@@ -536,7 +544,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             // Relative to another node
             if (!finalPosition && relativeTo) {
               const refNode = currentState.nodes.find(
-                (n) => n.id === relativeTo.referenceNodeId,
+                (n) => n.id === relativeTo.referenceNodeId
               );
               if (refNode) {
                 const relOffset = relativeTo.offset || 150;
@@ -601,7 +609,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
       setSelectedEdges,
       clearCanvas,
       log,
-    ],
+    ]
   );
 
   const processVoiceCommand = useCallback(
@@ -619,12 +627,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           freshState.edges,
           freshState.mode,
           freshState.selectedNodeIds,
-          freshState.selectedEdgeIds,
+          freshState.selectedEdgeIds
         );
 
         log(
           "info",
-          `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges, TTS: ${ttsEnabled})`,
+          `Sending to AI (${freshState.nodes.length} nodes, ${freshState.edges.length} edges, TTS: ${ttsEnabled})`
         );
 
         const response = await fetch("/api/voice-command", {
@@ -650,26 +658,35 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         if (data.toolResults && data.toolResults.length > 0) {
           log(
             "info",
-            `Received ${data.toolResults.length} tool result(s) from API`,
+            `Received ${data.toolResults.length} tool result(s) from API`
           );
           console.log(
             "[DEBUG] toolResults from API:",
-            JSON.stringify(data.toolResults, null, 2),
+            JSON.stringify(data.toolResults, null, 2)
           );
           applyToolResults(data.toolResults);
 
           // Auto-layout for BFD/PFD modes after structural changes
           const currentMode = getStoreState().mode;
           const hasStructuralChanges = data.toolResults.some((r) =>
-            ["add_node", "add_edge", "remove_node", "remove_edge"].includes(r.toolName)
+            ["add_node", "add_edge", "remove_node", "remove_edge"].includes(
+              r.toolName
+            )
           );
 
-          if ((currentMode === "bfd" || currentMode === "pfd") && hasStructuralChanges) {
+          if (
+            (currentMode === "bfd" || currentMode === "pfd") &&
+            hasStructuralChanges
+          ) {
             // Small delay to let React Flow measure nodes before layout
             setTimeout(() => {
-              const { pinnedNodeIds, organizeLayout, updateEdgeHandles } = getStoreState();
+              const { pinnedNodeIds, organizeLayout, updateEdgeHandles } =
+                getStoreState();
               const direction = getDefaultDirection(currentMode);
-              log("info", `Auto-organizing layout (${direction}) with ${pinnedNodeIds.size} pinned nodes`);
+              log(
+                "info",
+                `Auto-organizing layout (${direction}) with ${pinnedNodeIds.size} pinned nodes`
+              );
               organizeLayout(direction, pinnedNodeIds);
               // Recalculate edge handles based on new node positions
               updateEdgeHandles();
@@ -689,7 +706,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         if (data.speechMessage && ttsEnabled) {
           console.log(
             "[VoiceCommands] Generating TTS for:",
-            data.speechMessage,
+            data.speechMessage
           );
           log("info", "Generating voice response...");
 
@@ -709,7 +726,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
         setIsProcessing(false);
       }
     },
-    [applyToolResults, log, ttsEnabled, generateAndPlayTTS],
+    [applyToolResults, log, ttsEnabled, generateAndPlayTTS]
   );
 
   return {
