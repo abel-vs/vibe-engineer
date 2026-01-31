@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
 import { EditableLabel } from "./editable-label";
+import { NodeContextMenu } from "./node-context-menu";
 
 export type DexpiNodeData = {
   label?: string;
@@ -123,134 +124,123 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
     }
   });
 
-  // Get properties to display
-  const properties = data?.properties ?? {};
-  const hasProperties = Object.keys(properties).length > 0;
-
   // Support resizing - get dimensions from node props
   const nodeWidth = (props as NodeProps<DexpiNode> & { width?: number }).width;
   const nodeHeight = (props as NodeProps<DexpiNode> & { height?: number }).height;
   const displayWidth = nodeWidth || SVG_SIZE;
   const displayHeight = nodeHeight || SVG_SIZE;
 
+  const nodeLabel = displayLabel || categoryDisplayName || id;
+
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="dexpi-node relative flex flex-col items-center">
-        <NodeResizer
-          minWidth={48}
-          minHeight={48}
-          keepAspectRatio
-          isVisible={selected}
-          lineClassName="!border-gray-700"
-          handleClassName="!w-2 !h-2 !bg-gray-700 !border-white"
-        />
-        {/* SVG Container with handles attached to edges */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn(
-                "relative flex items-center justify-center",
-                selected && "ring-2 ring-blue-400 ring-offset-1 rounded"
-              )}
-              style={{ width: displayWidth, height: displayHeight }}
-            >
-              {/* Handles positioned at the edges of the SVG */}
-              <Handle
-                type="source"
-                position={Position.Top}
-                id="top"
-                className={cn(
-                  "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-top-1",
-                  connectedHandles.has("top") && "connected-handle"
-                )}
-                style={{ left: "50%" }}
-              />
-              <Handle
-                type="source"
-                position={Position.Bottom}
-                id="bottom"
-                className={cn(
-                  "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-bottom-1",
-                  connectedHandles.has("bottom") && "connected-handle"
-                )}
-                style={{ left: "50%" }}
-              />
-              <Handle
-                type="source"
-                position={Position.Left}
-                id="left"
-                className={cn(
-                  "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-left-1",
-                  connectedHandles.has("left") && "connected-handle"
-                )}
-                style={{ top: "50%" }}
-              />
-              <Handle
-                type="source"
-                position={Position.Right}
-                id="right"
-                className={cn(
-                  "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-right-1",
-                  connectedHandles.has("right") && "connected-handle"
-                )}
-                style={{ top: "50%" }}
-              />
-
-              {/* SVG Symbol - inline for proper scaling */}
-              {svgContent && !svgError ? (
-                <div
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: svgContent }}
-                />
-              ) : svgError ? (
-                <div className="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-400 rounded">
-                  ?
-                </div>
-              ) : (
-                <div className="w-full h-full bg-gray-50 animate-pulse rounded" />
-              )}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="text-xs">
-            <div className="font-medium">{categoryDisplayName}</div>
-            {subtypeName && <div className="text-gray-500">{subtypeName}</div>}
-          </TooltipContent>
-        </Tooltip>
-
-        {/* 
-          NOTE: These "below-node" details are positioned absolutely so they do NOT
-          participate in React Flow's node dimension measurement. Otherwise, feeding
-          measured height back into the symbol size (via props.height) can cause an
-          infinite growth loop.
-        */}
-        <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
-          {/* Label - always available for editing */}
-          <EditableLabel
-            nodeId={id}
-            value={displayLabel || ""}
-            className="font-medium text-gray-900 text-xs leading-none"
-            placeholder=""
+      <NodeContextMenu nodeId={id} nodeLabel={nodeLabel}>
+        <div className="dexpi-node relative flex flex-col items-center">
+          <NodeResizer
+            minWidth={48}
+            minHeight={48}
+            keepAspectRatio
+            isVisible={selected}
+            lineClassName="!border-gray-700"
+            handleClassName="!w-2 !h-2 !bg-gray-700 !border-white"
           />
+          {/* SVG Container with handles attached to edges */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  "relative flex items-center justify-center",
+                  selected && "ring-2 ring-blue-400 ring-offset-1 rounded"
+                )}
+                style={{ width: displayWidth, height: displayHeight }}
+              >
+                {/* Handles positioned at the edges of the SVG */}
+                <Handle
+                  type="source"
+                  position={Position.Top}
+                  id="top"
+                  className={cn(
+                    "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-top-1",
+                    connectedHandles.has("top") && "connected-handle"
+                  )}
+                  style={{ left: "50%" }}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id="bottom"
+                  className={cn(
+                    "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-bottom-1",
+                    connectedHandles.has("bottom") && "connected-handle"
+                  )}
+                  style={{ left: "50%" }}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Left}
+                  id="left"
+                  className={cn(
+                    "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-left-1",
+                    connectedHandles.has("left") && "connected-handle"
+                  )}
+                  style={{ top: "50%" }}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="right"
+                  className={cn(
+                    "!w-2 !h-2 !bg-gray-700 !border-0 !rounded-full !-right-1",
+                    connectedHandles.has("right") && "connected-handle"
+                  )}
+                  style={{ top: "50%" }}
+                />
 
-          {/* Description if provided */}
-          {data?.description && (
-            <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-              {data.description}
-            </div>
-          )}
+                {/* SVG Symbol - inline for proper scaling */}
+                {svgContent && !svgError ? (
+                  <div
+                    className="w-full h-full"
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                  />
+                ) : svgError ? (
+                  <div className="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-400 rounded">
+                    ?
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-gray-50 animate-pulse rounded" />
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              <div className="font-medium">{categoryDisplayName}</div>
+              {subtypeName && <div className="text-gray-500">{subtypeName}</div>}
+            </TooltipContent>
+          </Tooltip>
 
-          {/* Properties - shown below label if any */}
-          {hasProperties && (
-            <div className="mt-1">
-              {Object.entries(properties).map(([key, value]) => (
-                <div key={key} className="text-[9px] text-gray-600">
-                  <span className="font-medium">{key}:</span> {value}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* 
+            NOTE: These "below-node" details are positioned absolutely so they do NOT
+            participate in React Flow's node dimension measurement. Otherwise, feeding
+            measured height back into the symbol size (via props.height) can cause an
+            infinite growth loop.
+          */}
+          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 text-center max-w-[140px]">
+            {/* Label - always available for editing */}
+            <EditableLabel
+              nodeId={id}
+              value={displayLabel || ""}
+              className="font-medium text-gray-900 text-xs leading-none"
+              placeholder=""
+            />
+
+            {/* Description if provided */}
+            {data?.description && (
+              <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                {data.description}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </NodeContextMenu>
     </TooltipProvider>
   );
 });
