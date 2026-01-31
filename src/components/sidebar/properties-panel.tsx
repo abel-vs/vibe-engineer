@@ -2,37 +2,37 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { MODES } from "@/lib/modes";
 import {
-  isDexpiNodeType,
-  nodeTypeToCategory,
-  getCategorySymbols,
-  getSymbolPath,
-  getCategoryDisplayName,
+    getCategoryDisplayName,
+    getCategorySymbols,
+    getSymbolPath,
+    isDexpiNodeType,
+    nodeTypeToCategory,
 } from "@/lib/dexpi-config";
+import { MODES } from "@/lib/modes";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";

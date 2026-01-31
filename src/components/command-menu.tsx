@@ -2,26 +2,26 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+    CommandShortcut,
 } from "@/components/ui/command";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import {
-  getCategoryDisplayName,
-  getCategorySymbols,
-  getOrderedCategories,
-  categoryToNodeType,
-  getSymbolPath,
-  nodeTypeToCategory,
+    categoryToNodeType,
+    getCategoryDisplayName,
+    getCategorySymbols,
+    getOrderedCategories,
+    getSymbolPath,
+    nodeTypeToCategory,
 } from "@/lib/dexpi-config";
 import { MODES } from "@/lib/modes";
 import { deleteDiagram, listDiagrams, type SavedDiagram } from "@/lib/storage";

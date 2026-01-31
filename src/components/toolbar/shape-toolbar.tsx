@@ -1,36 +1,36 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
-import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { MODES, type DiagramMode } from "@/lib/modes";
-import type { DiagramStyle } from "@/lib/styles";
+import { Input } from "@/components/ui/input";
 import {
-  getOrderedCategories,
-  getCategoryDisplayName,
-  getSymbolCount,
-  getSymbolPath,
-  getCategorySymbols,
-  categoryToNodeType,
-  getSymbolPathFromSymbol,
-  type DexpiSymbol,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import {
+    categoryToNodeType,
+    getCategoryDisplayName,
+    getCategorySymbols,
+    getOrderedCategories,
+    getSymbolCount,
+    getSymbolPath,
+    getSymbolPathFromSymbol,
+    type DexpiSymbol,
 } from "@/lib/dexpi-config";
 import {
-  loadShapesData,
-  getOrderedCategories as getDrawioOrderedCategories,
-  getCategoryDisplayName as getDrawioCategoryDisplayName,
-  getShapesByCategory as getDrawioShapesByCategory,
-  getSvgPath as getDrawioSvgPath,
-  type DrawioShapesData,
-  type DrawioShape,
+    getCategoryDisplayName as getDrawioCategoryDisplayName,
+    getOrderedCategories as getDrawioOrderedCategories,
+    getShapesByCategory as getDrawioShapesByCategory,
+    getSvgPath as getDrawioSvgPath,
+    loadShapesData,
+    type DrawioShape,
+    type DrawioShapesData,
 } from "@/lib/drawio-pid-config";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { MODES, type DiagramMode } from "@/lib/modes";
+import type { DiagramStyle } from "@/lib/styles";
+import { cn } from "@/lib/utils";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 interface ShapeItem {
   type: string;
