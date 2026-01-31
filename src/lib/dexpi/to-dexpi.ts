@@ -3,24 +3,24 @@
  * Converts React Flow nodes and edges to DEXPI XML format
  */
 
-import type { Node, Edge } from "@xyflow/react";
 import type { DiagramMode } from "@/lib/modes";
+import type { Edge, Node } from "@xyflow/react";
+import {
+  edgeTypeToDexpi,
+  isNodeTypeSupported,
+  nodeTypeToDexpi,
+  streamTypeToDexpiFlow,
+} from "./mapping";
 import type {
-  ProcessModel,
-  ProcessStep,
-  ProcessConnection,
+  DexpiFlowType,
   ExternalPort,
   Port,
+  ProcessConnection,
+  ProcessModel,
+  ProcessStep,
   StreamProperties,
-  DexpiFlowType,
 } from "./types";
 import { APPLICATION_SOURCE } from "./types";
-import {
-  nodeTypeToDexpi,
-  edgeTypeToDexpi,
-  streamTypeToDexpiFlow,
-  isNodeTypeSupported,
-} from "./mapping";
 import { buildDexpiXml } from "./xml-utils";
 
 // ============================================================================
@@ -92,7 +92,7 @@ function buildProcessModel(
   options?: ConvertOptions
 ): ProcessModel {
   const timestamp = new Date().toISOString();
-  const diagramType = mode === "pfd" ? "PFD" : "BFD";
+  const diagramType = mode === "pid" ? "P&ID" : mode === "pfd" ? "PFD" : "BFD";
 
   // Separate input/output nodes from process steps
   const { processStepNodes, externalPortNodes } = categorizeNodes(nodes, mode);
@@ -106,7 +106,9 @@ function buildProcessModel(
   );
 
   // Convert input/output nodes to ExternalPorts
-  const externalPorts = externalPortNodes.map((node) => convertNodeToExternalPort(node));
+  const externalPorts = externalPortNodes.map((node) =>
+    convertNodeToExternalPort(node)
+  );
 
   // Convert edges to ProcessConnections
   const processConnections = edges.map((edge) =>
@@ -247,7 +249,8 @@ function convertNodeToExternalPort(node: Node): ExternalPort {
   // Determine direction based on connections or position
   // Default to "inlet" for feed nodes, "outlet" for product nodes
   // This is a heuristic - you might want to store this explicitly
-  const direction: "inlet" | "outlet" = node.position.x < 200 ? "inlet" : "outlet";
+  const direction: "inlet" | "outlet" =
+    node.position.x < 200 ? "inlet" : "outlet";
 
   return {
     id: node.id,
@@ -264,7 +267,9 @@ function convertNodeToExternalPort(node: Node): ExternalPort {
 /**
  * Build parameters from node data properties
  */
-function buildParametersFromNodeData(data: NodeData | undefined): ProcessStep["parameters"] {
+function buildParametersFromNodeData(
+  data: NodeData | undefined
+): ProcessStep["parameters"] {
   if (!data?.properties) return undefined;
 
   const parameters: ProcessStep["parameters"] = [];
@@ -301,7 +306,8 @@ function convertEdgeToProcessConnection(
 
   // Get DEXPI connection type
   const edgeType = type || "default";
-  const dexpiConnectionType = edgeTypeToDexpi[edgeType] || edgeTypeToDexpi["default"];
+  const dexpiConnectionType =
+    edgeTypeToDexpi[edgeType] || edgeTypeToDexpi["default"];
 
   // Get flow type
   const flowType = getFlowTypeFromEdge(edge);
@@ -334,7 +340,9 @@ function getFlowTypeFromEdge(edge: Edge): DexpiFlowType {
 /**
  * Build StreamProperties from edge data
  */
-function buildStreamProperties(data: EdgeData | undefined): StreamProperties | undefined {
+function buildStreamProperties(
+  data: EdgeData | undefined
+): StreamProperties | undefined {
   if (!data) return undefined;
 
   const properties: StreamProperties = {};
@@ -370,7 +378,9 @@ function buildStreamProperties(data: EdgeData | undefined): StreamProperties | u
 /**
  * Parse a quantity string like "100 kg/h" into value and unit
  */
-function parseQuantityString(str: string): { value: number; unit: string } | undefined {
+function parseQuantityString(
+  str: string
+): { value: number; unit: string } | undefined {
   if (!str) return undefined;
 
   // Try to match number followed by optional unit
@@ -394,7 +404,7 @@ function parseQuantityString(str: string): { value: number; unit: string } | und
  * Check if the diagram can be exported to DEXPI
  */
 export function canExportToDexpi(mode: DiagramMode): boolean {
-  return mode === "bfd" || mode === "pfd";
+  return mode === "bfd" || mode === "pfd" || mode === "pid";
 }
 
 /**
@@ -407,7 +417,9 @@ export function getExportWarnings(nodes: Node[], mode: DiagramMode): string[] {
     const nodeType = node.type || "default";
     if (!isNodeTypeSupported(nodeType)) {
       warnings.push(
-        `Node "${(node.data as NodeData)?.label || node.id}" has unsupported type "${nodeType}" - will be exported as generic process step`
+        `Node "${
+          (node.data as NodeData)?.label || node.id
+        }" has unsupported type "${nodeType}" - will be exported as generic process step`
       );
     }
   }

@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { canExportToDexpi, getExportWarnings, reactFlowToDexpi } from "@/lib/dexpi";
 import { toPng, toSvg } from "html-to-image";
 import { jsPDF } from "jspdf";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Download, FileImage, FileCode, FileText, Loader2, FileType } from "lucide-react";
-import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { reactFlowToDexpi, canExportToDexpi, getExportWarnings } from "@/lib/dexpi";
+import { Download, FileCode, FileImage, FileText, FileType, Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
 
 interface ExportMenuProps {
   flowRef: React.RefObject<HTMLDivElement | null>;
@@ -136,7 +136,7 @@ export function ExportMenu({ flowRef }: ExportMenuProps) {
 
   const exportToDexpi = useCallback(() => {
     if (!canExportToDexpi(mode)) {
-      console.warn("DEXPI export is only available for BFD and PFD modes");
+      console.warn("DEXPI export is only available for BFD, PFD and P&ID modes");
       return;
     }
 
@@ -202,11 +202,11 @@ export function ExportMenu({ flowRef }: ExportMenuProps) {
         <DropdownMenuItem
           onClick={exportToDexpi}
           disabled={!isDexpiAvailable}
-          title={!isDexpiAvailable ? "DEXPI export is only available for BFD and PFD modes" : undefined}
+          title={!isDexpiAvailable ? "DEXPI export is only available for BFD, PFD and P&ID modes" : undefined}
         >
           <FileType className="w-4 h-4 mr-2" />
           Export as DEXPI XML
-          {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD only)</span>}
+          {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD/P&ID only)</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

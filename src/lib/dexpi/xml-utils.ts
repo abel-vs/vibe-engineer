@@ -1,5 +1,6 @@
 /**
  * XML Serialization and Parsing Utilities for DEXPI
+ * Supports both DEXPI 2.0 (DEXPI-XML) and DEXPI 1.x (Proteus Schema) formats
  * Uses browser-native DOMParser and XMLSerializer
  */
 
@@ -17,7 +18,12 @@ import type {
   DexpiConnectionType,
   DexpiFlowType,
 } from "./types";
-import { DEXPI_NAMESPACE, DEXPI_VERSION, DEXPI_SCHEMA_LOCATION, APPLICATION_SOURCE } from "./types";
+import { DEXPI_NAMESPACE, DEXPI_VERSION, DEXPI_SCHEMA_LOCATION } from "./types";
+import {
+  detectDexpiVersion,
+  parseDexpi1x,
+  validateDexpi1x,
+} from "./proteus-parser";
 
 // ============================================================================
 // XML Document Building
@@ -27,7 +33,11 @@ import { DEXPI_NAMESPACE, DEXPI_VERSION, DEXPI_SCHEMA_LOCATION, APPLICATION_SOUR
  * Create a new XML Document with DEXPI namespace
  */
 export function createDexpiDocument(): Document {
-  const doc = document.implementation.createDocument(DEXPI_NAMESPACE, "DEXPI-Document", null);
+  const doc = document.implementation.createDocument(
+    DEXPI_NAMESPACE,
+    "DEXPI-Document",
+    null
+  );
 
   // Add XML declaration attributes to root
   const root = doc.documentElement;
@@ -83,7 +93,11 @@ function getValueElementName(type: string): string {
 /**
  * Add a Components element containing child objects
  */
-export function addComponentsElement(doc: Document, parent: Element, property: string): Element {
+export function addComponentsElement(
+  doc: Document,
+  parent: Element,
+  property: string
+): Element {
   const componentsEl = createElement(doc, "Components");
   componentsEl.setAttribute("property", property);
   parent.appendChild(componentsEl);
@@ -141,7 +155,12 @@ function buildProcessModelElement(doc: Document, model: ProcessModel): Element {
       addDataElement(doc, metaObj, "UpdatedAt", model.metadata.updatedAt);
     }
     if (model.metadata.applicationSource) {
-      addDataElement(doc, metaObj, "ApplicationSource", model.metadata.applicationSource);
+      addDataElement(
+        doc,
+        metaObj,
+        "ApplicationSource",
+        model.metadata.applicationSource
+      );
     }
     metadataEl.appendChild(metaObj);
   }
@@ -198,8 +217,10 @@ function buildProcessStepElement(doc: Document, step: ProcessStep): Element {
     layoutObj.setAttribute("type", "Extension/Layout");
     addDataElement(doc, layoutObj, "X", step.layout.x);
     addDataElement(doc, layoutObj, "Y", step.layout.y);
-    if (step.layout.width) addDataElement(doc, layoutObj, "Width", step.layout.width);
-    if (step.layout.height) addDataElement(doc, layoutObj, "Height", step.layout.height);
+    if (step.layout.width)
+      addDataElement(doc, layoutObj, "Width", step.layout.width);
+    if (step.layout.height)
+      addDataElement(doc, layoutObj, "Height", step.layout.height);
     layoutEl.appendChild(layoutObj);
   }
 
@@ -265,7 +286,10 @@ function buildExternalPortElement(doc: Document, port: ExternalPort): Element {
 /**
  * Build ProcessConnection element
  */
-function buildProcessConnectionElement(doc: Document, conn: ProcessConnection): Element {
+function buildProcessConnectionElement(
+  doc: Document,
+  conn: ProcessConnection
+): Element {
   const el = createElement(doc, "Object");
   el.setAttribute("id", conn.id);
   el.setAttribute("type", conn.type);
@@ -293,7 +317,12 @@ function buildProcessConnectionElement(doc: Document, conn: ProcessConnection): 
       addPhysicalQuantity(doc, propsObj, "FlowRate", conn.properties.flowRate);
     }
     if (conn.properties.temperature) {
-      addPhysicalQuantity(doc, propsObj, "Temperature", conn.properties.temperature);
+      addPhysicalQuantity(
+        doc,
+        propsObj,
+        "Temperature",
+        conn.properties.temperature
+      );
     }
     if (conn.properties.pressure) {
       addPhysicalQuantity(doc, propsObj, "Pressure", conn.properties.pressure);
@@ -346,13 +375,34 @@ function addPhysicalQuantity(
 }
 
 // ============================================================================
-// Parse DEXPI XML to ProcessModel
+// Parse DEXPI XML to ProcessModel (supports both 1.x and 2.0)
 // ============================================================================
 
 /**
  * Parse DEXPI XML string to ProcessModel
+ * Automatically detects version (1.x Proteus or 2.0 DEXPI-XML) and uses appropriate parser
  */
 export function parseDexpiXml(xmlString: string): DexpiDocument {
+  // Detect version first
+  const versionInfo = detectDexpiVersion(xmlString);
+
+  console.log("[DEXPI Parser] Detected version:", versionInfo);
+
+  // Use appropriate parser based on version
+  if (versionInfo.format === "proteus" || versionInfo.version === "1.x") {
+    console.log("[DEXPI Parser] Using DEXPI 1.x (Proteus) parser");
+    return parseDexpi1x(xmlString);
+  }
+
+  // Default to DEXPI 2.0 parser
+  console.log("[DEXPI Parser] Using DEXPI 2.0 parser");
+  return parseDexpi2x(xmlString);
+}
+
+/**
+ * Parse DEXPI 2.0 (DEXPI-XML) format
+ */
+function parseDexpi2x(xmlString: string): DexpiDocument {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlString, "application/xml");
 
@@ -366,7 +416,9 @@ export function parseDexpiXml(xmlString: string): DexpiDocument {
   const version = root.getAttribute("version") || DEXPI_VERSION;
 
   // Find the ProcessModel object
-  const processModelEl = root.querySelector('Object[type="Process/ProcessModel"]');
+  const processModelEl = root.querySelector(
+    'Object[type="Process/ProcessModel"]'
+  );
   if (!processModelEl) {
     throw new Error("No ProcessModel found in DEXPI document");
   }
@@ -386,11 +438,14 @@ function parseProcessModel(el: Element): ProcessModel {
   const id = el.getAttribute("id") || generateId("pm");
   const name = getDataValue(el, "Name") || "Untitled";
   const description = getDataValue(el, "Description");
-  const diagramType = (getDataValue(el, "DiagramType") as "BFD" | "PFD") || "BFD";
+  const diagramType =
+    (getDataValue(el, "DiagramType") as "BFD" | "PFD") || "BFD";
 
   // Parse metadata (case-insensitive)
   const metadataContainer = getComponentsElement(el, "Metadata");
-  const metadataObjects = metadataContainer ? getChildObjects(metadataContainer) : [];
+  const metadataObjects = metadataContainer
+    ? getChildObjects(metadataContainer)
+    : [];
   const metadataEl = metadataObjects[0];
   const metadata = metadataEl
     ? {
@@ -407,13 +462,18 @@ function parseProcessModel(el: Element): ProcessModel {
 
   // Parse ExternalPorts (case-insensitive)
   const externalPortsContainer = getComponentsElement(el, "ExternalPorts");
-  const externalPortElements = externalPortsContainer ? getChildObjects(externalPortsContainer) : [];
-  const externalPorts: ExternalPort[] = externalPortElements.map(parseExternalPort);
+  const externalPortElements = externalPortsContainer
+    ? getChildObjects(externalPortsContainer)
+    : [];
+  const externalPorts: ExternalPort[] =
+    externalPortElements.map(parseExternalPort);
 
   // Parse ProcessConnections (case-insensitive)
   const connsContainer = getComponentsElement(el, "ProcessConnections");
   const connElements = connsContainer ? getChildObjects(connsContainer) : [];
-  const processConnections: ProcessConnection[] = connElements.map(parseProcessConnection);
+  const processConnections: ProcessConnection[] = connElements.map(
+    parseProcessConnection
+  );
 
   return {
     id,
@@ -432,7 +492,9 @@ function parseProcessModel(el: Element): ProcessModel {
  */
 function parseProcessStep(el: Element): ProcessStep {
   const id = el.getAttribute("id") || generateId("ps");
-  const type = (el.getAttribute("type") as DexpiProcessStepType) || "Process/Process.GenericProcessStep";
+  const type =
+    (el.getAttribute("type") as DexpiProcessStepType) ||
+    "Process/Process.GenericProcessStep";
   const name = getDataValue(el, "Name") || "Unnamed Step";
   const description = getDataValue(el, "Description");
   const originalNodeType = getDataValue(el, "OriginalNodeType");
@@ -441,7 +503,9 @@ function parseProcessStep(el: Element): ProcessStep {
   const layoutContainer = getComponentsElement(el, "Layout");
   const layoutObjects = layoutContainer ? getChildObjects(layoutContainer) : [];
   const layoutEl = layoutObjects[0];
-  const layout = layoutEl ? parseLayout(layoutEl) : parseLayoutFromDotNotation(el);
+  const layout = layoutEl
+    ? parseLayout(layoutEl)
+    : parseLayoutFromDotNotation(el);
 
   // Parse ports (case-insensitive)
   const portsContainer = getComponentsElement(el, "Ports");
@@ -471,8 +535,10 @@ function parseProcessStep(el: Element): ProcessStep {
 function parsePort(el: Element, stepId: string): Port {
   const id = el.getAttribute("id") || generateId("port");
   const name = getDataValue(el, "Name") || "Port";
-  const direction = (getDataValue(el, "Direction") as "inlet" | "outlet") || "inlet";
-  const flowType = (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
+  const direction =
+    (getDataValue(el, "Direction") as "inlet" | "outlet") || "inlet";
+  const flowType =
+    (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
 
   return {
     id,
@@ -489,14 +555,18 @@ function parsePort(el: Element, stepId: string): Port {
 function parseExternalPort(el: Element): ExternalPort {
   const id = el.getAttribute("id") || generateId("ep");
   const name = getDataValue(el, "Name") || "External Port";
-  const direction = (getDataValue(el, "Direction") as "inlet" | "outlet") || "inlet";
-  const flowType = (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
+  const direction =
+    (getDataValue(el, "Direction") as "inlet" | "outlet") || "inlet";
+  const flowType =
+    (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
 
   // Parse layout - try nested Layout object first, then dot notation
   const layoutContainer = getComponentsElement(el, "Layout");
   const layoutObjects = layoutContainer ? getChildObjects(layoutContainer) : [];
   const layoutEl = layoutObjects[0];
-  const layout = layoutEl ? parseLayout(layoutEl) : parseLayoutFromDotNotation(el);
+  const layout = layoutEl
+    ? parseLayout(layoutEl)
+    : parseLayoutFromDotNotation(el);
 
   return {
     id,
@@ -513,18 +583,24 @@ function parseExternalPort(el: Element): ExternalPort {
 function parseProcessConnection(el: Element): ProcessConnection {
   const id = el.getAttribute("id") || generateId("conn");
   const type =
-    (el.getAttribute("type") as DexpiConnectionType) || "Process/Process.MaterialFlow";
+    (el.getAttribute("type") as DexpiConnectionType) ||
+    "Process/Process.MaterialFlow";
   const fromPort = getDataValue(el, "FromPort") || "";
   const toPort = getDataValue(el, "ToPort") || "";
-  const flowType = (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
+  const flowType =
+    (getDataValue(el, "FlowType") as DexpiFlowType) || "material";
   const label = getDataValue(el, "Label");
   const originalEdgeType = getDataValue(el, "OriginalEdgeType");
 
   // Parse stream properties (case-insensitive, handle both nested and dot notation)
-  const propsContainer = getComponentsElement(el, "StreamProperties") || getComponentsElement(el, "Properties");
+  const propsContainer =
+    getComponentsElement(el, "StreamProperties") ||
+    getComponentsElement(el, "Properties");
   const propsObjects = propsContainer ? getChildObjects(propsContainer) : [];
   const propsEl = propsObjects[0];
-  const properties = propsEl ? parseStreamProperties(propsEl) : parseStreamPropertiesFromDotNotation(el);
+  const properties = propsEl
+    ? parseStreamProperties(propsEl)
+    : parseStreamPropertiesFromDotNotation(el);
 
   return {
     id,
@@ -662,7 +738,9 @@ function parseLayoutFromDotNotation(el: Element): LayoutInfo | undefined {
 /**
  * Parse stream properties from dot notation (e.g., flowRate.value, flowRate.unit)
  */
-function parseStreamPropertiesFromDotNotation(el: Element): StreamProperties | undefined {
+function parseStreamPropertiesFromDotNotation(
+  el: Element
+): StreamProperties | undefined {
   const flowRateValue = getDataValueDotNotation(el, "flowRate.value");
   const flowRateUnit = getDataValueDotNotation(el, "flowRate.unit");
   const tempValue = getDataValueDotNotation(el, "temperature.value");
@@ -702,7 +780,10 @@ function parseStreamPropertiesFromDotNotation(el: Element): StreamProperties | u
 /**
  * Get data value using dot notation property name (e.g., "layout.x")
  */
-function getDataValueDotNotation(parent: Element, property: string): string | undefined {
+function getDataValueDotNotation(
+  parent: Element,
+  property: string
+): string | undefined {
   const dataEl = parent.querySelector(`Data[property="${property}"]`);
   if (!dataEl) return undefined;
 
@@ -721,12 +802,12 @@ function getDataValueDotNotation(parent: Element, property: string): string | un
 function getDataValue(parent: Element, property: string): string | undefined {
   // Try exact match first
   let dataEl = parent.querySelector(`Data[property="${property}"]`);
-  
+
   // Try lowercase match
   if (!dataEl) {
     dataEl = parent.querySelector(`Data[property="${property.toLowerCase()}"]`);
   }
-  
+
   // Try with first letter lowercase (camelCase)
   if (!dataEl) {
     const camelCase = property.charAt(0).toLowerCase() + property.slice(1);
@@ -743,14 +824,20 @@ function getDataValue(parent: Element, property: string): string | undefined {
 /**
  * Get Components element by property name (case-insensitive)
  */
-function getComponentsElement(parent: Element, property: string): Element | null {
+function getComponentsElement(
+  parent: Element,
+  property: string
+): Element | null {
   // Iterate through direct children to handle namespaced XML correctly
   const children = parent.children;
   const propertyLower = property.toLowerCase();
-  
+
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
-    if (child.localName === "Components" || child.tagName.endsWith(":Components")) {
+    if (
+      child.localName === "Components" ||
+      child.tagName.endsWith(":Components")
+    ) {
       const propAttr = child.getAttribute("property");
       if (propAttr && propAttr.toLowerCase() === propertyLower) {
         return child;
@@ -767,14 +854,14 @@ function getComponentsElement(parent: Element, property: string): Element | null
 function getChildObjects(parent: Element): Element[] {
   const result: Element[] = [];
   const children = parent.children;
-  
+
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
     if (child.localName === "Object" || child.tagName.endsWith(":Object")) {
       result.push(child);
     }
   }
-  
+
   return result;
 }
 
@@ -818,13 +905,65 @@ function formatXml(xml: string): string {
 }
 
 // ============================================================================
-// Validation
+// Validation (supports both DEXPI 1.x and 2.0)
 // ============================================================================
 
 /**
  * Validate DEXPI XML structure with comprehensive checks
+ * Supports both DEXPI 1.x (Proteus Schema) and DEXPI 2.0 (DEXPI-XML) formats
  */
 export function validateDexpiXml(xmlString: string): {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  try {
+    // First, detect the version
+    const versionInfo = detectDexpiVersion(xmlString);
+
+    console.log("[DEXPI Validation] Detected format:", versionInfo);
+
+    // Handle DEXPI 1.x (Proteus Schema)
+    if (versionInfo.format === "proteus" || versionInfo.version === "1.x") {
+      const result = validateDexpi1x(xmlString);
+
+      // Add info about detected version
+      if (versionInfo.detectedVersion) {
+        warnings.push(
+          `DEXPI 1.x format detected (version: ${versionInfo.detectedVersion})`
+        );
+      } else {
+        warnings.push("DEXPI 1.x (Proteus Schema) format detected");
+      }
+
+      return result;
+    }
+
+    // Handle DEXPI 2.0
+    if (versionInfo.format === "dexpi-xml" || versionInfo.version === "2.0") {
+      return validateDexpi2x(xmlString);
+    }
+
+    // Unknown format
+    errors.push(
+      `Unrecognized DEXPI format. Root element: '${versionInfo.rootElement}'. Expected 'DEXPI-Document' (2.0) or 'PlantModel' (1.x)`
+    );
+    return { valid: false, errors, warnings };
+  } catch (e) {
+    errors.push(
+      `Validation error: ${e instanceof Error ? e.message : String(e)}`
+    );
+    return { valid: false, errors, warnings };
+  }
+}
+
+/**
+ * Validate DEXPI 2.0 (DEXPI-XML) format
+ */
+function validateDexpi2x(xmlString: string): {
   valid: boolean;
   errors: string[];
   warnings: string[];
@@ -847,14 +986,18 @@ export function validateDexpiXml(xmlString: string): {
 
     // Check root element
     if (root.localName !== "DEXPI-Document") {
-      errors.push(`Expected root element 'DEXPI-Document', found '${root.localName}'`);
+      errors.push(
+        `Expected root element 'DEXPI-Document', found '${root.localName}'`
+      );
     }
 
     // Check namespace
     const xmlns = root.getAttribute("xmlns");
     if (xmlns !== DEXPI_NAMESPACE) {
       warnings.push(
-        `DEXPI namespace mismatch: expected '${DEXPI_NAMESPACE}', found '${xmlns || "none"}'`
+        `DEXPI namespace mismatch: expected '${DEXPI_NAMESPACE}', found '${
+          xmlns || "none"
+        }'`
       );
     }
 
@@ -869,7 +1012,9 @@ export function validateDexpiXml(xmlString: string): {
     }
 
     // Check for ProcessModel
-    const processModelEl = root.querySelector('Object[type="Process/ProcessModel"]');
+    const processModelEl = root.querySelector(
+      'Object[type="Process/ProcessModel"]'
+    );
     if (!processModelEl) {
       errors.push("No ProcessModel object found in document");
       return { valid: false, errors, warnings };
@@ -882,7 +1027,9 @@ export function validateDexpiXml(xmlString: string): {
 
     return { valid: errors.length === 0, errors, warnings };
   } catch (e) {
-    errors.push(`Validation error: ${e instanceof Error ? e.message : String(e)}`);
+    errors.push(
+      `Validation error: ${e instanceof Error ? e.message : String(e)}`
+    );
     return { valid: false, errors, warnings };
   }
 }
@@ -890,7 +1037,10 @@ export function validateDexpiXml(xmlString: string): {
 /**
  * Validate ProcessModel element structure
  */
-function validateProcessModelElement(el: Element): { errors: string[]; warnings: string[] } {
+function validateProcessModelElement(el: Element): {
+  errors: string[];
+  warnings: string[];
+} {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -929,7 +1079,10 @@ function validateProcessModelElement(el: Element): { errors: string[]; warnings:
   }
 
   // Validate ProcessConnections
-  const connsContainer = getComponentsElementValidation(el, "ProcessConnections");
+  const connsContainer = getComponentsElementValidation(
+    el,
+    "ProcessConnections"
+  );
   if (connsContainer) {
     const connElements = getChildObjectsValidation(connsContainer);
     for (const connEl of connElements) {
@@ -945,7 +1098,10 @@ function validateProcessModelElement(el: Element): { errors: string[]; warnings:
 /**
  * Validate ProcessStep element
  */
-function validateProcessStepElement(el: Element): { errors: string[]; warnings: string[] } {
+function validateProcessStepElement(el: Element): {
+  errors: string[];
+  warnings: string[];
+} {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -957,7 +1113,9 @@ function validateProcessStepElement(el: Element): { errors: string[]; warnings: 
   }
 
   if (!type) {
-    errors.push(`ProcessStep '${id || "unknown"}' is missing required 'type' attribute`);
+    errors.push(
+      `ProcessStep '${id || "unknown"}' is missing required 'type' attribute`
+    );
   } else if (!type.startsWith("Process/")) {
     warnings.push(
       `ProcessStep '${id}' has non-standard type '${type}' (should start with 'Process/')`
@@ -976,7 +1134,10 @@ function validateProcessStepElement(el: Element): { errors: string[]; warnings: 
 /**
  * Validate ProcessConnection element
  */
-function validateProcessConnectionElement(el: Element): { errors: string[]; warnings: string[] } {
+function validateProcessConnectionElement(el: Element): {
+  errors: string[];
+  warnings: string[];
+} {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -988,7 +1149,11 @@ function validateProcessConnectionElement(el: Element): { errors: string[]; warn
   }
 
   if (!type) {
-    errors.push(`ProcessConnection '${id || "unknown"}' is missing required 'type' attribute`);
+    errors.push(
+      `ProcessConnection '${
+        id || "unknown"
+      }' is missing required 'type' attribute`
+    );
   }
 
   // Check FromPort and ToPort
@@ -1007,7 +1172,10 @@ function validateProcessConnectionElement(el: Element): { errors: string[]; warn
   const flowTypeData = el.querySelector('Data[property="FlowType"]');
   if (flowTypeData) {
     const flowType = flowTypeData.textContent?.trim();
-    if (flowType && !["material", "energy", "utility", "information"].includes(flowType)) {
+    if (
+      flowType &&
+      !["material", "energy", "utility", "information"].includes(flowType)
+    ) {
       warnings.push(
         `ProcessConnection '${id}' has non-standard FlowType '${flowType}'`
       );
@@ -1020,13 +1188,19 @@ function validateProcessConnectionElement(el: Element): { errors: string[]; warn
 /**
  * Helper: Get Components element by property name
  */
-function getComponentsElementValidation(parent: Element, property: string): Element | null {
+function getComponentsElementValidation(
+  parent: Element,
+  property: string
+): Element | null {
   const children = parent.children;
   const propertyLower = property.toLowerCase();
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
-    if (child.localName === "Components" || child.tagName.endsWith(":Components")) {
+    if (
+      child.localName === "Components" ||
+      child.tagName.endsWith(":Components")
+    ) {
       const propAttr = child.getAttribute("property");
       if (propAttr && propAttr.toLowerCase() === propertyLower) {
         return child;

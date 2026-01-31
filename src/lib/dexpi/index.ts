@@ -40,6 +40,8 @@ export {
   isEdgeTypeSupported,
   BFD_NODE_TYPES,
   PFD_NODE_TYPES,
+  componentClassToNodeType,
+  getNodeTypeFromComponentClass,
 } from "./mapping";
 
 // Export (React Flow -> DEXPI)
@@ -61,3 +63,14 @@ export type { DexpiImportResult } from "./from-dexpi";
 
 // XML Utilities
 export { buildDexpiXml, parseDexpiXml, validateDexpiXml } from "./xml-utils";
+
+// Version Detection & Legacy Support
+export {
+  detectDexpiVersion,
+  parseDexpi1x,
+  validateDexpi1x,
+} from "./proteus-parser";
+export type {
+  DexpiVersionInfo,
+  Dexpi1xValidationResult,
+} from "./proteus-parser";

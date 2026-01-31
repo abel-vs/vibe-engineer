@@ -66,7 +66,7 @@ export interface ProcessModel {
   id: string;
   name: string;
   description?: string;
-  diagramType: "BFD" | "PFD";
+  diagramType: "BFD" | "PFD" | "P&ID";
   processSteps: ProcessStep[];
   processConnections: ProcessConnection[];
   externalPorts: ExternalPort[];
@@ -181,7 +181,8 @@ export interface LayoutInfo {
 
 export const DEXPI_NAMESPACE = "https://dexpi.org/schema/2.0";
 export const DEXPI_VERSION = "2.0";
-export const DEXPI_SCHEMA_LOCATION = "https://dexpi.org/schema/2.0 DEXPI_XML_Schema.xsd";
+export const DEXPI_SCHEMA_LOCATION =
+  "https://dexpi.org/schema/2.0 DEXPI_XML_Schema.xsd";
 
 // Application identifier for metadata
 export const APPLICATION_SOURCE = "voice-diagram-app";

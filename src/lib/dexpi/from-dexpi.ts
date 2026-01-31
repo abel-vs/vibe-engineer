@@ -3,24 +3,26 @@
  * Parses DEXPI XML and converts to React Flow nodes and edges
  */
 
-import type { Node, Edge } from "@xyflow/react";
 import type { DiagramMode } from "@/lib/modes";
+import type { Edge, Node } from "@xyflow/react";
+import {
+  detectModeFromDexpiTypes,
+  dexpiFlowToStreamType,
+  dexpiToEdgeType,
+  dexpiToNodeType,
+  getDexpiNodeTypeFromComponentClass,
+  getFallbackEdgeType,
+  getFallbackNodeType,
+  getNodeTypeFromComponentClass,
+} from "./mapping";
 import type {
   DexpiDocument,
+  DexpiProcessStepType,
+  ExternalPort,
+  ProcessConnection,
   ProcessModel,
   ProcessStep,
-  ProcessConnection,
-  ExternalPort,
-  DexpiProcessStepType,
 } from "./types";
-import {
-  dexpiToNodeType,
-  dexpiToEdgeType,
-  dexpiFlowToStreamType,
-  detectModeFromDexpiTypes,
-  getFallbackNodeType,
-  getFallbackEdgeType,
-} from "./mapping";
 import { parseDexpiXml, validateDexpiXml } from "./xml-utils";
 
 // ============================================================================
@@ -70,7 +72,10 @@ export function dexpiToReactFlow(xmlString: string): DexpiImportResult {
   // Log detailed info about ports
   console.log("[DEXPI Import] ProcessStep ports:");
   for (const step of processModel.processSteps) {
-    console.log(`  - ${step.id}: ${step.ports.length} ports`, step.ports.map(p => p.id));
+    console.log(
+      `  - ${step.id}: ${step.ports.length} ports`,
+      step.ports.map((p) => p.id)
+    );
   }
 
   console.log("[DEXPI Import] ProcessConnections:");
@@ -95,7 +100,7 @@ export function dexpiToReactFlow(xmlString: string): DexpiImportResult {
 
   // Build port to node mapping for edge conversion
   const portToNodeMap = buildPortToNodeMap(processModel);
-  
+
   console.log("[DEXPI Import] Port to Node map:");
   portToNodeMap.forEach((value, key) => {
     console.log(`  - ${key} -> node: ${value.nodeId}, handle: ${value.handle}`);
@@ -145,6 +150,7 @@ export function parseDexpiToModel(xmlString: string): DexpiDocument {
  */
 function detectMode(model: ProcessModel): DiagramMode {
   // First check explicit diagram type
+  if (model.diagramType === "P&ID") return "pid";
   if (model.diagramType === "PFD") return "pfd";
   if (model.diagramType === "BFD") return "bfd";
 
@@ -160,13 +166,43 @@ function detectMode(model: ProcessModel): DiagramMode {
 /**
  * Convert a ProcessStep to a React Flow node
  */
-function convertProcessStepToNode(step: ProcessStep, mode: DiagramMode, warnings: string[]): Node {
+function convertProcessStepToNode(
+  step: ProcessStep,
+  mode: DiagramMode,
+  warnings: string[]
+): Node {
   // Get React Flow node type
   let nodeType: string;
+  let dexpiCategory: string | undefined;
 
-  // First check if we have the original node type stored
-  if (step.originalNodeType) {
-    nodeType = step.originalNodeType;
+  // For P&ID mode, use DEXPI node types that render SVG symbols
+  if (mode === "pid" && step.originalNodeType) {
+    const dexpiInfo = getDexpiNodeTypeFromComponentClass(step.originalNodeType);
+    if (dexpiInfo) {
+      nodeType = dexpiInfo.nodeType;
+      dexpiCategory = dexpiInfo.category;
+    } else {
+      // Fall back to simple node type mapping
+      nodeType = getNodeTypeFromComponentClass(step.originalNodeType, "pfd");
+      warnings.push(
+        `No DEXPI category mapping for ComponentClass "${step.originalNodeType}" - using simple node type "${nodeType}"`
+      );
+    }
+  } else if (step.originalNodeType) {
+    // For non-P&ID modes, use the original node type mapping
+    // Try to map from ComponentClass name (DEXPI 1.x) or use directly (DEXPI 2.0 round-trip)
+    const mappedType = getNodeTypeFromComponentClass(
+      step.originalNodeType,
+      mode === "pfd" ? "pfd" : "bfd"
+    );
+    // If mapping found a different type than the fallback, use it
+    // Otherwise, check if originalNodeType is already a valid React Flow type
+    if (mappedType !== getFallbackNodeType(mode === "pfd" ? "pfd" : "bfd")) {
+      nodeType = mappedType;
+    } else {
+      // originalNodeType might already be a React Flow type (round-trip from 2.0)
+      nodeType = step.originalNodeType;
+    }
   } else {
     // Map from DEXPI type
     nodeType = mapDexpiTypeToNodeType(step.type, mode);
@@ -188,11 +224,18 @@ function convertProcessStepToNode(step: ProcessStep, mode: DiagramMode, warnings
     data.description = step.description;
   }
 
+  // Add DEXPI category for P&ID mode SVG rendering
+  if (dexpiCategory) {
+    data.dexpiCategory = dexpiCategory;
+    data.symbolIndex = 0; // Default to first symbol in category
+  }
+
   // Convert parameters to properties
   if (step.parameters && step.parameters.length > 0) {
     const properties: Record<string, string> = {};
     for (const param of step.parameters) {
-      properties[param.name] = String(param.value) + (param.unit ? ` ${param.unit}` : "");
+      properties[param.name] =
+        String(param.value) + (param.unit ? ` ${param.unit}` : "");
     }
     data.properties = properties;
   }
@@ -213,7 +256,10 @@ function convertProcessStepToNode(step: ProcessStep, mode: DiagramMode, warnings
 /**
  * Convert an ExternalPort to a React Flow node (input_output type)
  */
-function convertExternalPortToNode(port: ExternalPort, warnings: string[]): Node {
+function convertExternalPortToNode(
+  port: ExternalPort,
+  _warnings: string[]
+): Node {
   const position = port.layout
     ? { x: port.layout.x, y: port.layout.y }
     : { x: 0, y: 0 };
@@ -231,7 +277,10 @@ function convertExternalPortToNode(port: ExternalPort, warnings: string[]): Node
 /**
  * Map DEXPI ProcessStep type to React Flow node type
  */
-function mapDexpiTypeToNodeType(dexpiType: DexpiProcessStepType, mode: DiagramMode): string {
+function mapDexpiTypeToNodeType(
+  dexpiType: DexpiProcessStepType,
+  mode: DiagramMode
+): string {
   // Check direct mapping first
   if (dexpiToNodeType[dexpiType]) {
     const nodeType = dexpiToNodeType[dexpiType];
@@ -279,8 +328,14 @@ function buildPortToNodeMap(
     });
 
     // Also map any port-style IDs that might reference this node
-    map.set(`${extPort.id}_out_default`, { nodeId: extPort.id, handle: "default" });
-    map.set(`${extPort.id}_in_default`, { nodeId: extPort.id, handle: "default" });
+    map.set(`${extPort.id}_out_default`, {
+      nodeId: extPort.id,
+      handle: "default",
+    });
+    map.set(`${extPort.id}_in_default`, {
+      nodeId: extPort.id,
+      handle: "default",
+    });
   }
 
   return map;
@@ -313,10 +368,14 @@ function convertProcessConnectionToEdge(
   const targetInfo = portMap.get(conn.toPort);
 
   if (!sourceInfo) {
-    warnings.push(`Could not find source port "${conn.fromPort}" for connection "${conn.id}" - using port ID as node ID`);
+    warnings.push(
+      `Could not find source port "${conn.fromPort}" for connection "${conn.id}" - using port ID as node ID`
+    );
   }
   if (!targetInfo) {
-    warnings.push(`Could not find target port "${conn.toPort}" for connection "${conn.id}" - using port ID as node ID`);
+    warnings.push(
+      `Could not find target port "${conn.toPort}" for connection "${conn.id}" - using port ID as node ID`
+    );
   }
 
   // Get edge type
@@ -340,7 +399,8 @@ function convertProcessConnectionToEdge(
   // Convert stream properties
   if (conn.properties) {
     if (conn.properties.flowRate) {
-      data.flowRate = `${conn.properties.flowRate.value} ${conn.properties.flowRate.unit}`.trim();
+      data.flowRate =
+        `${conn.properties.flowRate.value} ${conn.properties.flowRate.unit}`.trim();
     }
     if (conn.properties.temperature) {
       data.temperature =
@@ -386,7 +446,9 @@ function extractNodeIdFromPortId(portId: string): string {
  * Auto-layout nodes that don't have position information
  */
 function layoutNodesWithoutPosition(nodes: Node[]): void {
-  const nodesNeedingLayout = nodes.filter((n) => n.position.x === 0 && n.position.y === 0);
+  const nodesNeedingLayout = nodes.filter(
+    (n) => n.position.x === 0 && n.position.y === 0
+  );
 
   if (nodesNeedingLayout.length === 0) return;
   if (nodesNeedingLayout.length === nodes.length) {
@@ -421,8 +483,13 @@ function layoutGrid(nodes: Node[]): void {
 /**
  * Layout nodes relative to existing positioned nodes
  */
-function layoutRelativeToExisting(nodesNeedingLayout: Node[], allNodes: Node[]): void {
-  const positionedNodes = allNodes.filter((n) => n.position.x !== 0 || n.position.y !== 0);
+function layoutRelativeToExisting(
+  nodesNeedingLayout: Node[],
+  allNodes: Node[]
+): void {
+  const positionedNodes = allNodes.filter(
+    (n) => n.position.x !== 0 || n.position.y !== 0
+  );
 
   // Find bounding box of positioned nodes
   let maxX = 0;
@@ -457,7 +524,11 @@ export function validateDexpiForImport(xmlString: string): {
   // Basic XML validation
   const xmlValidation = validateDexpiXml(xmlString);
   if (!xmlValidation.valid) {
-    return { valid: false, errors: xmlValidation.errors, warnings: xmlValidation.warnings };
+    return {
+      valid: false,
+      errors: xmlValidation.errors,
+      warnings: xmlValidation.warnings,
+    };
   }
 
   const errors: string[] = [];
@@ -473,7 +544,10 @@ export function validateDexpiForImport(xmlString: string): {
       errors.push("ProcessModel is missing ID");
     }
 
-    if (processModel.processSteps.length === 0 && processModel.externalPorts.length === 0) {
+    if (
+      processModel.processSteps.length === 0 &&
+      processModel.externalPorts.length === 0
+    ) {
       warnings.push("ProcessModel has no process steps or external ports");
     }
 
@@ -492,10 +566,14 @@ export function validateDexpiForImport(xmlString: string): {
 
     for (const conn of processModel.processConnections) {
       if (!allPortIds.has(conn.fromPort)) {
-        warnings.push(`Connection "${conn.id}" references unknown source port "${conn.fromPort}"`);
+        warnings.push(
+          `Connection "${conn.id}" references unknown source port "${conn.fromPort}"`
+        );
       }
       if (!allPortIds.has(conn.toPort)) {
-        warnings.push(`Connection "${conn.id}" references unknown target port "${conn.toPort}"`);
+        warnings.push(
+          `Connection "${conn.id}" references unknown target port "${conn.toPort}"`
+        );
       }
     }
   } catch (e) {
