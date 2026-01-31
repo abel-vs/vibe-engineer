@@ -44,6 +44,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 import { VoiceController } from "@/components/voice-controller";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
@@ -1033,112 +1039,109 @@ export default function DiagramPage() {
           <main className="flex-1 relative" ref={flowRef}>
             {showJsonView ? (
               <div className="w-full h-full flex flex-col bg-gray-900 relative">
-                {/* Tabs for JSON and DEXPI XML */}
-                <div className="flex items-center gap-2 px-2 pt-2 border-b border-gray-700 shrink-0">
-                  <button
-                    onClick={() => setCodeViewMode("json")}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
-                      codeViewMode === "json"
-                        ? "bg-gray-800 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                    }`}
-                  >
-                    JSON
-                  </button>
-                  <button
-                    onClick={() => setCodeViewMode("dexpi")}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
-                      codeViewMode === "dexpi"
-                        ? "bg-gray-800 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                    }`}
-                    title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
-                  >
-                    DEXPI XML
-                  </button>
-                </div>
+                <Tabs
+                  value={codeViewMode}
+                  onValueChange={(value) => setCodeViewMode(value as "json" | "dexpi")}
+                  className="flex flex-col h-full"
+                >
+                  {/* Toolbar with Tabs and Actions */}
+                  <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0 bg-gray-800">
+                    <div className="flex items-center gap-2">
+                      {/* Tabs */}
+                      <TabsList className="bg-gray-900 border border-gray-700">
+                        <TabsTrigger value="json" className="data-[state=active]:bg-gray-700">
+                          JSON
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="dexpi"
+                          className="data-[state=active]:bg-gray-700"
+                          disabled={!canExportToDexpi(mode)}
+                          title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
+                        >
+                          DEXPI XML
+                        </TabsTrigger>
+                      </TabsList>
 
-                {/* Toolbar */}
-                <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0 bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    {codeViewMode === "json" && (
-                      <>
-                        {jsonEditMode ? (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-400 hover:text-green-300 hover:bg-gray-700"
-                              onClick={handleApplyJson}
-                              title="Apply changes"
-                            >
-                              <Check className="w-4 h-4 mr-1" />
-                              Apply
-                            </Button>
+                      {/* Edit/Apply/Cancel Buttons - Only for JSON */}
+                      {codeViewMode === "json" && (
+                        <>
+                          {jsonEditMode ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-400 hover:text-green-300 hover:bg-gray-700"
+                                onClick={handleApplyJson}
+                                title="Apply changes"
+                              >
+                                <Check className="w-4 h-4 mr-1" />
+                                Apply
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                onClick={handleCancelEdit}
+                                title="Cancel editing"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-gray-400 hover:text-white hover:bg-gray-700"
-                              onClick={handleCancelEdit}
-                              title="Cancel editing"
+                              onClick={handleEnterEditMode}
+                              title="Edit JSON"
                             >
-                              <X className="w-4 h-4 mr-1" />
-                              Cancel
+                              <Pencil className="w-4 h-4 mr-1" />
+                              Edit
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-400 hover:text-white hover:bg-gray-700"
-                            onClick={handleEnterEditMode}
-                            title="Edit JSON"
-                          >
-                            <Pencil className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-400 hover:text-white hover:bg-gray-700"
-                    onClick={() => {
-                      const content = codeViewMode === "json"
-                        ? (jsonEditMode ? editableJson : generateJsonString())
-                        : generateDexpiXml();
-                      navigator.clipboard.writeText(content);
-                      setJsonCopied(true);
-                      setTimeout(() => setJsonCopied(false), 2000);
-                    }}
-                    title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
-                  >
-                    {jsonCopied ? (
-                      <>
-                        <Check className="w-4 h-4 mr-1 text-green-400" />
-                        <span className="text-green-400">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-1" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
+                          )}
+                        </>
+                      )}
+                    </div>
 
-                {/* Error message */}
-                {jsonError && codeViewMode === "json" && (
-                  <div className="px-4 py-2 bg-red-900/50 border-b border-red-700 text-red-300 text-xs">
-                    {jsonError}
+                    {/* Copy Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-white hover:bg-gray-700"
+                      onClick={() => {
+                        const content = codeViewMode === "json"
+                          ? (jsonEditMode ? editableJson : generateJsonString())
+                          : generateDexpiXml();
+                        navigator.clipboard.writeText(content);
+                        setJsonCopied(true);
+                        setTimeout(() => setJsonCopied(false), 2000);
+                      }}
+                      title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
+                    >
+                      {jsonCopied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1 text-green-400" />
+                          <span className="text-green-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
 
-                {/* Content - CodeMirror Editor */}
-                <div className="flex-1 overflow-hidden">
-                  {codeViewMode === "json" ? (
+                  {/* Error message */}
+                  {jsonError && codeViewMode === "json" && (
+                    <div className="px-4 py-2 bg-red-900/50 border-b border-red-700 text-red-300 text-xs">
+                      {jsonError}
+                    </div>
+                  )}
+
+                  {/* Tab Content */}
+                  <TabsContent value="json" className="flex-1 overflow-hidden m-0 ring-0">
                     <CodeMirror
                       value={jsonEditMode ? editableJson : generateJsonString()}
                       height="100%"
@@ -1164,7 +1167,9 @@ export default function DiagramPage() {
                       }}
                       className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
                     />
-                  ) : (
+                  </TabsContent>
+
+                  <TabsContent value="dexpi" className="flex-1 overflow-hidden m-0 ring-0">
                     <CodeMirror
                       value={generateDexpiXml()}
                       height="100%"
@@ -1178,10 +1183,10 @@ export default function DiagramPage() {
                         foldGutter: true,
                         bracketMatching: true,
                       }}
-                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+                      className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-x-auto [&_.cm-scroller]:overflow-y-auto"
                     />
-                  )}
-                </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             ) : (
               <DiagramCanvas key={canvasResetKey} />
