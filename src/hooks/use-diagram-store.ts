@@ -1,5 +1,7 @@
 import { getLayoutedNodes, type LayoutOptions } from "@/lib/auto-layout";
+import { getDefaultNodeSize } from "@/lib/dexpi-config";
 import { recalculateEdgeHandles } from "@/lib/edge-routing";
+import { isInlineNodeType } from "@/lib/inline-components";
 import type { DiagramMode } from "@/lib/modes";
 import { clearWorkspace, loadWorkspace, saveWorkspace } from "@/lib/storage";
 import type { DiagramStyle } from "@/lib/styles";
@@ -30,6 +32,9 @@ export interface DiagramState {
   edges: Edge[];
   mode: DiagramMode;
   style: DiagramStyle;
+
+  // Original imported XML (preserved for viewing)
+  originalXml: string | null;
 
   // Selection state
   selectedNodeIds: string[];
@@ -83,8 +88,15 @@ export interface DiagramState {
     nodes: Node[],
     edges: Edge[],
     mode: DiagramMode,
-    style?: DiagramStyle
+    style?: DiagramStyle,
+    originalXml?: string | null
   ) => void;
+
+  // Set original XML (for when imported from DEXPI)
+  setOriginalXml: (xml: string | null) => void;
+
+  // Check if original XML is available
+  hasOriginalXml: () => boolean;
 
   // Layout
   organizeLayout: (
@@ -120,6 +132,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
   edges: [],
   mode: "playground",
   style: "engineering",
+  originalXml: null,
   selectedNodeIds: [],
   selectedEdgeIds: [],
   shouldZoomToSelection: false,
@@ -210,14 +223,22 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   onConnect: (connection) => {
     // Save to history before adding edge
-    const { edges, past } = get();
-    const newPast = [...past, cloneSnapshot(get().nodes, edges)].slice(
+    const { nodes, edges, past } = get();
+    const newPast = [...past, cloneSnapshot(nodes, edges)].slice(
       -MAX_HISTORY_SIZE
     );
 
     // Preserve the actual handle IDs from the user's connection
     const sourceHandle = connection.sourceHandle ?? null;
     const targetHandle = connection.targetHandle ?? null;
+
+    // Check if target is an inline component (valve, instrument, etc.)
+    // Only hide arrow when TARGET is inline - arrows should point INTO equipment but not INTO inline components
+    // If source is inline but target is equipment, arrow should still show (pointing into the equipment)
+    const targetNode = nodes.find((n) => n.id === connection.target);
+    const targetIsInline =
+      targetNode?.type && isInlineNodeType(targetNode.type);
+    const noArrow = targetIsInline;
 
     const newEdge: Edge = {
       id: `edge_${Date.now()}`,
@@ -226,6 +247,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       sourceHandle,
       targetHandle,
       type: "stream",
+      // Set noArrow flag if either endpoint is an inline component
+      data: noArrow ? { noArrow: true } : undefined,
     };
     set({ edges: addEdge(newEdge, get().edges), past: newPast, future: [] });
   },
@@ -254,6 +277,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         nodes: targetWorkspace.nodes,
         edges: targetWorkspace.edges,
         style: targetWorkspace.style,
+        originalXml: null, // Clear original XML when switching modes
         selectedNodeIds: [],
         selectedEdgeIds: [],
         pinnedNodeIds: new Set<string>(),
@@ -266,6 +290,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         mode: newMode,
         nodes: [],
         edges: [],
+        originalXml: null,
         selectedNodeIds: [],
         selectedEdgeIds: [],
         pinnedNodeIds: new Set<string>(),
@@ -329,6 +354,11 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       const inEdge = incomingEdges[0];
       const outEdge = outgoingEdges[0];
 
+      // Check if the new target is an inline component to determine arrow behavior
+      const newTargetNode = nodes.find((n) => n.id === outEdge.target);
+      const newTargetIsInline =
+        newTargetNode?.type && isInlineNodeType(newTargetNode.type);
+
       // Create a reconnecting edge from the source to the target
       const reconnectingEdge: Edge = {
         id: `edge_reconnect_${Date.now()}`,
@@ -339,7 +369,8 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
         type: inEdge.type || outEdge.type, // Preserve edge type
         // Inherit other properties from the incoming edge
         label: inEdge.label,
-        data: inEdge.data,
+        // Show arrow only if target is not an inline component
+        data: { ...inEdge.data, noArrow: newTargetIsInline },
       };
 
       newEdges = [...newEdges, reconnectingEdge];
@@ -444,6 +475,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     set({
       nodes: [],
       edges: [],
+      originalXml: null,
       selectedNodeIds: [],
       selectedEdgeIds: [],
       shouldZoomToSelection: false,
@@ -498,12 +530,13 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   canRedo: () => get().future.length > 0,
 
-  loadDiagram: (nodes, edges, mode, style) => {
+  loadDiagram: (nodes, edges, mode, style, originalXml) => {
     set({
       nodes,
       edges,
       mode,
       style: style ?? "engineering",
+      originalXml: originalXml ?? null,
       selectedNodeIds: [],
       selectedEdgeIds: [],
       pinnedNodeIds: new Set<string>(),
@@ -511,6 +544,12 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       future: [],
     });
   },
+
+  setOriginalXml: (xml) => {
+    set({ originalXml: xml });
+  },
+
+  hasOriginalXml: () => get().originalXml !== null,
 
   organizeLayout: (options = {}, pinnedNodeIds) => {
     const {
@@ -598,12 +637,14 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       -MAX_HISTORY_SIZE
     );
 
+    // Get the appropriate size for this node type (valves smaller, vessels larger, etc.)
+    const nodeType = nodeConfig.type || "valves";
+    const nodeSize = getDefaultNodeSize(nodeType);
+
     // Center the node around the click position
-    // Default inline component size is ~42x42 for DEXPI symbols
-    const NODE_SIZE = 42;
     const centeredPosition: XYPosition = {
-      x: position.x - NODE_SIZE / 2,
-      y: position.y - NODE_SIZE / 2,
+      x: position.x - nodeSize.width / 2,
+      y: position.y - nodeSize.height / 2,
     };
 
     // Create new inline node
@@ -617,9 +658,16 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     };
 
     // Create two new edges to replace the original
-    // No arrow markers - P&ID convention for inline segments
-    // Preserve edge data (labels, flow rates, etc.) on the first segment
+    // Arrow logic: only hide arrow when TARGET is an inline component
+    // Edge 1 (source -> inline node): No arrow (target is inline)
+    // Edge 2 (inline node -> original target): Show arrow if original target is equipment
     const timestamp = Date.now();
+
+    // Check if the original target is also an inline component
+    const originalTargetNode = nodes.find((n) => n.id === edge.target);
+    const originalTargetIsInline =
+      originalTargetNode?.type && isInlineNodeType(originalTargetNode.type);
+
     const edge1: Edge = {
       id: `edge_${timestamp}_1`,
       source: edge.source,
@@ -628,8 +676,7 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       targetHandle: "left", // Inline components use left/right handles (W/E in DEXPI)
       type: edge.type,
       label: edge.label, // Preserve label on first segment
-      data: edge.data, // Preserve all edge data
-      markerEnd: undefined, // No arrow
+      data: { ...edge.data, noArrow: true }, // Target is inline, so no arrow
     };
 
     const edge2: Edge = {
@@ -639,8 +686,10 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
       sourceHandle: "right",
       targetHandle: edge.targetHandle,
       type: edge.type,
-      data: edge.data, // Preserve edge data (but no label to avoid duplication)
-      markerEnd: undefined, // No arrow
+      // Only hide arrow if original target is also inline; show arrow if target is equipment
+      data: originalTargetIsInline
+        ? { ...edge.data, noArrow: true }
+        : { ...edge.data, noArrow: false },
     };
 
     // Atomic operation: remove old edge, add node + 2 new edges
