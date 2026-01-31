@@ -228,7 +228,7 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
           <EditableLabel
             nodeId={id}
             value={displayLabel || ""}
-            className="font-medium text-gray-900 text-xs leading-tight"
+            className="font-medium text-gray-900 text-xs leading-none"
             placeholder=""
           />
 

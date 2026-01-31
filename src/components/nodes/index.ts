@@ -59,5 +59,10 @@ export function getNodeTypesForMode(mode: DiagramMode) {
   }
 }
 
-export { bfdNodeTypes, pfdNodeTypes, pfdSimplifiedNodeTypes, playgroundNodeTypes };
+export {
+  bfdNodeTypes,
+  pfdNodeTypes,
+  pfdSimplifiedNodeTypes,
+  playgroundNodeTypes,
+};
 // dexpiNodeTypes and drawioPidNodeTypes are already exported inline above

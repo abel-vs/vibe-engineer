@@ -2,72 +2,71 @@
 
 import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
 import { DiagramCanvas } from "@/components/diagram-canvas";
+import { ImportDialogs } from "@/components/import/import-dialogs";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { PropertiesPanel } from "@/components/sidebar/properties-panel";
 import { StyleSwitcher } from "@/components/style-switcher";
 import { ShapeToolbar } from "@/components/toolbar/shape-toolbar";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { VoiceController } from "@/components/voice-controller";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
 import { getModeLayoutOptions } from "@/lib/auto-layout";
 import { canExportToDexpi, dexpiToReactFlow, getExportWarnings, reactFlowToDexpi, validateDexpiForImport } from "@/lib/dexpi";
-import type { DiagramMode } from "@/lib/modes";
 import { clearAutoSave, loadWorkspace, saveDiagram, saveWorkspace, type SavedDiagram } from "@/lib/storage";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { xml } from "@codemirror/lang-xml";
 import { lintGutter, linter } from "@codemirror/lint";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
-import type { Edge, Node } from "@xyflow/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { toPng, toSvg } from "html-to-image";
 import { jsPDF } from "jspdf";
-import { AlertCircle, ArrowRight, Bug, Check, Code, Copy, Download, FileCode, FileImage, FileText, FileType, FolderOpen, LayoutGrid, Loader2, MessageSquare, MoreVertical, Pencil, Redo2, Save, Trash2, Undo2, Upload, X } from "lucide-react";
+import { ArrowRight, Bug, Check, Code, Copy, Download, FileCode, FileImage, FileText, FileType, FolderOpen, LayoutGrid, Loader2, MessageSquare, MoreVertical, Pencil, Redo2, Save, Trash2, Undo2, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -91,10 +90,6 @@ export default function DiagramPage() {
   const [newDiagramDialogOpen, setNewDiagramDialogOpen] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [importType, setImportType] = useState<"json" | "dexpi" | null>(null);
-  const [showImportConfirmDialog, setShowImportConfirmDialog] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: boolean; nodes?: Node[]; edges?: Edge[]; mode?: DiagramMode; warnings?: string[]; error?: string } | null>(null);
-  const [showImportResultDialog, setShowImportResultDialog] = useState(false);
   const { dictionary, dictionaryEnabled } = useSettings();
 
   const handleDebugLog = useCallback((log: DebugLog) => {
@@ -110,6 +105,12 @@ export default function DiagramPage() {
     onDebugLog: handleDebugLog,
   });
   const { nodes, edges, mode, style, loadDiagram, resetCanvas, undo, redo, canUndo, canRedo, organizeLayout, clearPinnedNodes, setMode } = useDiagramStore();
+
+  // Import dialogs
+  const { triggerImport, importData, showWarnings, dialogs: importDialogs } = ImportDialogs({
+    onImportComplete: loadDiagram,
+    hasExistingContent: nodes.length > 0,
+  });
 
   // Helper to generate JSON string from current state
   const generateJsonString = useCallback(() => {
@@ -140,7 +141,7 @@ export default function DiagramPage() {
   // Helper to generate DEXPI XML from current state
   const generateDexpiXml = useCallback(() => {
     if (!canExportToDexpi(mode)) {
-      return `<!-- DEXPI export is only available for BFD and PFD modes.\nCurrent mode: ${mode.toUpperCase()} -->\n\n<!-- Switch to BFD or PFD mode to view DEXPI XML -->`;
+      return `<!-- DEXPI export is only available for BFD, PFD and P&ID modes.\nCurrent mode: ${mode.toUpperCase()} -->\n\n<!-- Switch to BFD, PFD or P&ID mode to view DEXPI XML -->`;
     }
     try {
       return reactFlowToDexpi(nodes, edges, mode, {
@@ -304,28 +305,16 @@ export default function DiagramPage() {
 
         // Parse DEXPI XML
         const result = dexpiToReactFlow(text);
+        const allWarnings = [...(validation.warnings || []), ...result.warnings];
 
-        // Show confirmation dialog if canvas is not empty
-        if (nodes.length > 0) {
-          setImportResult({
-            success: true,
-            nodes: result.nodes,
-            edges: result.edges,
-            mode: result.mode,
-            warnings: [...(validation.warnings || []), ...result.warnings],
-          });
-          setShowImportConfirmDialog(true);
-        } else {
-          // Load directly if canvas is empty
-          loadDiagram(result.nodes, result.edges, result.mode);
-          if (result.warnings && result.warnings.length > 0) {
-            setImportResult({
-              success: true,
-              warnings: result.warnings,
-            });
-            setShowImportResultDialog(true);
-          }
-        }
+        // Use importData to handle the import flow (dialogs, etc.)
+        importData({
+          success: true,
+          nodes: result.nodes,
+          edges: result.edges,
+          mode: result.mode,
+          warnings: allWarnings,
+        });
       } catch (err) {
         console.error("Failed to parse pasted DEXPI XML:", err);
       }
@@ -333,7 +322,7 @@ export default function DiagramPage() {
 
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, [nodes.length, jsonEditMode, loadDiagram]);
+  }, [jsonEditMode, importData]);
 
   const handleTranscript = useCallback(
     async (text: string) => {
@@ -427,116 +416,6 @@ export default function DiagramPage() {
       setIsUpgrading(false);
     }
   }, [mode, nodes.length, processVoiceCommand, setMode]);
-
-  // Import handlers
-  const importFileInputRef = useRef<HTMLInputElement>(null);
-  
-  const handleImportClick = useCallback((type: "json" | "dexpi") => {
-    setImportType(type);
-    importFileInputRef.current?.click();
-  }, []);
-
-  const processImportFile = useCallback(
-    async (file: File) => {
-      const text = await file.text();
-
-      if (importType === "dexpi") {
-        try {
-          const validation = validateDexpiForImport(text);
-          if (!validation.valid) {
-            return {
-              success: false,
-              error: `Invalid DEXPI file: ${validation.errors.join(", ")}`,
-              warnings: validation.warnings,
-            };
-          }
-
-          const result = dexpiToReactFlow(text);
-          return {
-            success: true,
-            nodes: result.nodes,
-            edges: result.edges,
-            mode: result.mode,
-            warnings: [...(validation.warnings || []), ...result.warnings],
-          };
-        } catch (err) {
-          return {
-            success: false,
-            error: `Failed to parse DEXPI file: ${err instanceof Error ? err.message : String(err)}`,
-          };
-        }
-      } else {
-        try {
-          const data = JSON.parse(text);
-          if (!data.nodes || !Array.isArray(data.nodes)) {
-            return {
-              success: false,
-              error: "Invalid JSON: missing or invalid 'nodes' array",
-            };
-          }
-          if (!data.edges || !Array.isArray(data.edges)) {
-            return {
-              success: false,
-              error: "Invalid JSON: missing or invalid 'edges' array",
-            };
-          }
-          const mode = data.mode || "playground";
-          const warnings: string[] = [];
-          if (!data.mode) {
-            warnings.push("No mode specified in file, defaulting to playground");
-          }
-          return {
-            success: true,
-            nodes: data.nodes,
-            edges: data.edges,
-            mode: mode as DiagramMode,
-            warnings,
-          };
-        } catch (err) {
-          return {
-            success: false,
-            error: `Failed to parse JSON file: ${err instanceof Error ? err.message : String(err)}`,
-          };
-        }
-      }
-    },
-    [importType]
-  );
-
-  const handleFileSelect = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      e.target.value = "";
-
-      const result = await processImportFile(file);
-      setImportResult(result);
-
-      if (result.success) {
-        if (nodes.length > 0) {
-          setShowImportConfirmDialog(true);
-        } else {
-          confirmImport(result);
-        }
-      } else {
-        setShowImportResultDialog(true);
-      }
-    },
-    [nodes.length, processImportFile]
-  );
-
-  const confirmImport = useCallback(
-    (result: typeof importResult) => {
-      if (result?.success && result.nodes && result.edges && result.mode) {
-        loadDiagram(result.nodes, result.edges, result.mode);
-        setShowImportConfirmDialog(false);
-        if (result.warnings && result.warnings.length > 0) {
-          setShowImportResultDialog(true);
-        }
-      }
-    },
-    [loadDiagram]
-  );
 
   // Export handlers
   const getFlowElement = useCallback(() => {
@@ -642,7 +521,7 @@ export default function DiagramPage() {
 
   const exportToDexpi = useCallback(() => {
     if (!canExportToDexpi(mode)) {
-      console.warn("DEXPI export is only available for BFD and PFD modes");
+      console.warn("DEXPI export is only available for BFD, PFD and P&ID modes");
       return;
     }
     setIsExporting(true);
@@ -841,11 +720,11 @@ export default function DiagramPage() {
                     Import
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => handleImportClick("json")}>
+                    <DropdownMenuItem onClick={() => triggerImport("json")}>
                       <FileCode className="w-4 h-4" />
                       Import JSON
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleImportClick("dexpi")}>
+                    <DropdownMenuItem onClick={() => triggerImport("dexpi")}>
                       <FileType className="w-4 h-4" />
                       Import DEXPI XML
                     </DropdownMenuItem>
@@ -881,11 +760,11 @@ export default function DiagramPage() {
                     <DropdownMenuItem
                       onClick={exportToDexpi}
                       disabled={!isDexpiAvailable || isExporting}
-                      title={!isDexpiAvailable ? "DEXPI export is only available for BFD and PFD modes" : undefined}
+                      title={!isDexpiAvailable ? "DEXPI export is only available for BFD, PFD and P&ID modes" : undefined}
                     >
                       <FileType className="w-4 h-4" />
                       Export as DEXPI XML
-                      {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD only)</span>}
+                      {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD/P&ID only)</span>}
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
@@ -916,15 +795,6 @@ export default function DiagramPage() {
           </div>
         </header>
 
-        {/* Hidden file input for imports */}
-        <input
-          ref={importFileInputRef}
-          type="file"
-          accept={importType === "dexpi" ? ".xml,.dexpi.xml" : ".json"}
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-
         {/* New Diagram Confirmation Dialog */}
         <AlertDialog open={newDiagramDialogOpen} onOpenChange={setNewDiagramDialogOpen}>
           <AlertDialogContent>
@@ -943,91 +813,8 @@ export default function DiagramPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Import Confirmation Dialog */}
-        <Dialog open={showImportConfirmDialog} onOpenChange={setShowImportConfirmDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Replace Current Diagram?</DialogTitle>
-              <DialogDescription>
-                Importing will replace your current diagram. This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-
-            {importResult && importResult.warnings && importResult.warnings.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      Import Warnings
-                    </p>
-                    <ul className="text-sm text-yellow-700 mt-1 list-disc list-inside">
-                      {importResult.warnings.map((warning, i) => (
-                        <li key={i}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowImportConfirmDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={() => importResult && confirmImport(importResult)}>
-                Replace Diagram
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Import Result Dialog */}
-        <Dialog open={showImportResultDialog} onOpenChange={setShowImportResultDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {importResult?.success ? (
-                  <span className="flex items-center gap-2">
-                    <Check className="w-5 h-5 text-green-600" />
-                    Import Successful
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <X className="w-5 h-5 text-red-600" />
-                    Import Failed
-                  </span>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-
-            {importResult?.error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-700">{importResult.error}</p>
-              </div>
-            )}
-
-            {importResult && importResult.warnings && importResult.warnings.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                <p className="text-sm font-medium text-yellow-800 mb-2">
-                  Warnings:
-                </p>
-                <ul className="text-sm text-yellow-700 list-disc list-inside">
-                  {importResult.warnings.map((warning, i) => (
-                    <li key={i}>{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button onClick={() => setShowImportResultDialog(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Import Dialogs */}
+        {importDialogs}
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
@@ -1056,7 +843,7 @@ export default function DiagramPage() {
                         value="dexpi"
                         className="data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100 text-neutral-400"
                         disabled={!canExportToDexpi(mode)}
-                        title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD modes" : undefined}
+                        title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD/P&ID modes" : undefined}
                       >
                         DEXPI XML
                       </TabsTrigger>
