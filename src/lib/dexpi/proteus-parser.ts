@@ -8,6 +8,7 @@ import type {
   DexpiFlowType,
   DexpiProcessStepType,
   ExternalPort,
+  InlineComponent,
   Parameter,
   Port,
   ProcessConnection,
@@ -98,6 +99,121 @@ const SKIP_COMPONENT_CLASSES = new Set([
 ]);
 
 // ============================================================================
+// Inline Component Classes
+// These are rendered ON edges/pipes rather than as separate nodes
+// ============================================================================
+
+const INLINE_COMPONENT_CLASSES = new Set([
+  // Valves - all types
+  "Valve",
+  "ControlValve",
+  "CheckValve",
+  "SwingCheckValve",
+  "GlobeValve",
+  "BallValve",
+  "ButterflyValve",
+  "GateValve",
+  "SafetyValve",
+  "SpringLoadedGlobeSafetyValve",
+  "NeedleValve",
+  "PlugValve",
+  "DiaphragmValve",
+  "PinchValve",
+  "ReliefValve",
+  "RotaryValve",
+  "ThreeWayValve",
+  "FourWayValve",
+  "AngleValve",
+  "RegulatingValve",
+  // Fittings
+  "PipeReducer",
+  "PipeTee",
+  "BlindFlange",
+  "Flange",
+  "Elbow",
+  "Cap",
+  "Union",
+  "Coupling",
+  // Instruments (optional - can be disabled if you want them as nodes)
+  // "Instrument",
+  // "FlowMeter",
+  // "OrificeFlowMeter",
+]);
+
+// Map ComponentClass to DEXPI category for symbol lookup
+const COMPONENT_CLASS_TO_CATEGORY: Record<string, string> = {
+  // Valves
+  Valve: "Valves",
+  ControlValve: "Valves",
+  CheckValve: "Valves",
+  SwingCheckValve: "Valves",
+  GlobeValve: "Valves",
+  BallValve: "Valves",
+  ButterflyValve: "Valves",
+  GateValve: "Valves",
+  SafetyValve: "Valves",
+  SpringLoadedGlobeSafetyValve: "Valves",
+  NeedleValve: "Valves",
+  PlugValve: "Valves",
+  DiaphragmValve: "Valves",
+  PinchValve: "Valves",
+  ReliefValve: "Valves",
+  RotaryValve: "Valves",
+  ThreeWayValve: "Valves",
+  FourWayValve: "Valves",
+  AngleValve: "Valves",
+  RegulatingValve: "Valves",
+  // Fittings
+  PipeReducer: "Fittings",
+  PipeTee: "Fittings",
+  BlindFlange: "Fittings",
+  Flange: "Fittings",
+  Elbow: "Fittings",
+  Cap: "Fittings",
+  Union: "Fittings",
+  Coupling: "Fittings",
+  // Instruments
+  Instrument: "Instruments",
+  FlowMeter: "Flow_Sensors",
+  OrificeFlowMeter: "Flow_Sensors",
+};
+
+// Map ComponentClass to symbol index within the category
+// These indices match the order in dexpi-mapping.json
+const COMPONENT_CLASS_TO_SYMBOL_INDEX: Record<string, number> = {
+  // Valves - index matches common DEXPI symbol ordering
+  GateValve: 0,
+  GlobeValve: 1,
+  BallValve: 2,
+  ButterflyValve: 3,
+  CheckValve: 4,
+  SwingCheckValve: 4,
+  ControlValve: 5,
+  SafetyValve: 6,
+  SpringLoadedGlobeSafetyValve: 6,
+  NeedleValve: 7,
+  PlugValve: 8,
+  DiaphragmValve: 9,
+  ReliefValve: 6,
+  ThreeWayValve: 10,
+  // Default for unknown valve types
+  Valve: 0,
+  // Fittings
+  PipeReducer: 0,
+  PipeTee: 1,
+  Flange: 2,
+  BlindFlange: 3,
+  Elbow: 4,
+};
+
+/**
+ * Check if a ComponentClass is an inline component (should be rendered on edge)
+ */
+function isInlineComponentClass(componentClass: string): boolean {
+  return INLINE_COMPONENT_CLASSES.has(componentClass);
+}
+
+// ============================================================================
 // Version Detection
 // ============================================================================
 
@@ -172,6 +288,17 @@ interface PortMapEntry {
   stepId: string;
   direction: "inlet" | "outlet";
   nodeIndex?: number; // For PipingComponent connection points
+  position?: { x: number; y: number }; // Position for coordinate matching
+}
+
+/**
+ * Nozzle metadata for enhanced rendering
+ */
+interface NozzleMetadata {
+  id: string;
+  label: string;
+  position?: { x: number; y: number };
+  connectionNodeIds: string[]; // PipingNode-X IDs for this nozzle
 }
 
 /**
@@ -204,13 +331,9 @@ export function parseDexpi1x(xmlString: string): DexpiDocument {
 
   let stepIndex = 0;
   for (const equipEl of equipmentElements) {
-    const step = parseEquipmentElement(equipEl, stepIndex++);
+    const step = parseEquipmentElement(equipEl, stepIndex++, portMap);
     if (step) {
       processSteps.push(step);
-      // Map nozzles to ports
-      for (const port of step.ports) {
-        portMap.set(port.id, { stepId: step.id, direction: port.direction });
-      }
     }
   }
 
@@ -224,20 +347,22 @@ export function parseDexpi1x(xmlString: string): DexpiDocument {
   let pipingComponentIndex = 0;
 
   for (const pnsEl of pipingNetworkSystems) {
-    // Parse PipingComponents (valves, reducers, tees, etc.) as process steps
+    // Parse PipingComponents - separating inline components (valves, etc.) from regular components
     const pipingComponentResult = parsePipingComponents(
       pnsEl,
       pipingComponentIndex,
       portMap
     );
+    // Only add non-inline components as process steps
     processSteps.push(...pipingComponentResult.steps);
     pipingComponentIndex += pipingComponentResult.steps.length;
 
-    // Parse connections with enhanced port resolution
+    // Parse connections with inline components embedded
     const connections = parsePipingNetworkConnections(
       pnsEl,
       connectionIndex,
-      portMap
+      portMap,
+      pipingComponentResult.inlineComponents
     );
     processConnections.push(...connections.connections);
     connectionIndex += connections.connections.length;
@@ -340,7 +465,11 @@ function extractVersionInfo(root: Element): VersionInfo {
 /**
  * Parse an Equipment element to ProcessStep
  */
-function parseEquipmentElement(el: Element, index: number): ProcessStep | null {
+function parseEquipmentElement(
+  el: Element,
+  index: number,
+  portMap: Map<string, PortMapEntry>
+): ProcessStep | null {
   const id = el.getAttribute("ID") || `equipment_${index}`;
   const componentClass = el.getAttribute("ComponentClass") || "Equipment";
 
@@ -349,21 +478,84 @@ function parseEquipmentElement(el: Element, index: number): ProcessStep | null {
     EQUIPMENT_TO_PROCESS_TYPE[componentClass] ||
     "Process/Process.GenericProcessStep";
 
-  // Get name from GenericAttributes
+  // Get name from GenericAttributes only - don't fall back to ComponentClass
+  // If there's no explicit name, we want the label to be empty
   const name =
-    getGenericAttributeValue(el, "TagNameAssignmentClass") || componentClass;
+    getGenericAttributeValue(el, "TagNameAssignmentClass") || undefined;
 
-  // Parse nozzles as ports
-  const nozzles = el.querySelectorAll("Nozzle");
+  // Get position from Position element
+  const positionEl = el.querySelector(":scope > Position > Location");
+  const layout = positionEl
+    ? {
+        x: parseFloat(positionEl.getAttribute("X") || "0"),
+        y: parseFloat(positionEl.getAttribute("Y") || "0"),
+      }
+    : undefined;
+
+  // Parse nozzles as ports AND register all their IDs in portMap
+  const nozzles = el.querySelectorAll(":scope > Nozzle");
   const ports: Port[] = [];
 
   let nozzleIndex = 0;
   for (const nozzleEl of nozzles) {
-    const port = parseNozzleElement(nozzleEl, id, nozzleIndex++);
+    const { port, nozzleMetadata } = parseNozzleElementWithMetadata(
+      nozzleEl,
+      id,
+      nozzleIndex++
+    );
     if (port) {
       ports.push(port);
+
+      // Register the nozzle ID itself in portMap with position
+      portMap.set(port.id, {
+        stepId: id,
+        direction: port.direction,
+        position: nozzleMetadata.position,
+      });
+
+      // Register all ConnectionPoints Node IDs (PipingNode-X) in portMap
+      // AND add them as additional port entries so from-dexpi.ts can find them
+      // Also capture the node's position for coordinate matching
+      const nozzleEl = nozzles[nozzleIndex - 1]; // We just incremented, so -1
+      const connectionPoints = nozzleEl?.querySelector("ConnectionPoints");
+      const nodeEls = connectionPoints?.querySelectorAll("Node") || [];
+
+      for (const nodeId of nozzleMetadata.connectionNodeIds) {
+        // Find the position for this specific node
+        let nodePosition: { x: number; y: number } | undefined;
+        for (const nodeEl of nodeEls) {
+          if (nodeEl.getAttribute("ID") === nodeId) {
+            const posEl = nodeEl.querySelector("Position > Location");
+            if (posEl) {
+              nodePosition = {
+                x: parseFloat(posEl.getAttribute("X") || "0"),
+                y: parseFloat(posEl.getAttribute("Y") || "0"),
+              };
+            }
+            break;
+          }
+        }
+
+        portMap.set(nodeId, {
+          stepId: id,
+          direction: port.direction,
+          position: nodePosition || nozzleMetadata.position,
+        });
+
+        // Add as additional port entry (this is what from-dexpi.ts uses to build its map)
+        ports.push({
+          id: nodeId,
+          name: `${port.name} (${nodeId})`,
+          direction: port.direction,
+          flowType: "material",
+          stepId: id,
+        });
+      }
     }
   }
+
+  // Also register the equipment ID itself as a fallback
+  portMap.set(id, { stepId: id, direction: "inlet" });
 
   // Parse parameters from GenericAttributes
   const parameters = parseGenericAttributesToParameters(el);
@@ -374,19 +566,36 @@ function parseEquipmentElement(el: Element, index: number): ProcessStep | null {
     name,
     ports,
     parameters: parameters.length > 0 ? parameters : undefined,
-    originalNodeType: componentClass.toLowerCase(),
+    layout,
+    originalNodeType: componentClass,
   };
 }
 
 /**
- * Parse a Nozzle element to Port
+ * Parse a Nozzle element to Port with enhanced metadata
+ * Extracts all ConnectionPoints Node IDs for proper connection resolution
  */
-function parseNozzleElement(
+function parseNozzleElementWithMetadata(
   el: Element,
   stepId: string,
   index: number
-): Port | null {
+): { port: Port | null; nozzleMetadata: NozzleMetadata } {
   const id = el.getAttribute("ID") || `${stepId}_nozzle_${index}`;
+  const connectionNodeIds: string[] = [];
+
+  // Get nozzle label from GenericAttributes
+  const label =
+    getGenericAttributeValue(el, "SubTagNameAssignmentClass") ||
+    `N${index + 1}`;
+
+  // Get nozzle position
+  const positionEl = el.querySelector("Position > Location");
+  const position = positionEl
+    ? {
+        x: parseFloat(positionEl.getAttribute("X") || "0"),
+        y: parseFloat(positionEl.getAttribute("Y") || "0"),
+      }
+    : undefined;
 
   // Determine direction from connection points or naming convention
   const connectionPoints = el.querySelector("ConnectionPoints");
@@ -395,6 +604,17 @@ function parseNozzleElement(
   if (connectionPoints) {
     const flowOut = connectionPoints.getAttribute("FlowOut");
     direction = flowOut === "1" || flowOut === "true" ? "outlet" : "inlet";
+
+    // Extract ALL node IDs from ConnectionPoints
+    // These are the actual IDs used in Connection elements (e.g., PipingNode-44)
+    const nodes = connectionPoints.querySelectorAll("Node");
+    for (const nodeEl of nodes) {
+      const nodeId = nodeEl.getAttribute("ID");
+      // Include all node types except DefaultNode placeholders
+      if (nodeId && !nodeId.includes("-DefaultNode")) {
+        connectionNodeIds.push(nodeId);
+      }
+    }
   } else if (
     id.toLowerCase().includes("out") ||
     id.toLowerCase().includes("discharge")
@@ -405,39 +625,173 @@ function parseNozzleElement(
   // Get flow type from context
   const flowType: DexpiFlowType = "material";
 
-  return {
+  const port: Port = {
     id,
-    name: `Nozzle ${index + 1}`,
+    name: label,
     direction,
     flowType,
     stepId,
   };
+
+  const nozzleMetadata: NozzleMetadata = {
+    id,
+    label,
+    position,
+    connectionNodeIds,
+  };
+
+  return { port, nozzleMetadata };
 }
 
 /**
- * Parse PipingComponent elements (valves, reducers, tees, etc.) as ProcessSteps
+ * Parsed inline component data (before connection assignment)
+ */
+interface ParsedInlineComponent {
+  id: string;
+  componentClass: string;
+  category: string;
+  symbolIndex: number;
+  label?: string;
+  position: { x: number; y: number };
+  rotation: number;
+  connectionNodeIds: string[];
+}
+
+/**
+ * Parse PipingComponent elements
+ * Separates inline components (valves, etc.) from regular piping components
+ * Inline components will be embedded in edges, not created as separate nodes
  */
 function parsePipingComponents(
   pnsEl: Element,
   startIndex: number,
   portMap: Map<string, PortMapEntry>
-): { steps: ProcessStep[] } {
+): {
+  steps: ProcessStep[];
+  inlineComponents: Map<string, ParsedInlineComponent[]>; // Keyed by segment ID
+} {
   const steps: ProcessStep[] = [];
+  const inlineComponents = new Map<string, ParsedInlineComponent[]>();
 
-  // Find all PipingComponent elements within PipingNetworkSegments
-  const pipingComponents = pnsEl.querySelectorAll(
-    "PipingNetworkSegment > PipingComponent"
-  );
+  // Find all PipingNetworkSegments
+  const segments = pnsEl.querySelectorAll("PipingNetworkSegment");
 
   let index = startIndex;
-  for (const compEl of pipingComponents) {
-    const step = parsePipingComponentElement(compEl, index++, portMap);
-    if (step) {
-      steps.push(step);
+  for (const segment of segments) {
+    const segmentId = segment.getAttribute("ID") || `segment_${index}`;
+    const segmentInlineComponents: ParsedInlineComponent[] = [];
+
+    // Find all PipingComponent elements within this segment
+    const pipingComponents = segment.querySelectorAll(
+      ":scope > PipingComponent"
+    );
+
+    for (const compEl of pipingComponents) {
+      const componentClass =
+        compEl.getAttribute("ComponentClass") || "PipingComponent";
+
+      // Check if this is an inline component (valve, fitting, etc.)
+      if (isInlineComponentClass(componentClass)) {
+        // Parse as inline component
+        const inlineComp = parseInlineComponentElement(compEl, portMap);
+        if (inlineComp) {
+          segmentInlineComponents.push(inlineComp);
+        }
+      } else {
+        // Parse as regular process step
+        const step = parsePipingComponentElement(compEl, index++, portMap);
+        if (step) {
+          steps.push(step);
+        }
+      }
+    }
+
+    if (segmentInlineComponents.length > 0) {
+      inlineComponents.set(segmentId, segmentInlineComponents);
     }
   }
 
-  return { steps };
+  return { steps, inlineComponents };
+}
+
+/**
+ * Parse a PipingComponent element as an inline component
+ */
+function parseInlineComponentElement(
+  el: Element,
+  portMap: Map<string, PortMapEntry>
+): ParsedInlineComponent | null {
+  const id = el.getAttribute("ID") || `inline_${Date.now()}`;
+  const componentClass = el.getAttribute("ComponentClass") || "Valve";
+
+  // Get category and symbol index
+  const category = COMPONENT_CLASS_TO_CATEGORY[componentClass] || "Valves";
+  const symbolIndex = COMPONENT_CLASS_TO_SYMBOL_INDEX[componentClass] ?? 0;
+
+  // Get label from GenericAttributes
+  const label =
+    getGenericAttributeValue(el, "PipingComponentNameAssignmentClass") ||
+    getGenericAttributeValue(el, "TagNameAssignmentClass") ||
+    undefined;
+
+  // Get position from Position element
+  const positionEl = el.querySelector(":scope > Position > Location");
+  const position = positionEl
+    ? {
+        x: parseFloat(positionEl.getAttribute("X") || "0"),
+        y: parseFloat(positionEl.getAttribute("Y") || "0"),
+      }
+    : { x: 0, y: 0 };
+
+  // Get rotation from Position > Reference element
+  // Reference vector indicates the component's orientation
+  const referenceEl = el.querySelector(":scope > Position > Reference");
+  let rotation = 0;
+  if (referenceEl) {
+    const refX = parseFloat(referenceEl.getAttribute("X") || "1");
+    const refY = parseFloat(referenceEl.getAttribute("Y") || "0");
+    // Calculate angle from reference vector
+    rotation = Math.atan2(refY, refX) * (180 / Math.PI);
+  }
+
+  // Collect connection node IDs for port mapping
+  const connectionNodeIds: string[] = [];
+  const connectionPoints = el.querySelector("ConnectionPoints");
+  if (connectionPoints) {
+    const nodes = connectionPoints.querySelectorAll("Node");
+    for (const node of nodes) {
+      const nodeId = node.getAttribute("ID");
+      if (nodeId && !nodeId.includes("-DefaultNode")) {
+        connectionNodeIds.push(nodeId);
+
+        // Register in portMap so connections can find this inline component
+        // But we'll mark it as inline to handle it specially
+        portMap.set(nodeId, {
+          stepId: id,
+          direction: "inlet",
+          position,
+        });
+      }
+    }
+  }
+
+  // Also register the component ID itself
+  portMap.set(id, {
+    stepId: id,
+    direction: "inlet",
+    position,
+  });
+
+  return {
+    id,
+    componentClass,
+    category,
+    symbolIndex,
+    label,
+    position,
+    rotation,
+    connectionNodeIds,
+  };
 }
 
 /**
@@ -456,11 +810,12 @@ function parsePipingComponentElement(
     EQUIPMENT_TO_PROCESS_TYPE[componentClass] ||
     "Process/Process.GenericProcessStep";
 
-  // Get name from GenericAttributes or use ComponentClass
+  // Get name from GenericAttributes only - don't fall back to ComponentClass
+  // If there's no explicit name, we want the label to be empty
   const name =
     getGenericAttributeValue(el, "PipingComponentNameAssignmentClass") ||
     getGenericAttributeValue(el, "TagNameAssignmentClass") ||
-    componentClass;
+    undefined;
 
   // Parse ConnectionPoints as ports and register in portMap
   const ports: Port[] = [];
@@ -498,6 +853,15 @@ function parsePipingComponentElement(
         direction = nodeIndex === 1 ? "inlet" : "outlet";
       }
 
+      // Get node position for coordinate matching
+      const nodePosEl = nodeEl.querySelector("Position > Location");
+      const nodePosition = nodePosEl
+        ? {
+            x: parseFloat(nodePosEl.getAttribute("X") || "0"),
+            y: parseFloat(nodePosEl.getAttribute("Y") || "0"),
+          }
+        : undefined;
+
       const port: Port = {
         id: nodeId || `${id}_port_${nodeIndex}`,
         name: `Port ${nodeIndex + 1}`,
@@ -508,9 +872,14 @@ function parsePipingComponentElement(
 
       ports.push(port);
 
-      // Register in portMap for connection resolution
+      // Register in portMap for connection resolution with position
       if (nodeId) {
-        portMap.set(nodeId, { stepId: id, direction, nodeIndex });
+        portMap.set(nodeId, {
+          stepId: id,
+          direction,
+          nodeIndex,
+          position: nodePosition,
+        });
       }
 
       nodeIndex++;
@@ -521,8 +890,9 @@ function parsePipingComponentElement(
     portMap.set(id, { stepId: id, direction: "inlet", nodeIndex: 0 });
   }
 
-  // Get position from Position element
-  const positionEl = el.querySelector("Position > Location");
+  // Get position from Position element - use :scope to get direct child only
+  // (not nested Position elements inside ConnectionPoints > Node)
+  const positionEl = el.querySelector(":scope > Position > Location");
   const layout = positionEl
     ? {
         x: parseFloat(positionEl.getAttribute("X") || "0"),
@@ -546,41 +916,396 @@ function parsePipingComponentElement(
 
 /**
  * Parse piping network for connections
+ * Also extracts FromNode/ToNode indices for precise port resolution
+ * and PipingNetworkSystemLabel for edge labels
+ *
+ * Inline components (valves, fittings) are embedded in connections
+ * rather than being connected via separate edges.
  */
 function parsePipingNetworkConnections(
   pnsEl: Element,
   startIndex: number,
-  _portMap: Map<string, PortMapEntry>
+  portMap: Map<string, PortMapEntry>,
+  inlineComponentsBySegment: Map<string, ParsedInlineComponent[]>
 ): { connections: ProcessConnection[] } {
   const connections: ProcessConnection[] = [];
 
-  // Find all Connection elements
-  const connectionEls = pnsEl.querySelectorAll("Connection");
+  // Extract PipingNetworkSystemLabel from the parent system
+  // This label describes the piping line (e.g., "MNb 47121 75HB13 80")
+  const pipingLabel = extractPipingNetworkSystemLabel(pnsEl);
 
+  // Build a set of inline component IDs to skip when processing connections
+  const inlineComponentIds = new Set<string>();
+  for (const components of inlineComponentsBySegment.values()) {
+    for (const comp of components) {
+      inlineComponentIds.add(comp.id);
+      // Also add connection node IDs
+      for (const nodeId of comp.connectionNodeIds) {
+        inlineComponentIds.add(nodeId);
+      }
+    }
+  }
+
+  // Process each segment to create equipment-to-equipment connections with inline components
+  const segments = pnsEl.querySelectorAll("PipingNetworkSegment");
   let index = startIndex;
+
+  for (const segment of segments) {
+    const segmentId = segment.getAttribute("ID") || "";
+    const segmentInlineComponents =
+      inlineComponentsBySegment.get(segmentId) || [];
+
+    // Get CenterLine coordinates to determine path and component positions
+    const pathCoordinates = extractCenterLineCoordinates(segment);
+
+    // Find equipment endpoints for this segment (nozzles, off-page connectors)
+    const endpoints = findSegmentEndpoints(
+      segment,
+      portMap,
+      inlineComponentIds
+    );
+
+    if (endpoints.length >= 2) {
+      // Create a connection from start to end with inline components embedded
+      const fromEndpoint = endpoints[0];
+      const toEndpoint = endpoints[endpoints.length - 1];
+
+      // Calculate positions for inline components along the path
+      const inlineComps = calculateInlinePositions(
+        segmentInlineComponents,
+        pathCoordinates,
+        fromEndpoint.position,
+        toEndpoint.position
+      );
+
+      const connId = `conn_${index++}`;
+      connections.push({
+        id: connId,
+        type: "Process/Process.MaterialFlow",
+        fromPort: fromEndpoint.portId,
+        toPort: toEndpoint.portId,
+        flowType: "material",
+        label: pipingLabel || undefined,
+        inlineComponents: inlineComps.length > 0 ? inlineComps : undefined,
+      });
+    } else {
+      // Fallback: process explicit Connection elements
+      const connectionEls = segment.querySelectorAll(":scope > Connection");
+
+      for (const connEl of connectionEls) {
+        const fromId = connEl.getAttribute("FromID");
+        const toId = connEl.getAttribute("ToID");
+
+        // Skip incomplete connections or connections to inline components
+        if (!fromId || !toId) continue;
+        if (inlineComponentIds.has(fromId) || inlineComponentIds.has(toId))
+          continue;
+
+        const fromNode = connEl.getAttribute("FromNode");
+        const toNode = connEl.getAttribute("ToNode");
+
+        const resolvedFromPort = resolvePortWithIndex(
+          fromId,
+          fromNode,
+          portMap
+        );
+        const resolvedToPort = resolvePortWithIndex(toId, toNode, portMap);
+
+        const connId = `conn_${index++}`;
+        connections.push({
+          id: connId,
+          type: "Process/Process.MaterialFlow",
+          fromPort: resolvedFromPort,
+          toPort: resolvedToPort,
+          flowType: "material",
+          label: pipingLabel || undefined,
+          inlineComponents:
+            segmentInlineComponents.length > 0
+              ? segmentInlineComponents.map((comp) => ({
+                  id: comp.id,
+                  componentClass: comp.componentClass,
+                  category: comp.category,
+                  symbolIndex: comp.symbolIndex,
+                  label: comp.label,
+                  position: 0.5, // Default to middle if we can't calculate
+                  originalPosition: comp.position,
+                  rotation: comp.rotation,
+                }))
+              : undefined,
+        });
+      }
+    }
+  }
+
+  return { connections };
+}
+
+/**
+ * Extract CenterLine coordinates from a segment
+ */
+function extractCenterLineCoordinates(segment: Element): Coordinate[] {
+  const coordinates: Coordinate[] = [];
+  const centerLines = segment.querySelectorAll(":scope > CenterLine");
+
+  for (const cl of centerLines) {
+    const coords = cl.querySelectorAll("Coordinate");
+    for (const coord of coords) {
+      const x = parseFloat(coord.getAttribute("X") || "0");
+      const y = parseFloat(coord.getAttribute("Y") || "0");
+      // Avoid duplicate consecutive coordinates
+      const last = coordinates[coordinates.length - 1];
+      if (!last || !coordinatesMatch({ x, y }, last)) {
+        coordinates.push({ x, y });
+      }
+    }
+  }
+
+  return coordinates;
+}
+
+/**
+ * Find equipment endpoints for a segment (not inline components)
+ */
+function findSegmentEndpoints(
+  segment: Element,
+  portMap: Map<string, PortMapEntry>,
+  inlineComponentIds: Set<string>
+): Array<{ portId: string; position: Coordinate }> {
+  const endpoints: Array<{ portId: string; position: Coordinate }> = [];
+
+  // Look for Connection elements to find endpoints
+  const connectionEls = segment.querySelectorAll(":scope > Connection");
+  const endpointIds = new Set<string>();
+
   for (const connEl of connectionEls) {
     const fromId = connEl.getAttribute("FromID");
     const toId = connEl.getAttribute("ToID");
 
-    // Skip incomplete connections
-    if (!fromId || !toId) {
-      continue;
+    if (fromId && !inlineComponentIds.has(fromId)) {
+      endpointIds.add(fromId);
     }
-
-    const id = `conn_${index++}`;
-
-    // Keep original IDs - resolution to node IDs happens in from-dexpi.ts
-    // This preserves the connection topology for proper port-to-node mapping
-    connections.push({
-      id,
-      type: "Process/Process.MaterialFlow",
-      fromPort: fromId,
-      toPort: toId,
-      flowType: "material",
-    });
+    if (toId && !inlineComponentIds.has(toId)) {
+      endpointIds.add(toId);
+    }
   }
 
-  return { connections };
+  // Also check for PipeOffPageConnector (external ports)
+  const offPageConnectors = segment.querySelectorAll(
+    ":scope > PipeOffPageConnector"
+  );
+  for (const opc of offPageConnectors) {
+    const id = opc.getAttribute("ID");
+    if (id) {
+      const posEl = opc.querySelector("Position > Location");
+      const position = posEl
+        ? {
+            x: parseFloat(posEl.getAttribute("X") || "0"),
+            y: parseFloat(posEl.getAttribute("Y") || "0"),
+          }
+        : { x: 0, y: 0 };
+      endpoints.push({ portId: id, position });
+    }
+  }
+
+  // Get positions for other endpoints
+  for (const portId of endpointIds) {
+    const entry = portMap.get(portId);
+    if (entry?.position) {
+      endpoints.push({ portId, position: entry.position });
+    }
+  }
+
+  return endpoints;
+}
+
+/**
+ * Calculate positions for inline components along the path
+ * Returns InlineComponent objects with position as 0-1 fraction along path
+ */
+function calculateInlinePositions(
+  components: ParsedInlineComponent[],
+  pathCoordinates: Coordinate[],
+  startPos: Coordinate,
+  endPos: Coordinate
+): InlineComponent[] {
+  if (components.length === 0) return [];
+  if (pathCoordinates.length < 2) {
+    // No path info - distribute evenly
+    return components.map((comp, i) => ({
+      id: comp.id,
+      componentClass: comp.componentClass,
+      category: comp.category,
+      symbolIndex: comp.symbolIndex,
+      label: comp.label,
+      position: (i + 1) / (components.length + 1),
+      originalPosition: comp.position,
+      rotation: comp.rotation,
+    }));
+  }
+
+  // Calculate total path length
+  let totalLength = 0;
+  for (let i = 1; i < pathCoordinates.length; i++) {
+    totalLength += Math.hypot(
+      pathCoordinates[i].x - pathCoordinates[i - 1].x,
+      pathCoordinates[i].y - pathCoordinates[i - 1].y
+    );
+  }
+
+  if (totalLength === 0) totalLength = 1; // Avoid division by zero
+
+  // For each component, find its position along the path
+  return components
+    .map((comp) => {
+      // Find the closest point on the path
+      let minDist = Infinity;
+      let distanceAlongPath = 0;
+      let cumulativeLength = 0;
+
+      for (let i = 1; i < pathCoordinates.length; i++) {
+        const segStart = pathCoordinates[i - 1];
+        const segEnd = pathCoordinates[i];
+        const segLength = Math.hypot(
+          segEnd.x - segStart.x,
+          segEnd.y - segStart.y
+        );
+
+        // Project component position onto this segment
+        const t = projectPointOntoSegment(comp.position, segStart, segEnd);
+        const projectedPoint = {
+          x: segStart.x + t * (segEnd.x - segStart.x),
+          y: segStart.y + t * (segEnd.y - segStart.y),
+        };
+
+        const dist = Math.hypot(
+          comp.position.x - projectedPoint.x,
+          comp.position.y - projectedPoint.y
+        );
+
+        if (dist < minDist) {
+          minDist = dist;
+          distanceAlongPath = cumulativeLength + t * segLength;
+        }
+
+        cumulativeLength += segLength;
+      }
+
+      // Calculate normalized position (0-1)
+      const normalizedPosition = Math.max(
+        0.05,
+        Math.min(0.95, distanceAlongPath / totalLength)
+      );
+
+      return {
+        id: comp.id,
+        componentClass: comp.componentClass,
+        category: comp.category,
+        symbolIndex: comp.symbolIndex,
+        label: comp.label,
+        position: normalizedPosition,
+        originalPosition: comp.position,
+        rotation: comp.rotation,
+      };
+    })
+    .sort((a, b) => a.position - b.position); // Sort by position along path
+}
+
+/**
+ * Project a point onto a line segment, returning t value (0-1)
+ */
+function projectPointOntoSegment(
+  point: Coordinate,
+  segStart: Coordinate,
+  segEnd: Coordinate
+): number {
+  const dx = segEnd.x - segStart.x;
+  const dy = segEnd.y - segStart.y;
+  const lengthSq = dx * dx + dy * dy;
+
+  if (lengthSq === 0) return 0;
+
+  const t =
+    ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / lengthSq;
+  return Math.max(0, Math.min(1, t));
+}
+
+/**
+ * Position coordinate with small tolerance for matching
+ */
+interface Coordinate {
+  x: number;
+  y: number;
+}
+
+/**
+ * Check if two coordinates are approximately equal (within tolerance)
+ */
+function coordinatesMatch(
+  a: Coordinate,
+  b: Coordinate,
+  tolerance = 0.5
+): boolean {
+  return Math.abs(a.x - b.x) < tolerance && Math.abs(a.y - b.y) < tolerance;
+}
+
+/**
+ * Extract label text from PipingNetworkSystemLabel
+ */
+function extractPipingNetworkSystemLabel(pnsEl: Element): string | null {
+  // Look for label in the PipingNetworkSystem
+  const labelEl = pnsEl.querySelector(
+    ":scope > Label[ComponentClass*='PipingNetworkSystemLabel'] > Text"
+  );
+
+  if (labelEl) {
+    return labelEl.getAttribute("String") || null;
+  }
+
+  // Also check for PipingNetworkSegmentLabel within segments
+  const segmentLabelEl = pnsEl.querySelector(
+    "PipingNetworkSegment > Label[ComponentClass*='PipingNetworkSegmentLabel'] > Text"
+  );
+
+  if (segmentLabelEl) {
+    return segmentLabelEl.getAttribute("String") || null;
+  }
+
+  return null;
+}
+
+/**
+ * Resolve a port ID, optionally using a node index
+ * If the ID is in portMap, use it directly
+ * If not, and we have a node index, try to find the specific port
+ */
+function resolvePortWithIndex(
+  componentId: string,
+  nodeIndex: string | null,
+  portMap: Map<string, PortMapEntry>
+): string {
+  // First, check if the componentId itself is already in the portMap
+  if (portMap.has(componentId)) {
+    return componentId;
+  }
+
+  // If we have a node index, the component might have multiple ports
+  // Try to find the specific port by looking for entries that match the component
+  // This handles cases where connections reference component IDs with node indices
+  if (nodeIndex) {
+    // Look for port IDs that might match this component + node index pattern
+    // Common patterns: ComponentId_port_N, PipingNode-N, etc.
+    for (const [portId, entry] of portMap.entries()) {
+      if (
+        entry.stepId === componentId &&
+        entry.nodeIndex === parseInt(nodeIndex) - 1
+      ) {
+        return portId;
+      }
+    }
+  }
+
+  // Return the original ID - it will be resolved in from-dexpi.ts
+  return componentId;
 }
 
 /**

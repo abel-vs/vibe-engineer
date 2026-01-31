@@ -44,6 +44,17 @@ export interface DexpiImportResult {
 }
 
 // ============================================================================
+// Position Transformation Constants
+// ============================================================================
+
+// DEXPI uses mm coordinates - scale up for better React Flow canvas usage
+const POSITION_SCALE_FACTOR = 4;
+
+// DEXPI Y-axis increases upward, React Flow Y increases downward
+// We invert by negating and adding offset to keep all values positive
+const INVERT_Y_AXIS = true;
+
+// ============================================================================
 // Main Import Function
 // ============================================================================
 
@@ -87,14 +98,18 @@ export function dexpiToReactFlow(xmlString: string): DexpiImportResult {
   // Detect mode from diagram type or process step types
   const mode = detectMode(processModel);
 
+  // Calculate Y offset for inverting coordinates
+  // Find the maximum Y value to use as offset
+  const yOffset = calculateYOffset(processModel);
+
   // Convert ProcessSteps to nodes
   const stepNodes = processModel.processSteps.map((step) =>
-    convertProcessStepToNode(step, mode, warnings)
+    convertProcessStepToNode(step, mode, warnings, yOffset)
   );
 
   // Convert ExternalPorts to nodes
   const externalNodes = processModel.externalPorts.map((port) =>
-    convertExternalPortToNode(port, warnings)
+    convertExternalPortToNode(port, warnings, yOffset)
   );
 
   const nodes = [...stepNodes, ...externalNodes];
@@ -129,6 +144,49 @@ export function dexpiToReactFlow(xmlString: string): DexpiImportResult {
     },
     warnings,
   };
+}
+
+/**
+ * Calculate Y offset for coordinate inversion
+ * Finds the maximum Y value across all elements
+ */
+function calculateYOffset(model: ProcessModel): number {
+  if (!INVERT_Y_AXIS) return 0;
+
+  let maxY = 0;
+
+  for (const step of model.processSteps) {
+    if (step.layout) {
+      maxY = Math.max(maxY, step.layout.y);
+    }
+  }
+
+  for (const port of model.externalPorts) {
+    if (port.layout) {
+      maxY = Math.max(maxY, port.layout.y);
+    }
+  }
+
+  // Add some padding to the max Y
+  return (maxY + 50) * POSITION_SCALE_FACTOR;
+}
+
+/**
+ * Transform DEXPI coordinates to React Flow coordinates
+ * - Scales by POSITION_SCALE_FACTOR
+ * - Inverts Y axis if INVERT_Y_AXIS is true
+ */
+function transformPosition(
+  x: number,
+  y: number,
+  yOffset: number
+): { x: number; y: number } {
+  const scaledX = x * POSITION_SCALE_FACTOR;
+  const scaledY = INVERT_Y_AXIS
+    ? yOffset - y * POSITION_SCALE_FACTOR
+    : y * POSITION_SCALE_FACTOR;
+
+  return { x: scaledX, y: scaledY };
 }
 
 /**
@@ -170,7 +228,8 @@ function detectMode(model: ProcessModel): DiagramMode {
 function convertProcessStepToNode(
   step: ProcessStep,
   mode: DiagramMode,
-  warnings: string[]
+  warnings: string[],
+  yOffset: number
 ): Node {
   // Get React Flow node type
   let nodeType: string;
@@ -216,10 +275,12 @@ function convertProcessStepToNode(
     }
   }
 
-  // Build node data
-  const data: Record<string, unknown> = {
-    label: step.name,
-  };
+  // Build node data - only set label if there's an actual name
+  const data: Record<string, unknown> = {};
+
+  if (step.name) {
+    data.label = step.name;
+  }
 
   if (step.description) {
     data.description = step.description;
@@ -244,9 +305,20 @@ function convertProcessStepToNode(
     data.properties = properties;
   }
 
-  // Get position from layout or use defaults
+  // Extract nozzle metadata for equipment nodes (for P&ID display)
+  // Only include primary nozzle ports (those starting with "Nozzle-"), not PipingNode-X duplicates
+  const nozzlePorts = step.ports.filter((p) => p.id.startsWith("Nozzle-"));
+  if (nozzlePorts.length > 0) {
+    data.nozzles = nozzlePorts.map((p) => ({
+      id: p.id,
+      label: p.name,
+      direction: p.direction,
+    }));
+  }
+
+  // Get position from layout and transform to React Flow coordinates
   const position = step.layout
-    ? { x: step.layout.x, y: step.layout.y }
+    ? transformPosition(step.layout.x, step.layout.y, yOffset)
     : { x: 0, y: 0 }; // Will be auto-laid out later
 
   return {
@@ -262,10 +334,12 @@ function convertProcessStepToNode(
  */
 function convertExternalPortToNode(
   port: ExternalPort,
-  _warnings: string[]
+  _warnings: string[],
+  yOffset: number
 ): Node {
+  // Transform position to React Flow coordinates
   const position = port.layout
-    ? { x: port.layout.x, y: port.layout.y }
+    ? transformPosition(port.layout.x, port.layout.y, yOffset)
     : { x: 0, y: 0 };
 
   return {
@@ -423,6 +497,19 @@ function convertProcessConnectionToEdge(
       data.pressure =
         `${conn.properties.pressure.value} ${conn.properties.pressure.unit}`.trim();
     }
+  }
+
+  // Convert inline components (valves, instruments) for rendering on edge
+  if (conn.inlineComponents && conn.inlineComponents.length > 0) {
+    data.inlineComponents = conn.inlineComponents.map((comp) => ({
+      id: comp.id,
+      componentClass: comp.componentClass,
+      category: comp.category,
+      symbolIndex: comp.symbolIndex,
+      label: comp.label,
+      position: comp.position,
+      rotation: comp.rotation,
+    }));
   }
 
   // Don't set handle IDs - BFD nodes only have default handles without specific IDs
