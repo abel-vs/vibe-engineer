@@ -1,5 +1,5 @@
-import { openDB, IDBPDatabase } from "idb";
-import type { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
+import { IDBPDatabase, openDB } from "idb";
 import type { DiagramMode } from "./modes";
 import type { DiagramStyle } from "./styles";
 
@@ -38,7 +38,9 @@ export async function saveDiagram(diagram: SavedDiagram): Promise<void> {
   await db.put(STORE_NAME, diagram);
 }
 
-export async function loadDiagram(id: string): Promise<SavedDiagram | undefined> {
+export async function loadDiagram(
+  id: string
+): Promise<SavedDiagram | undefined> {
   const db = await getDB();
   return db.get(STORE_NAME, id);
 }
