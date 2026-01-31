@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
     getCategoryDisplayName,
+    getDexpiCategorySize,
     getSymbol,
     getSymbolPath,
     nodeTypeToCategory,
@@ -34,9 +35,6 @@ interface DexpiNodeComponentProps extends NodeProps<DexpiNode> {
   nodeType?: string;
 }
 
-// Default SVG size for the node
-const SVG_SIZE = 64;
-
 export const DexpiNodeComponent = memo(function DexpiNodeComponent(
   props: DexpiNodeComponentProps
 ) {
@@ -50,6 +48,9 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
   const symbolIndex = data?.symbolIndex ?? 0;
   const symbolPath = getSymbolPath(category, symbolIndex);
   const symbol = getSymbol(category, symbolIndex);
+  
+  // Get category-specific default size (valves smaller, vessels larger, etc.)
+  const defaultSize = getDexpiCategorySize(category);
 
   // Only show user-provided label, not category or symbol description
   const displayLabel = data?.label || null;
@@ -124,11 +125,11 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
     }
   });
 
-  // Support resizing - get dimensions from node props
+  // Support resizing - get dimensions from node props, falling back to category-specific defaults
   const nodeWidth = (props as NodeProps<DexpiNode> & { width?: number }).width;
   const nodeHeight = (props as NodeProps<DexpiNode> & { height?: number }).height;
-  const displayWidth = nodeWidth || SVG_SIZE;
-  const displayHeight = nodeHeight || SVG_SIZE;
+  const displayWidth = nodeWidth || defaultSize.width;
+  const displayHeight = nodeHeight || defaultSize.height;
 
   const nodeLabel = displayLabel || categoryDisplayName || id;
 
@@ -137,8 +138,8 @@ export const DexpiNodeComponent = memo(function DexpiNodeComponent(
       <NodeContextMenu nodeId={id} nodeLabel={nodeLabel}>
         <div className="dexpi-node relative flex flex-col items-center">
           <NodeResizer
-            minWidth={48}
-            minHeight={48}
+            minWidth={24}
+            minHeight={24}
             keepAspectRatio
             isVisible={selected}
             lineClassName="!border-gray-700"

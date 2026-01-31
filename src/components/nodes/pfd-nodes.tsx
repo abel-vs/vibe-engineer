@@ -7,7 +7,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
-import { SIMPLIFIED_PFD_EQUIPMENT, getSimplifiedPfdSymbolPath } from "@/lib/dexpi-config";
+import { SIMPLIFIED_PFD_EQUIPMENT, getSimplifiedPfdSize, getSimplifiedPfdSymbolPath } from "@/lib/dexpi-config";
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
 import { memo, useEffect, useState } from "react";
@@ -230,8 +230,8 @@ export const PumpNode = memo(function PumpNode(props: NodeProps<PFDNode>) {
       )}
     >
       <NodeResizer
-        minWidth={48}
-        minHeight={48}
+        minWidth={24}
+        minHeight={24}
         keepAspectRatio
         isVisible={selected}
         lineClassName="!border-green-700"
@@ -531,8 +531,8 @@ export const MixerNode = memo(function MixerNode(props: NodeProps<PFDNode>) {
   return (
     <div className="relative w-16 h-16">
       <NodeResizer
-        minWidth={48}
-        minHeight={48}
+        minWidth={24}
+        minHeight={24}
         keepAspectRatio
         isVisible={selected}
         lineClassName="!border-purple-700"
@@ -597,8 +597,8 @@ export const SplitterNode = memo(function SplitterNode(props: NodeProps<PFDNode>
   return (
     <div className="relative w-16 h-16">
       <NodeResizer
-        minWidth={48}
-        minHeight={48}
+        minWidth={24}
+        minHeight={24}
         keepAspectRatio
         isVisible={selected}
         lineClassName="!border-purple-700"
@@ -675,6 +675,9 @@ const SimplifiedPfdNodeComponent = memo(function SimplifiedPfdNodeComponent({
   // Get equipment info for tooltip
   const equipment = SIMPLIFIED_PFD_EQUIPMENT.find((eq) => eq.nodeType === nodeType);
   const categoryDisplayName = equipment?.label || nodeType;
+  
+  // Get node type-specific default size (vessels larger, etc.)
+  const defaultSize = getSimplifiedPfdSize(nodeType);
 
   useEffect(() => {
     if (!symbolPath) {
@@ -741,11 +744,11 @@ const SimplifiedPfdNodeComponent = memo(function SimplifiedPfdNodeComponent({
     }
   });
 
-  // Support resizing - get dimensions from node props
+  // Support resizing - get dimensions from node props, falling back to node type-specific defaults
   const nodeWidth = (props as SimplifiedPfdNodeProps & { width?: number }).width;
   const nodeHeight = (props as SimplifiedPfdNodeProps & { height?: number }).height;
-  const displayWidth = nodeWidth || 64;
-  const displayHeight = nodeHeight || 64;
+  const displayWidth = nodeWidth || defaultSize.width;
+  const displayHeight = nodeHeight || defaultSize.height;
 
   // Only show user-provided label, not category or symbol description
   const displayLabel = data?.label || null;
@@ -758,8 +761,8 @@ const SimplifiedPfdNodeComponent = memo(function SimplifiedPfdNodeComponent({
       <NodeContextMenu nodeId={id} nodeLabel={nodeLabel}>
         <div className="dexpi-node relative flex flex-col items-center">
           <NodeResizer
-            minWidth={48}
-            minHeight={48}
+            minWidth={24}
+            minHeight={24}
             keepAspectRatio
             isVisible={selected}
             lineClassName="!border-gray-700"

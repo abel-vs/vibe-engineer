@@ -1,5 +1,6 @@
 "use client";
 
+import { getDrawioCategorySize } from "@/lib/dexpi-config";
 import {
     ConnectionPoint,
     DrawioShape,
@@ -33,15 +34,15 @@ const positionMap: Record<string, Position> = {
   right: Position.Right,
 };
 
-// Default node size
-const DEFAULT_SIZE = 64;
-
 export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
   props: NodeProps<DrawioPidNode>
 ) {
   const { id, data, selected } = props;
   const { category, shapeName, shape, label } = data;
   const edges = useEdges();
+  
+  // Get category-specific default size (valves smaller, vessels larger, etc.)
+  const defaultSize = getDrawioCategorySize(category);
 
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgError, setSvgError] = useState(false);
@@ -106,15 +107,15 @@ export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
     }
   });
 
-  // Get node dimensions (support resizing)
+  // Get node dimensions (support resizing), falling back to category-specific defaults
   const nodeWidth =
     (props as NodeProps<DrawioPidNode> & { width?: number }).width ||
     shape?.width ||
-    DEFAULT_SIZE;
+    defaultSize.width;
   const nodeHeight =
     (props as NodeProps<DrawioPidNode> & { height?: number }).height ||
     shape?.height ||
-    DEFAULT_SIZE;
+    defaultSize.height;
 
   // Get properties to display
   const properties = data?.properties ?? {};
@@ -127,8 +128,8 @@ export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
     <NodeContextMenu nodeId={id} nodeLabel={nodeLabel}>
       <div className="drawio-pid-node relative flex flex-col items-center">
         <NodeResizer
-          minWidth={32}
-          minHeight={32}
+          minWidth={24}
+          minHeight={24}
           isVisible={selected}
           lineClassName="!border-gray-700"
           handleClassName="!w-2 !h-2 !bg-gray-700 !border-white"

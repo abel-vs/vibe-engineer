@@ -347,3 +347,148 @@ export function getSimplifiedPfdEquipment(
 ): SimplifiedPfdEquipment | undefined {
   return SIMPLIFIED_PFD_EQUIPMENT.find((eq) => eq.nodeType === nodeType);
 }
+
+// ============================================
+// DEFAULT NODE SIZES BY EQUIPMENT TYPE
+// ============================================
+// Different equipment types have different standard sizes:
+// - Vessels/Columns: Large (major equipment)
+// - Heat Exchangers/Separators: Medium-Large
+// - Pumps/Compressors/Mixers: Medium
+// - Valves/Instruments/Fittings: Small (inline components)
+
+export interface NodeSizeConfig {
+  width: number;
+  height: number;
+}
+
+// Size presets
+export const NODE_SIZE_PRESETS = {
+  large: { width: 150, height: 150 }, // Vessels, columns, tanks
+  mediumLarge: { width: 105, height: 105 }, // Heat exchangers, separators
+  medium: { width: 90, height: 90 }, // Pumps, compressors, mixers
+  small: { width: 30, height: 30 }, // Valves, instruments, fittings
+  tiny: { width: 24, height: 24 }, // Small inline elements
+} as const;
+
+// Map DEXPI categories to default sizes
+export const CATEGORY_SIZE_MAP: Record<string, NodeSizeConfig> = {
+  // Large - Only major vessels/tanks/columns
+  Vessels: NODE_SIZE_PRESETS.large,
+
+  // Medium - All other process equipment
+  Separators: NODE_SIZE_PRESETS.medium,
+  Heat_Exchangers: NODE_SIZE_PRESETS.medium,
+  Driers: NODE_SIZE_PRESETS.medium,
+  Pumps: NODE_SIZE_PRESETS.medium,
+  Pumps_ISO: NODE_SIZE_PRESETS.medium,
+  Pumps_DIN: NODE_SIZE_PRESETS.medium,
+  Compressors: NODE_SIZE_PRESETS.medium,
+  Compressors_ISO: NODE_SIZE_PRESETS.medium,
+  Mixers: NODE_SIZE_PRESETS.medium,
+  Agitators: NODE_SIZE_PRESETS.medium,
+  Centrifuges: NODE_SIZE_PRESETS.medium,
+  Filters: NODE_SIZE_PRESETS.medium,
+  Crushers_Grinding: NODE_SIZE_PRESETS.medium,
+  Feeders: NODE_SIZE_PRESETS.medium,
+  Shaping_Machines: NODE_SIZE_PRESETS.medium,
+  Engines: NODE_SIZE_PRESETS.medium,
+  Apparatus_Elements: NODE_SIZE_PRESETS.medium,
+  Misc: NODE_SIZE_PRESETS.medium,
+
+  // Small - Inline components (valves, instruments, fittings)
+  Valves: NODE_SIZE_PRESETS.small,
+  Instruments: NODE_SIZE_PRESETS.small,
+  Flow_Sensors: NODE_SIZE_PRESETS.small,
+  Fittings: NODE_SIZE_PRESETS.small,
+  Piping: NODE_SIZE_PRESETS.small,
+};
+
+// Map draw.io P&ID categories to default sizes
+export const DRAWIO_CATEGORY_SIZE_MAP: Record<string, NodeSizeConfig> = {
+  // Large - Only vessels/tanks
+  vessels: NODE_SIZE_PRESETS.large,
+
+  // Medium - All other process equipment
+  heat_exchangers: NODE_SIZE_PRESETS.medium,
+  separators: NODE_SIZE_PRESETS.medium,
+  pumps: NODE_SIZE_PRESETS.medium,
+  compressors: NODE_SIZE_PRESETS.medium,
+  filters: NODE_SIZE_PRESETS.medium,
+  agitators: NODE_SIZE_PRESETS.medium,
+  engines: NODE_SIZE_PRESETS.medium,
+  crushers_grinding: NODE_SIZE_PRESETS.medium,
+  misc: NODE_SIZE_PRESETS.medium,
+
+  // Small - Inline components
+  valves: NODE_SIZE_PRESETS.small,
+  instruments: NODE_SIZE_PRESETS.small,
+  flow_sensors: NODE_SIZE_PRESETS.small,
+  fittings: NODE_SIZE_PRESETS.small,
+  piping: NODE_SIZE_PRESETS.small,
+};
+
+// Map simplified PFD node types to default sizes
+export const SIMPLIFIED_PFD_SIZE_MAP: Record<string, NodeSizeConfig> = {
+  // Large - Only vessels
+  pfd_vessel: NODE_SIZE_PRESETS.large,
+  // Medium - All other equipment
+  pfd_pump: NODE_SIZE_PRESETS.medium,
+  pfd_compressor: NODE_SIZE_PRESETS.medium,
+  pfd_exchanger: NODE_SIZE_PRESETS.medium,
+  pfd_separator: NODE_SIZE_PRESETS.medium,
+  pfd_mixer: NODE_SIZE_PRESETS.medium,
+  pfd_filter: NODE_SIZE_PRESETS.medium,
+  pfd_agitator: NODE_SIZE_PRESETS.medium,
+  // Small
+  pfd_text: NODE_SIZE_PRESETS.small,
+};
+
+// Default fallback size
+export const DEFAULT_NODE_SIZE: NodeSizeConfig = NODE_SIZE_PRESETS.medium;
+
+/**
+ * Get the default size for a DEXPI category
+ */
+export function getDexpiCategorySize(categoryName: string): NodeSizeConfig {
+  return CATEGORY_SIZE_MAP[categoryName] || DEFAULT_NODE_SIZE;
+}
+
+/**
+ * Get the default size for a draw.io P&ID category
+ */
+export function getDrawioCategorySize(categoryName: string): NodeSizeConfig {
+  return DRAWIO_CATEGORY_SIZE_MAP[categoryName] || DEFAULT_NODE_SIZE;
+}
+
+/**
+ * Get the default size for a simplified PFD node type
+ */
+export function getSimplifiedPfdSize(nodeType: string): NodeSizeConfig {
+  return SIMPLIFIED_PFD_SIZE_MAP[nodeType] || DEFAULT_NODE_SIZE;
+}
+
+/**
+ * Get the default size for any node type (auto-detects type)
+ * Checks simplified PFD types, DEXPI categories, and draw.io categories
+ */
+export function getDefaultNodeSize(nodeType: string): NodeSizeConfig {
+  // Check simplified PFD types first
+  if (nodeType.startsWith("pfd_")) {
+    return getSimplifiedPfdSize(nodeType);
+  }
+
+  // Check draw.io types (prefixed with drawio_)
+  if (nodeType.startsWith("drawio_")) {
+    const category = nodeType.replace("drawio_", "");
+    return getDrawioCategorySize(category);
+  }
+
+  // Check DEXPI categories (convert node type back to category name)
+  const category = nodeTypeToCategory(nodeType);
+  if (category) {
+    return getDexpiCategorySize(category);
+  }
+
+  return DEFAULT_NODE_SIZE;
+}
