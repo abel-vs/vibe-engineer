@@ -20,10 +20,53 @@ const DEFAULT_OPTIONS: LayoutOptions = {
 
 /**
  * Get the default layout direction based on diagram mode.
- * BFD and PFD use left-to-right flow, playground uses top-to-bottom.
+ * BFD, PFD, and P&ID use left-to-right flow (engineering convention), playground uses top-to-bottom.
  */
-export function getDefaultDirection(mode: DiagramMode): LayoutOptions["direction"] {
+export function getDefaultDirection(
+  mode: DiagramMode
+): LayoutOptions["direction"] {
   return mode === "playground" ? "TB" : "LR";
+}
+
+/**
+ * Get mode-specific layout options for better diagram organization.
+ * P&ID needs more horizontal spacing for inline valves, BFD needs less detail spacing.
+ */
+export function getModeLayoutOptions(
+  mode: DiagramMode
+): Partial<LayoutOptions> {
+  switch (mode) {
+    case "pid":
+      // P&ID: More horizontal spacing for inline valves, closer vertical spacing
+      return {
+        direction: "LR",
+        nodeWidth: 80,
+        nodeHeight: 80,
+        rankSep: 120, // More space between process stages for valves
+        nodeSep: 60, // Moderate vertical spacing
+      };
+    case "pfd":
+      // PFD: Standard equipment spacing
+      return {
+        direction: "LR",
+        nodeWidth: 100,
+        nodeHeight: 80,
+        rankSep: 100,
+        nodeSep: 60,
+      };
+    case "bfd":
+      // BFD: Larger blocks, more spacing
+      return {
+        direction: "LR",
+        nodeWidth: 150,
+        nodeHeight: 80,
+        rankSep: 100,
+        nodeSep: 70,
+      };
+    case "playground":
+    default:
+      return DEFAULT_OPTIONS;
+  }
 }
 
 /**
@@ -97,7 +140,10 @@ export function getLayoutedNodes(
 /**
  * Layout direction labels for UI
  */
-export const LAYOUT_DIRECTIONS: { value: LayoutOptions["direction"]; label: string }[] = [
+export const LAYOUT_DIRECTIONS: {
+  value: LayoutOptions["direction"];
+  label: string;
+}[] = [
   { value: "TB", label: "Top to Bottom" },
   { value: "LR", label: "Left to Right" },
   { value: "BT", label: "Bottom to Top" },

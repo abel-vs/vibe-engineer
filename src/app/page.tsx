@@ -2,34 +2,66 @@
 
 import { DebugTerminal, type DebugLogEntry } from "@/components/debug-terminal";
 import { DiagramCanvas } from "@/components/diagram-canvas";
-import { ExportMenu } from "@/components/export/export-menu";
-import { ImportMenu } from "@/components/import-menu";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { PropertiesPanel } from "@/components/sidebar/properties-panel";
 import { StyleSwitcher } from "@/components/style-switcher";
 import { ShapeToolbar } from "@/components/toolbar/shape-toolbar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { VoiceController } from "@/components/voice-controller";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
-import { getDefaultDirection } from "@/lib/auto-layout";
-import { autoSave, clearAutoSave, loadAutoSave, saveDiagram, type SavedDiagram } from "@/lib/storage";
+import { getModeLayoutOptions } from "@/lib/auto-layout";
+import { canExportToDexpi, dexpiToReactFlow, getExportWarnings, reactFlowToDexpi, validateDexpiForImport } from "@/lib/dexpi";
+import type { DiagramMode } from "@/lib/modes";
+import { clearAutoSave, loadWorkspace, saveDiagram, saveWorkspace, type SavedDiagram } from "@/lib/storage";
+import { json, jsonParseLinter } from "@codemirror/lang-json";
+import { lintGutter, linter } from "@codemirror/lint";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import CodeMirror from "@uiw/react-codemirror";
+import type { Edge, Node } from "@xyflow/react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { Bug, Code, FolderOpen, LayoutGrid, MessageSquare, Redo2, Save, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { toPng, toSvg } from "html-to-image";
+import { jsPDF } from "jspdf";
+import { AlertCircle, ArrowRight, Bug, Check, Code, Copy, Download, FileCode, FileImage, FileText, FileType, FolderOpen, LayoutGrid, Loader2, MessageSquare, MoreVertical, Pencil, Redo2, Save, Trash2, Undo2, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 export default function DiagramPage() {
@@ -38,10 +70,22 @@ export default function DiagramPage() {
   const [transcript, setTranscript] = useState("");
   const [debugMode, setDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
+  const [canvasResetKey, setCanvasResetKey] = useState(0);
   const [showJsonView, setShowJsonView] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [jsonCopied, setJsonCopied] = useState(false);
+  const [jsonEditMode, setJsonEditMode] = useState(false);
+  const [editableJson, setEditableJson] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [newDiagramDialogOpen, setNewDiagramDialogOpen] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [importType, setImportType] = useState<"json" | "dexpi" | null>(null);
+  const [showImportConfirmDialog, setShowImportConfirmDialog] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; nodes?: Node[]; edges?: Edge[]; mode?: DiagramMode; warnings?: string[]; error?: string } | null>(null);
+  const [showImportResultDialog, setShowImportResultDialog] = useState(false);
   const { dictionary, dictionaryEnabled } = useSettings();
 
   const handleDebugLog = useCallback((log: DebugLog) => {
@@ -53,25 +97,117 @@ export default function DiagramPage() {
   }, []);
 
   // Always pass the debug log handler - filter happens inside based on debugMode
-  const { processVoiceCommand, isProcessing, lastResponse, error } = useVoiceCommands({
+  const { processVoiceCommand, reset: resetVoiceCommands, isProcessing, lastResponse, error } = useVoiceCommands({
     onDebugLog: handleDebugLog,
   });
-  const { nodes, edges, mode, style, loadDiagram, clearCanvas, undo, redo, canUndo, canRedo, organizeLayout, clearPinnedNodes } = useDiagramStore();
+  const { nodes, edges, mode, style, loadDiagram, resetCanvas, undo, redo, canUndo, canRedo, organizeLayout, clearPinnedNodes, setMode } = useDiagramStore();
 
-  // Auto-save on changes
+  // Helper to generate JSON string from current state
+  const generateJsonString = useCallback(() => {
+    return JSON.stringify(
+      {
+        mode,
+        style,
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: n.data,
+        })),
+        edges: edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          type: e.type,
+          label: e.label,
+          data: e.data,
+        })),
+      },
+      null,
+      2
+    );
+  }, [mode, style, nodes, edges]);
+
+  // Enter edit mode with current JSON
+  const handleEnterEditMode = useCallback(() => {
+    setEditableJson(generateJsonString());
+    setJsonError(null);
+    setJsonEditMode(true);
+  }, [generateJsonString]);
+
+  // Apply JSON changes
+  const handleApplyJson = useCallback(() => {
+    try {
+      const parsed = JSON.parse(editableJson);
+      
+      // Validate structure
+      if (!Array.isArray(parsed.nodes)) {
+        throw new Error("Invalid JSON: 'nodes' must be an array");
+      }
+      if (!Array.isArray(parsed.edges)) {
+        throw new Error("Invalid JSON: 'edges' must be an array");
+      }
+      
+      // Convert to React Flow format
+      const newNodes = parsed.nodes.map((n: { id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: n.data || {},
+      }));
+      
+      const newEdges = parsed.edges.map((e: { id: string; source: string; target: string; type?: string; label?: string; data?: Record<string, unknown> }) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        type: e.type || "default",
+        label: e.label,
+        data: e.data || {},
+      }));
+      
+      // Load the diagram with new data
+      loadDiagram(newNodes, newEdges, parsed.mode || mode, parsed.style || style);
+      
+      setJsonEditMode(false);
+      setJsonError(null);
+    } catch (err) {
+      setJsonError(err instanceof Error ? err.message : "Invalid JSON");
+    }
+  }, [editableJson, loadDiagram, mode, style]);
+
+  // Cancel edit mode
+  const handleCancelEdit = useCallback(() => {
+    setJsonEditMode(false);
+    setJsonError(null);
+  }, []);
+
+  // CodeMirror extensions for JSON editing
+  const jsonExtensions = useMemo(() => [
+    json(),
+    linter(jsonParseLinter()),
+    lintGutter(),
+  ], []);
+
+  // Auto-save on changes - save to per-mode workspace
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
-      autoSave(nodes, edges, mode, style);
+      saveWorkspace(mode, {
+        nodes,
+        edges,
+        style,
+        timestamp: Date.now(),
+      });
     }
   }, [nodes, edges, mode, style]);
 
-  // Load auto-save on mount
+  // Load workspace for current mode on mount
   useEffect(() => {
-    const saved = loadAutoSave();
+    const saved = loadWorkspace(mode);
     if (saved && (saved.nodes.length > 0 || saved.edges.length > 0)) {
-      loadDiagram(saved.nodes, saved.edges, saved.mode, saved.style);
+      loadDiagram(saved.nodes, saved.edges, mode, saved.style);
     }
-  }, [loadDiagram]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
@@ -131,15 +267,29 @@ export default function DiagramPage() {
     [processVoiceCommand, debugMode, handleDebugLog]
   );
 
+  const confirmNewDiagram = useCallback(() => {
+    resetVoiceCommands();
+    resetCanvas();
+    clearAutoSave();
+    clearDebugLogs();
+    setShowTranscript(false);
+    setTranscript("");
+    setJsonEditMode(false);
+    setEditableJson("");
+    setJsonError(null);
+    setJsonCopied(false);
+    setCanvasResetKey((k) => k + 1);
+    setNewDiagramDialogOpen(false);
+  }, [resetVoiceCommands, resetCanvas, clearDebugLogs]);
+
   const handleNewDiagram = useCallback(() => {
-    if (
-      nodes.length === 0 ||
-      window.confirm("Clear current diagram and start fresh?")
-    ) {
-      clearCanvas();
-      clearAutoSave(); // Clear session storage so refresh starts clean
+    const isEmpty = nodes.length === 0 && edges.length === 0;
+    if (isEmpty) {
+      confirmNewDiagram();
+    } else {
+      setNewDiagramDialogOpen(true);
     }
-  }, [nodes.length, clearCanvas]);
+  }, [nodes.length, edges.length, confirmNewDiagram]);
 
   const handleSaveDiagram = useCallback(async () => {
     if (!saveName.trim()) return;
@@ -165,6 +315,268 @@ export default function DiagramPage() {
     }
   }, [saveName, mode, nodes, edges]);
 
+  // Handle upgrading diagram to next level (BFD -> PFD or PFD -> P&ID)
+  const handleUpgradeDiagram = useCallback(async () => {
+    if (nodes.length === 0) return;
+    
+    const targetMode = mode === "bfd" ? "pfd" : "pid";
+    const upgradePrompt = mode === "bfd" 
+      ? "Upgrade this BFD to a PFD: Convert each process block to specific equipment (vessels, pumps, heat exchangers, etc.), add operating conditions on streams (temperature, pressure, flow rates), maintain the same process flow. Do NOT add valves or instruments - those are for P&ID."
+      : "Upgrade this PFD to a P&ID: Keep all existing equipment, add control valves on each stream, add instruments (transmitters, controllers) for key process variables, add relief valves where needed, add control loops. Use ISA tag numbers for instruments.";
+    
+    setIsUpgrading(true);
+    try {
+      // First change the mode so the AI uses the correct equipment types
+      setMode(targetMode);
+      // Then process the upgrade command
+      await processVoiceCommand(upgradePrompt);
+    } catch (err) {
+      console.error("Error upgrading diagram:", err);
+    } finally {
+      setIsUpgrading(false);
+    }
+  }, [mode, nodes.length, processVoiceCommand, setMode]);
+
+  // Import handlers
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleImportClick = useCallback((type: "json" | "dexpi") => {
+    setImportType(type);
+    importFileInputRef.current?.click();
+  }, []);
+
+  const processImportFile = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+
+      if (importType === "dexpi") {
+        try {
+          const validation = validateDexpiForImport(text);
+          if (!validation.valid) {
+            return {
+              success: false,
+              error: `Invalid DEXPI file: ${validation.errors.join(", ")}`,
+              warnings: validation.warnings,
+            };
+          }
+
+          const result = dexpiToReactFlow(text);
+          return {
+            success: true,
+            nodes: result.nodes,
+            edges: result.edges,
+            mode: result.mode,
+            warnings: [...(validation.warnings || []), ...result.warnings],
+          };
+        } catch (err) {
+          return {
+            success: false,
+            error: `Failed to parse DEXPI file: ${err instanceof Error ? err.message : String(err)}`,
+          };
+        }
+      } else {
+        try {
+          const data = JSON.parse(text);
+          if (!data.nodes || !Array.isArray(data.nodes)) {
+            return {
+              success: false,
+              error: "Invalid JSON: missing or invalid 'nodes' array",
+            };
+          }
+          if (!data.edges || !Array.isArray(data.edges)) {
+            return {
+              success: false,
+              error: "Invalid JSON: missing or invalid 'edges' array",
+            };
+          }
+          const mode = data.mode || "playground";
+          const warnings: string[] = [];
+          if (!data.mode) {
+            warnings.push("No mode specified in file, defaulting to playground");
+          }
+          return {
+            success: true,
+            nodes: data.nodes,
+            edges: data.edges,
+            mode: mode as DiagramMode,
+            warnings,
+          };
+        } catch (err) {
+          return {
+            success: false,
+            error: `Failed to parse JSON file: ${err instanceof Error ? err.message : String(err)}`,
+          };
+        }
+      }
+    },
+    [importType]
+  );
+
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = "";
+
+      const result = await processImportFile(file);
+      setImportResult(result);
+
+      if (result.success) {
+        if (nodes.length > 0) {
+          setShowImportConfirmDialog(true);
+        } else {
+          confirmImport(result);
+        }
+      } else {
+        setShowImportResultDialog(true);
+      }
+    },
+    [nodes.length, processImportFile]
+  );
+
+  const confirmImport = useCallback(
+    (result: typeof importResult) => {
+      if (result?.success && result.nodes && result.edges && result.mode) {
+        loadDiagram(result.nodes, result.edges, result.mode);
+        setShowImportConfirmDialog(false);
+        if (result.warnings && result.warnings.length > 0) {
+          setShowImportResultDialog(true);
+        }
+      }
+    },
+    [loadDiagram]
+  );
+
+  // Export handlers
+  const getFlowElement = useCallback(() => {
+    if (!flowRef.current) return null;
+    return flowRef.current.querySelector(".react-flow__viewport") as HTMLElement | null;
+  }, []);
+
+  const downloadFile = (dataUrl: string, filename: string) => {
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+  };
+
+  const exportToPng = useCallback(async () => {
+    const element = getFlowElement();
+    if (!element) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(element, {
+        backgroundColor: "#f9fafb",
+        pixelRatio: 2,
+      });
+      downloadFile(dataUrl, `diagram-${Date.now()}.png`);
+    } catch (err) {
+      console.error("Failed to export PNG:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [getFlowElement]);
+
+  const exportToSvg = useCallback(async () => {
+    const element = getFlowElement();
+    if (!element) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toSvg(element, {
+        backgroundColor: "#f9fafb",
+      });
+      downloadFile(dataUrl, `diagram-${Date.now()}.svg`);
+    } catch (err) {
+      console.error("Failed to export SVG:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [getFlowElement]);
+
+  const exportToPdf = useCallback(async () => {
+    const element = getFlowElement();
+    if (!element) return;
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(element, {
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const maxWidth = pageWidth - margin * 2;
+      const maxHeight = pageHeight - margin * 2;
+      const imgRatio = img.width / img.height;
+      let finalWidth = maxWidth;
+      let finalHeight = maxWidth / imgRatio;
+      if (finalHeight > maxHeight) {
+        finalHeight = maxHeight;
+        finalWidth = maxHeight * imgRatio;
+      }
+      const x = (pageWidth - finalWidth) / 2;
+      const y = (pageHeight - finalHeight) / 2;
+      pdf.addImage(dataUrl, "PNG", x, y, finalWidth, finalHeight);
+      pdf.save(`diagram-${Date.now()}.pdf`);
+    } catch (err) {
+      console.error("Failed to export PDF:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [getFlowElement]);
+
+  const exportToJson = useCallback(() => {
+    const data = {
+      mode,
+      nodes,
+      edges,
+      exportedAt: new Date().toISOString(),
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    downloadFile(url, `diagram-${Date.now()}.json`);
+    URL.revokeObjectURL(url);
+  }, [mode, nodes, edges]);
+
+  const exportToDexpi = useCallback(() => {
+    if (!canExportToDexpi(mode)) {
+      console.warn("DEXPI export is only available for BFD and PFD modes");
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const warnings = getExportWarnings(nodes, mode);
+      if (warnings.length > 0) {
+        console.warn("DEXPI Export Warnings:", warnings);
+      }
+      const xml = reactFlowToDexpi(nodes, edges, mode, {
+        name: `${mode.toUpperCase()} Diagram`,
+        description: `Exported from Voice Diagram on ${new Date().toLocaleDateString()}`,
+      });
+      const blob = new Blob([xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, `diagram-${Date.now()}.dexpi.xml`);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to export DEXPI XML:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [mode, nodes, edges]);
+
+  const isDexpiAvailable = canExportToDexpi(mode);
+
   return (
     <ReactFlowProvider>
       <div className="h-screen w-screen flex flex-col bg-gray-100">
@@ -174,6 +586,26 @@ export default function DiagramPage() {
             <h1 className="text-lg font-bold text-gray-800">Voice Diagram</h1>
             <Separator orientation="vertical" className="h-6" />
             <ModeSwitcher />
+            {/* Generate next level diagram button - appears in BFD and PFD modes */}
+            {(mode === "bfd" || mode === "pfd") && nodes.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUpgradeDiagram}
+                disabled={isUpgrading || isProcessing}
+                className="gap-1.5 text-xs"
+                title={mode === "bfd" 
+                  ? "Generate PFD from this BFD - converts blocks to specific equipment" 
+                  : "Generate P&ID from this PFD - adds valves, instruments, control loops"}
+              >
+                {isUpgrading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-3.5 h-3.5" />
+                )}
+                {mode === "bfd" ? "Generate PFD" : "Generate P&ID"}
+              </Button>
+            )}
             <StyleSwitcher />
           </div>
 
@@ -197,116 +629,314 @@ export default function DiagramPage() {
               <Redo2 className="w-4 h-4" />
             </Button>
             <Separator orientation="vertical" className="h-6" />
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={nodes.length === 0}
-              title="Auto-organize layout"
-              onClick={() => {
-                clearPinnedNodes(); // Reset pins on manual organize
-                organizeLayout(getDefaultDirection(mode));
-              }}
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" />
-              Organize
-            </Button>
-            <Separator orientation="vertical" className="h-6" />
-            <Button variant="ghost" size="sm" onClick={handleNewDiagram}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              New
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              title="Open saved designs (⌘K → Saved Designs)"
-              onClick={() => {
-                // Dispatch keyboard event to open command menu
-                document.dispatchEvent(
-                  new KeyboardEvent("keydown", {
-                    key: "k",
-                    metaKey: true,
-                    bubbles: true,
-                  })
-                );
-              }}
-            >
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Open
-            </Button>
-            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" disabled={nodes.length === 0}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={nodes.length === 0}
+                  onClick={() => {
+                    clearPinnedNodes();
+                    organizeLayout(getModeLayoutOptions(mode));
+                  }}
+                >
+                  <LayoutGrid className="w-4 h-4" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Save Design</DialogTitle>
-                  <DialogDescription>
-                    Save your diagram to access it later from the command menu (⌘K).
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="design-name">Design Name</Label>
-                    <Input
-                      id="design-name"
-                      placeholder="My Design"
-                      value={saveName}
-                      onChange={(e) => setSaveName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && saveName.trim()) {
-                          handleSaveDiagram();
-                        }
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Auto-organize layout</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={handleNewDiagram}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>New diagram</p>
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" title="More options">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  title="Open saved designs (⌘K → Saved Designs)"
+                  onClick={() => {
+                    document.dispatchEvent(
+                      new KeyboardEvent("keydown", {
+                        key: "k",
+                        metaKey: true,
+                        bubbles: true,
+                      })
+                    );
+                  }}
+                >
+                  <FolderOpen className="w-4 h-4" />
+                  Open
+                </DropdownMenuItem>
+                <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem
+                      disabled={nodes.length === 0}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        setSaveDialogOpen(true);
                       }}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {mode.toUpperCase()} • {nodes.length} nodes • {edges.length} edges
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setSaveDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveDiagram}
-                    disabled={!saveName.trim() || isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save Design"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Separator orientation="vertical" className="h-6" />
-            <ImportMenu />
-            <ExportMenu flowRef={flowRef} />
-            <Separator orientation="vertical" className="h-6" />
-            <Button
-              variant={debugMode ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setDebugMode(!debugMode)}
-              title="Toggle debug terminal - shows all executed commands"
-            >
-              <Bug className="w-4 h-4 mr-2" />
-              {debugMode ? "Debug ON" : "Debug"}
-            </Button>
-            <Button
-              variant={showJsonView ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setShowJsonView(!showJsonView)}
-              title="Toggle JSON view - shows raw diagram state"
-            >
-              <Code className="w-4 h-4 mr-2" />
-              {showJsonView ? "JSON ON" : "JSON"}
-            </Button>
+                    >
+                      <Save className="w-4 h-4" />
+                      Save
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Save Design</DialogTitle>
+                      <DialogDescription>
+                        Save your diagram to access it later from the command menu (⌘K).
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="design-name">Design Name</Label>
+                        <Input
+                          id="design-name"
+                          placeholder="My Design"
+                          value={saveName}
+                          onChange={(e) => setSaveName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && saveName.trim()) {
+                              handleSaveDiagram();
+                            }
+                          }}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          mode === "playground" ? "bg-gray-100 text-gray-700" :
+                          mode === "bfd" ? "bg-blue-100 text-blue-700" :
+                          mode === "pfd" ? "bg-green-100 text-green-700" :
+                          "bg-orange-100 text-orange-700"
+                        }`}>
+                          {mode === "pid" ? "P&ID" : mode.toUpperCase()}
+                        </span>
+                        <span>{nodes.length} nodes • {edges.length} edges</span>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setSaveDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSaveDiagram}
+                        disabled={!saveName.trim() || isSaving}
+                      >
+                        {isSaving ? "Saving..." : "Save Design"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Upload className="w-4 h-4" />
+                    Import
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleImportClick("json")}>
+                      <FileCode className="w-4 h-4" />
+                      Import JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleImportClick("dexpi")}>
+                      <FileType className="w-4 h-4" />
+                      Import DEXPI XML
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger disabled={isExporting}>
+                    {isExporting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    Export
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={exportToPng} disabled={isExporting}>
+                      <FileImage className="w-4 h-4" />
+                      Export as PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToSvg} disabled={isExporting}>
+                      <FileCode className="w-4 h-4" />
+                      Export as SVG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToPdf} disabled={isExporting}>
+                      <FileText className="w-4 h-4" />
+                      Export as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={exportToJson} disabled={isExporting}>
+                      <FileCode className="w-4 h-4" />
+                      Export as JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={exportToDexpi}
+                      disabled={!isDexpiAvailable || isExporting}
+                      title={!isDexpiAvailable ? "DEXPI export is only available for BFD and PFD modes" : undefined}
+                    >
+                      <FileType className="w-4 h-4" />
+                      Export as DEXPI XML
+                      {!isDexpiAvailable && <span className="ml-1 text-xs text-muted-foreground">(BFD/PFD only)</span>}
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setDebugMode(!debugMode)}
+                  className={debugMode ? "bg-accent" : ""}
+                >
+                  <Bug className="w-4 h-4" />
+                  {debugMode ? "Debug ON" : "Debug"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showJsonView ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setShowJsonView(!showJsonView)}
+                >
+                  <Code className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Toggle JSON view - shows raw diagram state</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </header>
+
+        {/* Hidden file input for imports */}
+        <input
+          ref={importFileInputRef}
+          type="file"
+          accept={importType === "dexpi" ? ".xml,.dexpi.xml" : ".json"}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* New Diagram Confirmation Dialog */}
+        <AlertDialog open={newDiagramDialogOpen} onOpenChange={setNewDiagramDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Start a new diagram?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will clear your current diagram. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmNewDiagram}>
+                Clear & Start Fresh
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Import Confirmation Dialog */}
+        <Dialog open={showImportConfirmDialog} onOpenChange={setShowImportConfirmDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Replace Current Diagram?</DialogTitle>
+              <DialogDescription>
+                Importing will replace your current diagram. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+
+            {importResult && importResult.warnings && importResult.warnings.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">
+                      Import Warnings
+                    </p>
+                    <ul className="text-sm text-yellow-700 mt-1 list-disc list-inside">
+                      {importResult.warnings.map((warning, i) => (
+                        <li key={i}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowImportConfirmDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={() => importResult && confirmImport(importResult)}>
+                Replace Diagram
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Import Result Dialog */}
+        <Dialog open={showImportResultDialog} onOpenChange={setShowImportResultDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {importResult?.success ? (
+                  <span className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-green-600" />
+                    Import Successful
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <X className="w-5 h-5 text-red-600" />
+                    Import Failed
+                  </span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+
+            {importResult?.error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-700">{importResult.error}</p>
+              </div>
+            )}
+
+            {importResult && importResult.warnings && importResult.warnings.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <p className="text-sm font-medium text-yellow-800 mb-2">
+                  Warnings:
+                </p>
+                <ul className="text-sm text-yellow-700 list-disc list-inside">
+                  {importResult.warnings.map((warning, i) => (
+                    <li key={i}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button onClick={() => setShowImportResultDialog(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
@@ -318,34 +948,110 @@ export default function DiagramPage() {
           {/* Canvas Area */}
           <main className="flex-1 relative" ref={flowRef}>
             {showJsonView ? (
-              <div className="w-full h-full overflow-auto bg-gray-900 p-4">
-                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">
-                  {JSON.stringify(
-                    {
-                      mode,
-                      style,
-                      nodes: nodes.map((n) => ({
-                        id: n.id,
-                        type: n.type,
-                        position: n.position,
-                        data: n.data,
-                      })),
-                      edges: edges.map((e) => ({
-                        id: e.id,
-                        source: e.source,
-                        target: e.target,
-                        type: e.type,
-                        label: e.label,
-                        data: e.data,
-                      })),
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
+              <div className="w-full h-full flex flex-col bg-gray-900 relative">
+                {/* Toolbar */}
+                <div className="flex items-center justify-between p-2 border-b border-gray-700 shrink-0">
+                  <div className="flex items-center gap-2">
+                    {jsonEditMode ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-400 hover:text-green-300 hover:bg-gray-800"
+                          onClick={handleApplyJson}
+                          title="Apply changes"
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Apply
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-white hover:bg-gray-800"
+                          onClick={handleCancelEdit}
+                          title="Cancel editing"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white hover:bg-gray-800"
+                        onClick={handleEnterEditMode}
+                        title="Edit JSON"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                    onClick={() => {
+                      const jsonData = jsonEditMode ? editableJson : generateJsonString();
+                      navigator.clipboard.writeText(jsonData);
+                      setJsonCopied(true);
+                      setTimeout(() => setJsonCopied(false), 2000);
+                    }}
+                    title="Copy JSON to clipboard"
+                  >
+                    {jsonCopied ? (
+                      <>
+                        <Check className="w-4 h-4 mr-1 text-green-400" />
+                        <span className="text-green-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Error message */}
+                {jsonError && (
+                  <div className="px-4 py-2 bg-red-900/50 border-b border-red-700 text-red-300 text-xs">
+                    {jsonError}
+                  </div>
+                )}
+                
+                {/* Content - CodeMirror Editor */}
+                <div className="flex-1 overflow-hidden">
+                  <CodeMirror
+                    value={jsonEditMode ? editableJson : generateJsonString()}
+                    height="100%"
+                    theme={vscodeDark}
+                    extensions={jsonExtensions}
+                    editable={jsonEditMode}
+                    readOnly={!jsonEditMode}
+                    onChange={(value) => {
+                      if (jsonEditMode) {
+                        setEditableJson(value);
+                        setJsonError(null);
+                      }
+                    }}
+                    basicSetup={{
+                      lineNumbers: true,
+                      highlightActiveLineGutter: true,
+                      highlightActiveLine: jsonEditMode,
+                      foldGutter: true,
+                      bracketMatching: true,
+                      closeBrackets: jsonEditMode,
+                      autocompletion: jsonEditMode,
+                      indentOnInput: jsonEditMode,
+                    }}
+                    className="h-full [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
+                  />
+                </div>
               </div>
             ) : (
-              <DiagramCanvas />
+              <DiagramCanvas key={canvasResetKey} />
             )}
 
             {/* Voice Controller Overlay */}
