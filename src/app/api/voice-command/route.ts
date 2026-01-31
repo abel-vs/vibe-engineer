@@ -23,6 +23,39 @@ interface ToolResult {
   result: { success: boolean } & Record<string, unknown>;
 }
 
+// Deduplicate consecutive identical tool calls (same tool + same args)
+// This prevents runaway loops where the model calls the same tool repeatedly
+function deduplicateToolResults(results: ToolResult[]): ToolResult[] {
+  if (results.length <= 1) return results;
+
+  const deduplicated: ToolResult[] = [];
+  let lastSignature = "";
+
+  for (const result of results) {
+    // Create a signature from tool name and args
+    const signature = JSON.stringify({
+      tool: result.toolName,
+      args: result.args,
+    });
+
+    // Skip if identical to the last one
+    if (signature === lastSignature) {
+      continue;
+    }
+
+    deduplicated.push(result);
+    lastSignature = signature;
+  }
+
+  // Log if we deduplicated a lot
+  const removed = results.length - deduplicated.length;
+  if (removed > 0) {
+    console.log(`[Voice Command] Deduplicated ${removed} duplicate tool calls`);
+  }
+
+  return deduplicated;
+}
+
 // Create a mutable state tracker for multi-turn tool execution
 function createStateTracker(initialState: DiagramStateForAI) {
   // Deep clone the initial state
@@ -57,8 +90,10 @@ function createStateTracker(initialState: DiagramStateForAI) {
       const nodeId = generateId("node");
       const position = args.position || getRightmostPosition();
       // Generate default label if not provided
-      const label = args.label ||
-        args.nodeType.charAt(0).toUpperCase() + args.nodeType.slice(1).replace(/_/g, ' ');
+      const label =
+        args.label ||
+        args.nodeType.charAt(0).toUpperCase() +
+          args.nodeType.slice(1).replace(/_/g, " ");
 
       state.nodes.push({
         id: nodeId,
@@ -242,7 +277,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { transcript, diagramState, ttsEnabled = true } = (await req.json()) as {
+    const {
+      transcript,
+      diagramState,
+      ttsEnabled = true,
+    } = (await req.json()) as {
       transcript: string;
       diagramState: DiagramStateForAI;
       ttsEnabled?: boolean;
@@ -271,7 +310,8 @@ export async function POST(req: NextRequest) {
     // Build base tools with execute functions that update tracked state
     const baseTools = {
       add_node: tool({
-        description: "Add a new node/equipment to the diagram. REQUIRED: nodeType must be specified.",
+        description:
+          "Add a new node/equipment to the diagram. REQUIRED: nodeType must be specified.",
         inputSchema: addNodeSchema,
         execute: async (args) => {
           console.log("[Tool] add_node:", args);
@@ -284,7 +324,8 @@ export async function POST(req: NextRequest) {
         },
       }),
       add_edge: tool({
-        description: "Add a connection/stream between two nodes. Use the node IDs returned from add_node.",
+        description:
+          "Add a connection/stream between two nodes. Use the node IDs returned from add_node.",
         inputSchema: addEdgeSchema,
         execute: async (args) => {
           console.log("[Tool] add_edge:", args);
@@ -292,19 +333,33 @@ export async function POST(req: NextRequest) {
           const rawArgs = args as Record<string, unknown>;
           const normalizedArgs = {
             ...args,
-            sourceNodeId: args.sourceNodeId || (rawArgs.fromNodeId as string) || (rawArgs.from as string),
-            targetNodeId: args.targetNodeId || (rawArgs.toNodeId as string) || (rawArgs.to as string),
+            sourceNodeId:
+              args.sourceNodeId ||
+              (rawArgs.fromNodeId as string) ||
+              (rawArgs.from as string),
+            targetNodeId:
+              args.targetNodeId ||
+              (rawArgs.toNodeId as string) ||
+              (rawArgs.to as string),
           };
           // Validate required fields
           if (!normalizedArgs.sourceNodeId || !normalizedArgs.targetNodeId) {
-            console.error("[Tool] add_edge: Missing required fields", args, normalizedArgs);
-            return { success: false, error: "Missing sourceNodeId or targetNodeId" };
+            console.error(
+              "[Tool] add_edge: Missing required fields",
+              args,
+              normalizedArgs
+            );
+            return {
+              success: false,
+              error: "Missing sourceNodeId or targetNodeId",
+            };
           }
           return tracker.addEdge(normalizedArgs);
         },
       }),
       remove_node: tool({
-        description: "Remove a node from the diagram. Also removes all connected edges.",
+        description:
+          "Remove a node from the diagram. Also removes all connected edges.",
         inputSchema: removeNodeSchema,
         execute: async (args) => {
           console.log("[Tool] remove_node:", args);
@@ -336,7 +391,8 @@ export async function POST(req: NextRequest) {
         },
       }),
       select_elements: tool({
-        description: "Select/highlight one or more elements on the canvas. Use this to visually highlight nodes when answering questions about the diagram (e.g., 'where is the pump?', 'show me the reactors').",
+        description:
+          "Select/highlight one or more elements on the canvas. Use this to visually highlight nodes when answering questions about the diagram (e.g., 'where is the pump?', 'show me the reactors').",
         inputSchema: selectElementsSchema,
         execute: async (args) => {
           console.log("[Tool] select_elements:", args);
@@ -344,7 +400,8 @@ export async function POST(req: NextRequest) {
         },
       }),
       move_node: tool({
-        description: "Move a node to a new position or relative to another node",
+        description:
+          "Move a node to a new position or relative to another node",
         inputSchema: moveNodeSchema,
         execute: async (args) => {
           console.log("[Tool] move_node:", args);
@@ -360,7 +417,8 @@ export async function POST(req: NextRequest) {
         },
       }),
       get_current_state: tool({
-        description: "Get the current diagram state including all nodes and edges. Use this to see what's on the canvas before making changes.",
+        description:
+          "Get the current diagram state including all nodes and edges. Use this to see what's on the canvas before making changes.",
         inputSchema: z.object({}),
         execute: async () => {
           const state = tracker.getState();
@@ -390,7 +448,8 @@ export async function POST(req: NextRequest) {
       ? {
           ...baseTools,
           speak_response: tool({
-            description: "Speak a short voice response to the user. Use this to acknowledge commands with a friendly voice message. Keep messages under 100 characters. Call this ONCE at the end of processing to provide audio feedback.",
+            description:
+              "Speak a short voice response to the user. Use this to acknowledge commands with a friendly voice message. Keep messages under 100 characters. Call this ONCE at the end of processing to provide audio feedback.",
             inputSchema: speakResponseSchema,
             execute: async (args) => {
               console.log("[Tool] speak_response:", args.message);
@@ -405,7 +464,10 @@ export async function POST(req: NextRequest) {
 
     // Create the agent with Cerebras provider
     const modelName = process.env.CEREBRAS_MODEL || "zai-glm-4.7";
-    console.log("[Voice Command] Using ToolLoopAgent with Cerebras model:", modelName);
+    console.log(
+      "[Voice Command] Using ToolLoopAgent with Cerebras model:",
+      modelName
+    );
 
     const agent = new ToolLoopAgent({
       model: cerebras(modelName),
@@ -433,8 +495,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const toolResults = tracker.getToolResults();
-    console.log("[Voice Command] Tool results:", toolResults.length);
+    const rawToolResults = tracker.getToolResults();
+    console.log("[Voice Command] Raw tool results:", rawToolResults.length);
+
+    // Deduplicate consecutive identical tool calls to prevent wasteful processing
+    const toolResults = deduplicateToolResults(rawToolResults);
+    console.log(
+      "[Voice Command] Deduplicated tool results:",
+      toolResults.length
+    );
 
     // Return immediately with speech message - client will call TTS endpoint separately
     return NextResponse.json({

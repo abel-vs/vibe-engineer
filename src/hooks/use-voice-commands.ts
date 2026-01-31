@@ -1,53 +1,64 @@
 "use client";
 
 import { useSettings } from "@/contexts/settings-context";
-import { getDefaultDirection } from "@/lib/auto-layout";
+import { getModeLayoutOptions } from "@/lib/auto-layout";
+import { DEXPI_CATEGORIES, categoryToNodeType } from "@/lib/dexpi-config";
 import { serializeDiagramForAI } from "@/lib/diagram-state";
 import type { Edge, Node } from "@xyflow/react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDiagramStore } from "./use-diagram-store";
 
 // Get fresh state from store at call time (avoids stale closures)
 const getStoreState = () => useDiagramStore.getState();
 
-// Normalize node types - convert plurals to singulars and common variations
+// Build set of valid DEXPI node types (lowercase)
+const DEXPI_NODE_TYPES = new Set(
+  DEXPI_CATEGORIES.map((cat) => categoryToNodeType(cat).toLowerCase())
+);
+
+// Normalize node types - fix variations while preserving valid DEXPI types
 function normalizeNodeType(nodeType: string): string {
   const normalized = nodeType.toLowerCase().trim();
-  
-  // Map plural/variant forms to the correct singular PFD node types
+
+  // If it's a valid DEXPI type (vessels, pumps, filters, etc.), keep it as-is
+  // These render proper P&ID symbols from DEXPI SVGs
+  if (DEXPI_NODE_TYPES.has(normalized)) {
+    return normalized;
+  }
+
+  // Map invalid/variant forms to correct types
+  // Note: We do NOT convert DEXPI types (plural) to simple PFD types (singular)
+  // because DEXPI types render proper engineering symbols
   const typeMap: Record<string, string> = {
-    // Plural to singular mappings
-    vessels: "vessel",
-    tanks: "tank",
-    pumps: "pump",
-    reactors: "reactor",
-    compressors: "compressor",
-    heat_exchangers: "heat_exchanger",
-    columns: "column",
-    valves: "valve",
-    mixers: "mixer",
-    splitters: "splitter",
-    // Common variations
-    filters: "vessel",
-    filter: "vessel",
-    clarifiers: "vessel",
-    clarifier: "vessel",
-    separators: "vessel",
-    separator: "vessel",
-    exchangers: "heat_exchanger",
-    exchanger: "heat_exchanger",
-    // BFD variations
+    // BFD variations (normalize plural to singular)
     process_blocks: "process_block",
     input_outputs: "input_output",
     storages: "storage",
-    // Playground variations
+    // Playground variations (normalize plural to singular)
     rectangles: "rectangle",
     circles: "circle",
     diamonds: "diamond",
     triangles: "triangle",
     texts: "text",
+    // Map simple PFD singular types to DEXPI plural types for proper symbols
+    // This ensures voice commands get P&ID symbols instead of basic shapes
+    tank: "vessels",
+    vessel: "vessels",
+    reactor: "vessels",
+    column: "vessels",
+    pump: "pumps",
+    compressor: "compressors",
+    heat_exchanger: "heat_exchangers",
+    valve: "valves",
+    mixer: "mixers",
+    splitter: "mixers",
+    filter: "filters",
+    separator: "separators",
+    // Common variations/typos
+    exchanger: "heat_exchangers",
+    exchangers: "heat_exchangers",
   };
-  
+
   return typeMap[normalized] || normalized;
 }
 
@@ -149,6 +160,8 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
   const [lastResponse, setLastResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   // Helper to generate TTS and play it (fire and forget)
   const generateAndPlayTTS = useCallback(async (text: string) => {
@@ -190,6 +203,18 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
     },
     [onDebugLog]
   );
+
+  const reset = useCallback(() => {
+    // Make any in-flight responses stale + abort fetches.
+    requestIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+
+    setIsProcessing(false);
+    setLastResponse(null);
+    setError(null);
+    setIsSpeaking(false);
+  }, []);
 
   const {
     addNode,
@@ -340,8 +365,8 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
             addEdgeAction(newEdge);
             log("result", `Added edge: ${sourceNodeId} -> ${targetNodeId}`, {
               id: edgeId,
-              sourceHandle,
-              targetHandle,
+              source: sourceNodeId,
+              target: targetNodeId,
             });
             break;
           }
@@ -635,6 +660,14 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
   const processVoiceCommand = useCallback(
     async (transcript: string) => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+
+      // Cancel any prior in-flight request so responses can't mutate state later.
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setIsProcessing(true);
       setError(null);
 
@@ -660,9 +693,15 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ transcript, diagramState, ttsEnabled }),
+          signal: controller.signal,
         });
 
         const data: VoiceCommandResponse = await response.json();
+
+        // If a reset/new command happened while we were waiting, ignore this response.
+        if (requestIdRef.current !== requestId) {
+          return data;
+        }
 
         if (!response.ok) {
           const errorMsg =
@@ -696,19 +735,21 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
           );
 
           if (
-            (currentMode === "bfd" || currentMode === "pfd") &&
+            (currentMode === "bfd" ||
+              currentMode === "pfd" ||
+              currentMode === "pid") &&
             hasStructuralChanges
           ) {
             // Small delay to let React Flow measure nodes before layout
             setTimeout(() => {
               const { pinnedNodeIds, organizeLayout, updateEdgeHandles } =
                 getStoreState();
-              const direction = getDefaultDirection(currentMode);
+              const layoutOptions = getModeLayoutOptions(currentMode);
               log(
                 "info",
-                `Auto-organizing layout (${direction}) with ${pinnedNodeIds.size} pinned nodes`
+                `Auto-organizing layout (${layoutOptions.direction}) with ${pinnedNodeIds.size} pinned nodes`
               );
-              organizeLayout(direction, pinnedNodeIds);
+              organizeLayout(layoutOptions, pinnedNodeIds);
               // Recalculate edge handles based on new node positions
               updateEdgeHandles();
             }, 100);
@@ -739,12 +780,29 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
         return data;
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          // User-triggered cancel/reset; don't treat as an error.
+          log("info", "Voice command cancelled");
+          return {
+            transcript,
+            response: "",
+            toolCalls: [],
+            toolResults: [],
+            speechMessage: null,
+          };
+        }
+
         const message = err instanceof Error ? err.message : "Unknown error";
         log("error", `Command failed: ${message}`);
         setError(message);
         throw err;
       } finally {
-        setIsProcessing(false);
+        if (requestIdRef.current === requestId) {
+          setIsProcessing(false);
+          if (abortControllerRef.current === controller) {
+            abortControllerRef.current = null;
+          }
+        }
       }
     },
     [applyToolResults, log, ttsEnabled, generateAndPlayTTS]
@@ -752,6 +810,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}) {
 
   return {
     processVoiceCommand,
+    reset,
     isProcessing,
     isSpeaking,
     lastResponse,
