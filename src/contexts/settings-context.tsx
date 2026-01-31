@@ -7,6 +7,7 @@ export interface Settings {
   dictionaryEnabled: boolean;
   dictionary: string[]; // Custom words/terms for STT correction
   showFlow: boolean; // Show animated flow dots on edges
+  showChatInput: boolean; // Show the voice input bar at the bottom
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: Settings = {
   dictionaryEnabled: true,
   dictionary: [],
   showFlow: false,
+  showChatInput: true,
 };
 
 const STORAGE_KEY = "voice-diagram-settings";

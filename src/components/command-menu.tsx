@@ -25,7 +25,7 @@ import {
 } from "@/lib/dexpi-config";
 import { MODES } from "@/lib/modes";
 import { deleteDiagram, listDiagrams, type SavedDiagram } from "@/lib/storage";
-import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, Plus, Trash2, Volume2, VolumeX, Waves } from "lucide-react";
+import { ArrowLeft, Book, BookOpen, BookX, FileText, Keyboard, MessageSquare, MessageSquareOff, Plus, Trash2, Volume2, VolumeX, Waves } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 type View = "main" | "dictionary" | "addNode";
@@ -112,7 +112,7 @@ function SymbolPreview({ path }: { path: string }) {
 export function CommandMenu() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
-  const { ttsEnabled, dictionaryEnabled, dictionary, showFlow, updateSetting } = useSettings();
+  const { ttsEnabled, dictionaryEnabled, dictionary, showFlow, showChatInput, updateSetting } = useSettings();
   const [dictionaryText, setDictionaryText] = useState("");
   const [savedDesigns, setSavedDesigns] = useState<SavedDiagram[]>([]);
   const { mode, loadDiagram, addNode, zoomToNode } = useDiagramStore();
@@ -205,6 +205,10 @@ export function CommandMenu() {
 
   const toggleShowFlow = () => {
     updateSetting("showFlow", !showFlow);
+  };
+
+  const toggleShowChatInput = () => {
+    updateSetting("showChatInput", !showChatInput);
   };
 
   const handleDictionaryChange = useCallback((value: string) => {
@@ -453,6 +457,25 @@ export function CommandMenu() {
             <Switch
               checked={showFlow}
               onCheckedChange={toggleShowFlow}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          </CommandItem>
+          <CommandItem
+            onSelect={toggleShowChatInput}
+            className="flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              {showChatInput ? (
+                <MessageSquare className="h-4 w-4" />
+              ) : (
+                <MessageSquareOff className="h-4 w-4" />
+              )}
+              <span>Voice Input Bar</span>
+            </div>
+            <Switch
+              checked={showChatInput}
+              onCheckedChange={toggleShowChatInput}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             />
