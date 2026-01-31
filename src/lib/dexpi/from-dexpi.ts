@@ -48,13 +48,13 @@ export interface DexpiImportResult {
  * Convert DEXPI XML string to React Flow state
  */
 export function dexpiToReactFlow(xmlString: string): DexpiImportResult {
-  const warnings: string[] = [];
-
   // Validate XML first
   const validation = validateDexpiXml(xmlString);
   if (!validation.valid) {
     throw new Error(`Invalid DEXPI XML: ${validation.errors.join(", ")}`);
   }
+
+  const warnings: string[] = [...validation.warnings];
 
   // Parse XML to ProcessModel
   const dexpiDoc = parseDexpiXml(xmlString);
@@ -454,14 +454,14 @@ export function validateDexpiForImport(xmlString: string): {
   errors: string[];
   warnings: string[];
 } {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
   // Basic XML validation
   const xmlValidation = validateDexpiXml(xmlString);
   if (!xmlValidation.valid) {
-    return { valid: false, errors: xmlValidation.errors, warnings };
+    return { valid: false, errors: xmlValidation.errors, warnings: xmlValidation.warnings };
   }
+
+  const errors: string[] = [];
+  const warnings: string[] = [...xmlValidation.warnings];
 
   // Try to parse
   try {
