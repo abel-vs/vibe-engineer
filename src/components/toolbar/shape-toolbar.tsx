@@ -1040,7 +1040,7 @@ export function ShapeToolbar() {
   const isPidMode = mode === "pid";
 
   // Symbol library toggle: "dexpi" (Visual Paradigm) or "drawio"
-  const [symbolLibrary, setSymbolLibrary] = useState<"dexpi" | "drawio">("drawio");
+  const [symbolLibrary, setSymbolLibrary] = useState<"dexpi" | "drawio">("dexpi");
 
   // Draw.io shapes data (loaded async)
   const [drawioData, setDrawioData] = useState<DrawioShapesData | null>(null);
