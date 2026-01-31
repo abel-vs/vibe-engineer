@@ -52,6 +52,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VoiceController } from "@/components/voice-controller";
+import { useCodeView } from "@/contexts/code-view-context";
 import { useSettings } from "@/contexts/settings-context";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
 import { useVoiceCommands, type DebugLog } from "@/hooks/use-voice-commands";
@@ -61,8 +62,10 @@ import { clearAutoSave, loadWorkspace, saveDiagram, saveWorkspace, type SavedDia
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { xml } from "@codemirror/lang-xml";
 import { lintGutter, linter } from "@codemirror/lint";
+import { openSearchPanel, search } from "@codemirror/search";
+import { EditorView } from "@codemirror/view";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { ReactFlowProvider } from "@xyflow/react";
 import { toPng, toSvg } from "html-to-image";
 import { jsPDF } from "jspdf";
@@ -90,7 +93,12 @@ export default function DiagramPage() {
   const [newDiagramDialogOpen, setNewDiagramDialogOpen] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const { dictionary, dictionaryEnabled } = useSettings();
+  const { dictionary, dictionaryEnabled, showChatInput } = useSettings();
+  const { highlightedNodeId, highlightFormat, clearHighlight, setHighlightLine } = useCodeView();
+  
+  // CodeMirror refs for programmatic scrolling
+  const jsonEditorRef = useRef<ReactCodeMirrorRef>(null);
+  const dexpiEditorRef = useRef<ReactCodeMirrorRef>(null);
 
   const handleDebugLog = useCallback((log: DebugLog) => {
     setDebugLogs((prev) => [...prev, log]);
@@ -211,12 +219,39 @@ export default function DiagramPage() {
     json(),
     linter(jsonParseLinter()),
     lintGutter(),
+    search({
+      top: true,
+    }),
+    // Handle Cmd/Ctrl+F to open search panel (prevents browser default)
+    EditorView.domEventHandlers({
+      keydown: (event, view) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "f") {
+          event.preventDefault();
+          openSearchPanel(view);
+          return true;
+        }
+        return false;
+      },
+    }),
   ], []);
 
   // CodeMirror extensions for XML viewing (with line wrapping)
   const xmlExtensions = useMemo(() => [
     xml(),
-    // Enable line wrapping for XML to prevent horizontal overflow
+    search({
+      top: true,
+    }),
+    // Handle Cmd/Ctrl+F to open search panel (prevents browser default)
+    EditorView.domEventHandlers({
+      keydown: (event, view) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "f") {
+          event.preventDefault();
+          openSearchPanel(view);
+          return true;
+        }
+        return false;
+      },
+    }),
   ], []);
 
   // Auto-save on changes - save to per-mode workspace
@@ -323,6 +358,68 @@ export default function DiagramPage() {
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, [jsonEditMode, importData]);
+
+  // Helper function to find line number for a node ID in content
+  const findNodeLineNumber = useCallback((content: string, nodeId: string, format: "json" | "dexpi"): number | null => {
+    const lines = content.split("\n");
+    
+    if (format === "json") {
+      // Look for "id": "nodeId" pattern
+      const pattern = new RegExp(`"id":\\s*"${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
+      for (let i = 0; i < lines.length; i++) {
+        if (pattern.test(lines[i])) {
+          return i + 1; // Line numbers are 1-indexed
+        }
+      }
+    } else {
+      // Look for id="nodeId" pattern in XML
+      const pattern = new RegExp(`id="${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
+      for (let i = 0; i < lines.length; i++) {
+        if (pattern.test(lines[i])) {
+          return i + 1;
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  // Effect to handle code view highlighting from context menu
+  useEffect(() => {
+    if (highlightedNodeId && highlightFormat) {
+      // Open code view with the correct tab
+      setShowJsonView(true);
+      setCodeViewMode(highlightFormat);
+      
+      // Find the line number in the generated content
+      const content = highlightFormat === "json" ? generateJsonString() : generateDexpiXml();
+      const lineNumber = findNodeLineNumber(content, highlightedNodeId, highlightFormat);
+      
+      if (lineNumber) {
+        setHighlightLine(lineNumber);
+        
+        // Scroll to line after a short delay to allow CodeMirror to render
+        setTimeout(() => {
+          const editorRef = highlightFormat === "json" ? jsonEditorRef : dexpiEditorRef;
+          const view = editorRef.current?.view;
+          
+          if (view) {
+            const line = view.state.doc.line(Math.min(lineNumber, view.state.doc.lines));
+            view.dispatch({
+              effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+              selection: { anchor: line.from, head: line.to },
+            });
+          }
+        }, 100);
+      }
+    }
+  }, [highlightedNodeId, highlightFormat, generateJsonString, generateDexpiXml, findNodeLineNumber, setHighlightLine]);
+
+  // Clear highlight when closing code view
+  useEffect(() => {
+    if (!showJsonView && highlightedNodeId) {
+      clearHighlight();
+    }
+  }, [showJsonView, highlightedNodeId, clearHighlight]);
 
   const handleTranscript = useCallback(
     async (text: string) => {
@@ -932,6 +1029,7 @@ export default function DiagramPage() {
                   {/* Tab Content */}
                   <TabsContent value="json" className="flex-1 overflow-hidden m-0 ring-0 w-full">
                     <CodeMirror
+                      ref={jsonEditorRef}
                       value={jsonEditMode ? editableJson : generateJsonString()}
                       height="100%"
                       width="100%"
@@ -948,7 +1046,7 @@ export default function DiagramPage() {
                       basicSetup={{
                         lineNumbers: true,
                         highlightActiveLineGutter: true,
-                        highlightActiveLine: jsonEditMode,
+                        highlightActiveLine: jsonEditMode || !!highlightedNodeId,
                         foldGutter: true,
                         bracketMatching: true,
                         closeBrackets: jsonEditMode,
@@ -961,6 +1059,7 @@ export default function DiagramPage() {
 
                   <TabsContent value="dexpi" className="flex-1 overflow-hidden m-0 ring-0 w-full">
                     <CodeMirror
+                      ref={dexpiEditorRef}
                       value={generateDexpiXml()}
                       height="100%"
                       width="100%"
@@ -971,6 +1070,7 @@ export default function DiagramPage() {
                       basicSetup={{
                         lineNumbers: true,
                         highlightActiveLineGutter: true,
+                        highlightActiveLine: !!highlightedNodeId,
                         foldGutter: true,
                         bracketMatching: true,
                       }}
@@ -984,50 +1084,52 @@ export default function DiagramPage() {
             )}
 
             {/* Voice Controller Overlay */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
-              {/* Test Buttons */}
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex gap-2">
-                <button
-                  onClick={() => handleTranscript("Add a rectangle and a circle and connect them")}
-                  disabled={isProcessing}
-                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  Test: Add shapes
-                </button>
-                <button
-                  onClick={() => {
-                    const firstNode = nodes[0];
-                    if (firstNode) {
-                      console.log("[Test] Setting property on node:", firstNode.id);
-                      const { updateNode } = useDiagramStore.getState();
-                      const existingProps = (firstNode.data?.properties as Record<string, string>) || {};
-                      updateNode(firstNode.id, {
-                        data: {
-                          ...firstNode.data,
-                          properties: { ...existingProps, testProp: "testValue" },
-                        },
-                      });
-                      console.log("[Test] Property set, verifying...");
-                      const verifyNode = useDiagramStore.getState().nodes.find(n => n.id === firstNode.id);
-                      console.log("[Test] Node after update:", JSON.stringify(verifyNode?.data, null, 2));
-                    } else {
-                      console.log("[Test] No nodes to update");
-                    }
-                  }}
-                  disabled={nodes.length === 0}
-                  className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-600 rounded border border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  Test: Set Property
-                </button>
+            {showChatInput && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+                {/* Test Buttons */}
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex gap-2">
+                  <button
+                    onClick={() => handleTranscript("Add a rectangle and a circle and connect them")}
+                    disabled={isProcessing}
+                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    Test: Add shapes
+                  </button>
+                  <button
+                    onClick={() => {
+                      const firstNode = nodes[0];
+                      if (firstNode) {
+                        console.log("[Test] Setting property on node:", firstNode.id);
+                        const { updateNode } = useDiagramStore.getState();
+                        const existingProps = (firstNode.data?.properties as Record<string, string>) || {};
+                        updateNode(firstNode.id, {
+                          data: {
+                            ...firstNode.data,
+                            properties: { ...existingProps, testProp: "testValue" },
+                          },
+                        });
+                        console.log("[Test] Property set, verifying...");
+                        const verifyNode = useDiagramStore.getState().nodes.find(n => n.id === firstNode.id);
+                        console.log("[Test] Node after update:", JSON.stringify(verifyNode?.data, null, 2));
+                      } else {
+                        console.log("[Test] No nodes to update");
+                      }
+                    }}
+                    disabled={nodes.length === 0}
+                    className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-600 rounded border border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    Test: Set Property
+                  </button>
+                </div>
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+                  <VoiceController
+                    onTranscript={handleTranscript}
+                    disabled={isProcessing}
+                    dictionary={dictionaryEnabled ? dictionary : []}
+                  />
+                </div>
               </div>
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
-                <VoiceController
-                  onTranscript={handleTranscript}
-                  disabled={isProcessing}
-                  dictionary={dictionaryEnabled ? dictionary : []}
-                />
-              </div>
-            </div>
+            )}
 
             {/* Transcript/Response Toast */}
             {showTranscript && (
