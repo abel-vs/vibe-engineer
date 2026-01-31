@@ -7,6 +7,7 @@ import {
   createDrawioPidNodeType,
   DrawioPidNodeComponent,
 } from "./drawio-pid-node";
+import { nozzleNodeTypes } from "./nozzle-node";
 import { pfdNodeTypes, pfdSimplifiedNodeTypes } from "./pfd-nodes";
 import { playgroundNodeTypes } from "./playground-nodes";
 
@@ -40,6 +41,7 @@ export const allNodeTypes = {
   ...pfdSimplifiedNodeTypes,
   ...dexpiNodeTypes,
   ...drawioPidNodeTypes,
+  ...nozzleNodeTypes,
 };
 
 export function getNodeTypesForMode(mode: DiagramMode) {
@@ -52,8 +54,13 @@ export function getNodeTypesForMode(mode: DiagramMode) {
       // PFD mode uses simplified generic equipment symbols
       return pfdSimplifiedNodeTypes;
     case "pid":
-      // P&ID mode uses full DEXPI and Draw.io P&ID node types (including valves/instruments)
-      return { ...pfdNodeTypes, ...dexpiNodeTypes, ...drawioPidNodeTypes };
+      // P&ID mode uses full DEXPI and Draw.io P&ID node types (including valves/instruments/nozzles)
+      return {
+        ...pfdNodeTypes,
+        ...dexpiNodeTypes,
+        ...drawioPidNodeTypes,
+        ...nozzleNodeTypes,
+      };
     default:
       return allNodeTypes;
   }
@@ -61,6 +68,7 @@ export function getNodeTypesForMode(mode: DiagramMode) {
 
 export {
   bfdNodeTypes,
+  nozzleNodeTypes,
   pfdNodeTypes,
   pfdSimplifiedNodeTypes,
   playgroundNodeTypes,
