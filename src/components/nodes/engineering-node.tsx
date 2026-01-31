@@ -1,9 +1,8 @@
 "use client";
 
-import { STYLES } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import { Handle, NodeResizer, Position, useEdges, type Node, type NodeProps } from "@xyflow/react";
-import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useMemo } from "react";
 
 export type EngineeringNodeData = {
   label: string;
@@ -25,11 +24,6 @@ const HANDLE_POSITIONS = [
   { position: Position.Right, id: "right" },
 ] as const;
 
-// Snap a value up to the nearest grid multiple
-function snapToGrid(value: number, gridSize: number): number {
-  return Math.ceil(value / gridSize) * gridSize;
-}
-
 export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
   props: EngineeringNodeComponentProps
 ) {
@@ -37,24 +31,6 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
   const properties = data?.properties ?? {};
   const hasProperties = Object.keys(properties).length > 0;
   const edges = useEdges();
-  const styleConfig = STYLES.engineering;
-  const gridGap = styleConfig.canvas.gridGap;
-  
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [snappedWidth, setSnappedWidth] = useState<number | undefined>(undefined);
-  const [snappedHeight, setSnappedHeight] = useState<number | undefined>(undefined);
-
-  // Measure content and snap dimensions to grid
-  useLayoutEffect(() => {
-    if (contentRef.current) {
-      const { offsetWidth, offsetHeight } = contentRef.current;
-      // Add border width (2px on each side = 4px total)
-      const totalWidth = offsetWidth + 4;
-      const totalHeight = offsetHeight + 4;
-      setSnappedWidth(snapToGrid(totalWidth, gridGap));
-      setSnappedHeight(snapToGrid(totalHeight, gridGap));
-    }
-  }, [data, gridGap, hasProperties]);
 
   // Determine which handles are connected (check both source and target for each handle)
   const connectedHandles = useMemo(() => {
@@ -74,7 +50,7 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
     return connected;
   }, [edges, id]);
 
-  // Support resizing from props
+  // Support resizing from props (set by NodeResizer)
   const propsWidth = (props as EngineeringNodeComponentProps & { width?: number }).width;
   const propsHeight = (props as EngineeringNodeComponentProps & { height?: number }).height;
 
@@ -85,8 +61,9 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
         selected && "border-blue-500 ring-2 ring-blue-200"
       )}
       style={{
-        width: propsWidth ?? (snappedWidth ? `${snappedWidth}px` : 'auto'),
-        height: propsHeight ?? (snappedHeight ? `${snappedHeight}px` : 'auto'),
+        // Only apply explicit dimensions if set by NodeResizer, otherwise let content determine size
+        ...(propsWidth ? { width: propsWidth } : {}),
+        ...(propsHeight ? { height: propsHeight } : {}),
       }}
     >
       <NodeResizer
@@ -111,11 +88,8 @@ export const EngineeringNodeComponent = memo(function EngineeringNodeComponent(
         />
       ))}
 
-      {/* Content - wrapped for measurement */}
-      <div 
-        ref={contentRef}
-        className="px-3 py-2 flex flex-col justify-center h-full"
-      >
+      {/* Content */}
+      <div className="px-3 py-2 flex flex-col justify-center">
         {/* Label - Bold */}
         <div className="font-bold text-black text-sm">
           {data?.label || originalType?.toUpperCase() || "NODE"}

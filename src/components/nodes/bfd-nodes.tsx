@@ -29,7 +29,6 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         "px-6 py-4 rounded-lg border-2 bg-blue-50 shadow-md min-w-[140px] min-h-[50px] text-center",
         selected ? "border-blue-600 shadow-lg ring-2 ring-blue-300" : "border-blue-400"
       )}
-      style={{ width: props.width, height: props.height }}
     >
       <NodeResizer
         minWidth={140}
@@ -38,32 +37,19 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         lineClassName="!border-blue-600"
         handleClassName="!w-2 !h-2 !bg-blue-600 !border-white"
       />
-      {/* Target handles (incoming) */}
+      {/* Handles - all type="source" for bidirectional connections with ConnectionMode.Loose */}
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
         id="left"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
         id="top"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id="bottom-in"
-        className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
-      />
-      <div className="font-bold text-blue-900 flex items-center justify-center h-full flex-col">
-        {data.label}
-        {data.description && (
-          <div className="text-xs text-blue-700 mt-1">{data.description}</div>
-        )}
-      </div>
-      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
@@ -76,6 +62,12 @@ export const ProcessBlockNode = memo(function ProcessBlockNode(props: NodeProps<
         id="bottom"
         className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white"
       />
+      <div className="font-bold text-blue-900 flex items-center justify-center flex-col">
+        {data.label}
+        {data.description && (
+          <div className="text-xs text-blue-700 mt-1">{data.description}</div>
+        )}
+      </div>
     </div>
   );
 });
@@ -91,10 +83,7 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
 
   // Render as simple text element
   return (
-    <div 
-      className="relative min-w-[60px] min-h-[24px]"
-      style={{ width: props.width, height: props.height }}
-    >
+    <div className="relative min-w-[60px] min-h-[24px]">
       <NodeResizer
         minWidth={60}
         minHeight={24}
@@ -102,34 +91,19 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
         lineClassName="!border-gray-400"
         handleClassName="!w-2 !h-2 !bg-gray-400 !border-white"
       />
-      {/* Target handles (incoming) */}
+      {/* Handles - all type="source" for bidirectional connections with ConnectionMode.Loose */}
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
         id="left"
         className="!w-2 !h-2 !bg-gray-400 !border !border-white !opacity-50"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
         id="top"
         className="!w-2 !h-2 !bg-gray-400 !border !border-white !opacity-50"
       />
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id="bottom-in"
-        className="!w-2 !h-2 !bg-gray-400 !border !border-white !opacity-50"
-      />
-      <div
-        className={cn(
-          "px-2 py-1 text-center h-full flex items-center justify-center",
-          selected ? "bg-blue-50 rounded" : ""
-        )}
-      >
-        <div className="font-medium text-gray-700 text-sm">{data.label}</div>
-      </div>
-      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
@@ -142,6 +116,14 @@ export const InputOutputNode = memo(function InputOutputNode(props: NodeProps<BF
         id="bottom"
         className="!w-2 !h-2 !bg-gray-400 !border !border-white !opacity-50"
       />
+      <div
+        className={cn(
+          "px-2 py-1 text-center flex items-center justify-center",
+          selected ? "bg-blue-50 rounded" : ""
+        )}
+      >
+        <div className="font-medium text-gray-700 text-sm">{data.label}</div>
+      </div>
     </div>
   );
 });
@@ -162,7 +144,6 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         "border-b-4",
         selected ? "border-amber-600 shadow-lg ring-2 ring-amber-300" : "border-amber-400"
       )}
-      style={{ width: props.width, height: props.height }}
     >
       <NodeResizer
         minWidth={100}
@@ -171,32 +152,19 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         lineClassName="!border-amber-600"
         handleClassName="!w-2 !h-2 !bg-amber-600 !border-white"
       />
-      {/* Target handles (incoming) */}
+      {/* Handles - all type="source" for bidirectional connections with ConnectionMode.Loose */}
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
         id="left"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
         id="top"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id="bottom-in"
-        className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
-      />
-      <div className="font-semibold text-amber-900 flex items-center justify-center h-full flex-col">
-        {data.label}
-        {data.description && (
-          <div className="text-xs text-amber-700 mt-1">{data.description}</div>
-        )}
-      </div>
-      {/* Source handles (outgoing) */}
       <Handle
         type="source"
         position={Position.Right}
@@ -209,6 +177,12 @@ export const StorageNode = memo(function StorageNode(props: NodeProps<BFDNode>) 
         id="bottom"
         className="!w-3 !h-3 !bg-amber-600 !border-2 !border-white"
       />
+      <div className="font-semibold text-amber-900 flex items-center justify-center flex-col">
+        {data.label}
+        {data.description && (
+          <div className="text-xs text-amber-700 mt-1">{data.description}</div>
+        )}
+      </div>
     </div>
   );
 });

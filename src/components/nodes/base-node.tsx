@@ -37,13 +37,27 @@ export const BaseNodeComponent = memo(function BaseNodeComponent({
       {showHandles && (
         <>
           <Handle
-            type="target"
+            type="source"
             position={Position.Left}
+            id="left"
             className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
           />
           <Handle
             type="source"
             position={Position.Right}
+            id="right"
+            className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
+          />
+          <Handle
+            type="source"
+            position={Position.Top}
+            id="top"
+            className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
+          />
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="bottom"
             className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
           />
         </>

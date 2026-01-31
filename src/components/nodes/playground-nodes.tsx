@@ -1,9 +1,9 @@
 "use client";
 
-import { memo } from "react";
-import { Handle, NodeResizer, Position, type NodeProps, type Node } from "@xyflow/react";
-import { cn } from "@/lib/utils";
 import { useDiagramStore } from "@/hooks/use-diagram-store";
+import { cn } from "@/lib/utils";
+import { Handle, NodeResizer, Position, type Node, type NodeProps } from "@xyflow/react";
+import { memo } from "react";
 import { EngineeringNodeComponent } from "./engineering-node";
 
 type PlaygroundNodeData = {
@@ -29,7 +29,6 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
         "px-6 py-4 rounded-lg border-2 bg-white shadow-md min-w-[100px] min-h-[40px] text-center",
         selected ? "border-blue-500 shadow-lg ring-2 ring-blue-200" : "border-gray-400"
       )}
-      style={{ width: props.width, height: props.height }}
     >
       <NodeResizer
         minWidth={100}
@@ -39,14 +38,28 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
         handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
       />
-      <div className="font-medium text-gray-800 flex items-center justify-center h-full">{data.label}</div>
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
+      />
+      <div className="font-medium text-gray-800 flex items-center justify-center">{data.label}</div>
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
       />
     </div>
@@ -57,7 +70,6 @@ export const RectangleNode = memo(function RectangleNode(props: NodeProps<Playgr
 export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
-  const size = props.width || props.height || 80;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="circle" />;
@@ -66,10 +78,9 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
   return (
     <div
       className={cn(
-        "rounded-full border-2 bg-white shadow-md flex items-center justify-center",
+        "w-20 h-20 rounded-full border-2 bg-white shadow-md flex items-center justify-center",
         selected ? "border-green-500 shadow-lg ring-2 ring-green-200" : "border-gray-400"
       )}
-      style={{ width: size, height: size, minWidth: 60, minHeight: 60 }}
     >
       <NodeResizer
         minWidth={60}
@@ -80,8 +91,21 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
         handleClassName="!w-2 !h-2 !bg-green-500 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
+        id="left"
+        className="!w-3 !h-3 !bg-green-500 !border-2 !border-white"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-green-500 !border-2 !border-white"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
         className="!w-3 !h-3 !bg-green-500 !border-2 !border-white"
       />
       <div className="font-medium text-gray-800 text-sm text-center px-1">
@@ -90,6 +114,7 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-green-500 !border-2 !border-white"
       />
     </div>
@@ -100,14 +125,13 @@ export const CircleNode = memo(function CircleNode(props: NodeProps<PlaygroundNo
 export const DiamondNode = memo(function DiamondNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
-  const size = props.width || props.height || 96;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="diamond" />;
   }
 
   return (
-    <div className="relative" style={{ width: size, height: size, minWidth: 60, minHeight: 60 }}>
+    <div className="relative w-24 h-24">
       <NodeResizer
         minWidth={60}
         minHeight={60}
@@ -117,9 +141,22 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
         handleClassName="!w-2 !h-2 !bg-orange-500 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white !left-0 !top-1/2"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white !top-0 !left-1/2"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white !bottom-0 !left-1/2"
       />
       <div
         className={cn(
@@ -135,6 +172,7 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white !right-0 !top-1/2"
       />
     </div>
@@ -145,15 +183,13 @@ export const DiamondNode = memo(function DiamondNode(props: NodeProps<Playground
 export const TriangleNode = memo(function TriangleNode(props: NodeProps<PlaygroundNode>) {
   const { data, selected } = props;
   const style = useDiagramStore((state) => state.style);
-  const width = props.width || 96;
-  const height = props.height || 80;
 
   if (style === "engineering") {
     return <EngineeringNodeComponent {...props} originalType="triangle" />;
   }
 
   return (
-    <div className="relative" style={{ width, height, minWidth: 60, minHeight: 50 }}>
+    <div className="relative w-24 h-20">
       <NodeResizer
         minWidth={60}
         minHeight={50}
@@ -162,9 +198,22 @@ export const TriangleNode = memo(function TriangleNode(props: NodeProps<Playgrou
         handleClassName="!w-2 !h-2 !bg-purple-500 !border-white"
       />
       <Handle
-        type="target"
+        type="source"
         position={Position.Left}
+        id="left"
         className="!w-3 !h-3 !bg-purple-500 !border-2 !border-white !top-1/2"
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        className="!w-3 !h-3 !bg-purple-500 !border-2 !border-white !top-0 !left-1/2"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        className="!w-3 !h-3 !bg-purple-500 !border-2 !border-white !bottom-0 !left-1/2"
       />
       <svg viewBox="0 0 100 87" className="w-full h-full">
         <polygon
@@ -182,6 +231,7 @@ export const TriangleNode = memo(function TriangleNode(props: NodeProps<Playgrou
       <Handle
         type="source"
         position={Position.Right}
+        id="right"
         className="!w-3 !h-3 !bg-purple-500 !border-2 !border-white !top-1/2"
       />
     </div>
@@ -203,7 +253,6 @@ export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>)
         "px-3 py-2 bg-transparent min-w-[50px] min-h-[24px]",
         selected && "outline outline-2 outline-blue-500 outline-dashed rounded"
       )}
-      style={{ width: props.width, height: props.height }}
     >
       <NodeResizer
         minWidth={50}
@@ -212,7 +261,7 @@ export const TextNode = memo(function TextNode(props: NodeProps<PlaygroundNode>)
         lineClassName="!border-blue-500"
         handleClassName="!w-2 !h-2 !bg-blue-500 !border-white"
       />
-      <div className="text-gray-800 font-medium flex items-center h-full">{data.label}</div>
+      <div className="text-gray-800 font-medium flex items-center">{data.label}</div>
     </div>
   );
 });

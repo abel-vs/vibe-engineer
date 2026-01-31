@@ -150,36 +150,13 @@ export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
           <div className="w-full h-full bg-gray-50 animate-pulse rounded" />
         )}
 
-        {/* Target handles first (underneath) - receive connections but don't intercept drag starts */}
+        {/* Handles - all source type for bidirectional connections with ConnectionMode.Loose */}
         {connectionPoints.map((cp) => {
           const posHint = getPositionHint(cp);
           const isConnected = connectedHandles.has(cp.name);
           return (
             <Handle
-              key={`target-${cp.name}`}
-              id={cp.name}
-              type="target"
-              position={positionMap[posHint]}
-              isConnectable={true}
-              className={cn(
-                "!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full !pointer-events-none",
-                isConnected && "connected-handle"
-              )}
-              style={{
-                left: `${cp.x * 100}%`,
-                top: `${cp.y * 100}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          );
-        })}
-        {/* Source handles second (on top) - initiate outgoing connections */}
-        {connectionPoints.map((cp) => {
-          const posHint = getPositionHint(cp);
-          const isConnected = connectedHandles.has(cp.name);
-          return (
-            <Handle
-              key={`source-${cp.name}`}
+              key={cp.name}
               id={cp.name}
               type="source"
               position={positionMap[posHint]}
@@ -197,15 +174,9 @@ export const DrawioPidNodeComponent = memo(function DrawioPidNodeComponent(
           );
         })}
 
-        {/* Fallback handles if no connection points defined */}
+        {/* Fallback handles if no connection points defined - all source type for bidirectional connections */}
         {connectionPoints.length === 0 && (
           <>
-            {/* Target handles first (underneath, no pointer events) */}
-            <Handle type="target" position={Position.Top} id="N" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full !pointer-events-none" style={{ left: "50%", top: 0, transform: "translate(-50%, -50%)" }} />
-            <Handle type="target" position={Position.Bottom} id="S" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full !pointer-events-none" style={{ left: "50%", top: "100%", transform: "translate(-50%, -50%)" }} />
-            <Handle type="target" position={Position.Left} id="W" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full !pointer-events-none" style={{ left: 0, top: "50%", transform: "translate(-50%, -50%)" }} />
-            <Handle type="target" position={Position.Right} id="E" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full !pointer-events-none" style={{ left: "100%", top: "50%", transform: "translate(-50%, -50%)" }} />
-            {/* Source handles second (on top) */}
             <Handle type="source" position={Position.Top} id="N" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full" style={{ left: "50%", top: 0, transform: "translate(-50%, -50%)" }} />
             <Handle type="source" position={Position.Bottom} id="S" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full" style={{ left: "50%", top: "100%", transform: "translate(-50%, -50%)" }} />
             <Handle type="source" position={Position.Left} id="W" className="!w-1.5 !h-1.5 !bg-gray-600 !border-0 !rounded-full" style={{ left: 0, top: "50%", transform: "translate(-50%, -50%)" }} />
