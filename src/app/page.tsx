@@ -81,7 +81,7 @@ export default function DiagramPage() {
   const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([]);
   const [canvasResetKey, setCanvasResetKey] = useState(0);
   const [showJsonView, setShowJsonView] = useState(false);
-  const [codeViewMode, setCodeViewMode] = useState<"json" | "dexpi">("json");
+  const [codeViewMode, setCodeViewMode] = useState<"json" | "dexpi" | "original">("json");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -94,11 +94,12 @@ export default function DiagramPage() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { dictionary, dictionaryEnabled, showChatInput } = useSettings();
-  const { highlightedNodeId, highlightFormat, clearHighlight, setHighlightLine } = useCodeView();
+  const { highlightedElementId, highlightedElementType, highlightFormat, clearHighlight, setHighlightLine } = useCodeView();
   
   // CodeMirror refs for programmatic scrolling
   const jsonEditorRef = useRef<ReactCodeMirrorRef>(null);
   const dexpiEditorRef = useRef<ReactCodeMirrorRef>(null);
+  const originalEditorRef = useRef<ReactCodeMirrorRef>(null);
 
   const handleDebugLog = useCallback((log: DebugLog) => {
     setDebugLogs((prev) => [...prev, log]);
@@ -112,11 +113,15 @@ export default function DiagramPage() {
   const { processVoiceCommand, reset: resetVoiceCommands, isProcessing, lastResponse, error } = useVoiceCommands({
     onDebugLog: handleDebugLog,
   });
-  const { nodes, edges, mode, style, loadDiagram, resetCanvas, undo, redo, canUndo, canRedo, organizeLayout, clearPinnedNodes, setMode } = useDiagramStore();
+  const { nodes, edges, mode, style, originalXml, loadDiagram, resetCanvas, undo, redo, canUndo, canRedo, organizeLayout, clearPinnedNodes, setMode } = useDiagramStore();
 
-  // Import dialogs
+  // Import dialogs - wrap loadDiagram to pass originalXml
+  const handleImportComplete = useCallback((importedNodes: typeof nodes, importedEdges: typeof edges, importedMode: typeof mode, importedOriginalXml?: string) => {
+    loadDiagram(importedNodes, importedEdges, importedMode, undefined, importedOriginalXml);
+  }, [loadDiagram]);
+
   const { triggerImport, importData, showWarnings, dialogs: importDialogs } = ImportDialogs({
-    onImportComplete: loadDiagram,
+    onImportComplete: handleImportComplete,
     hasExistingContent: nodes.length > 0,
   });
 
@@ -349,6 +354,7 @@ export default function DiagramPage() {
           edges: result.edges,
           mode: result.mode,
           warnings: allWarnings,
+          originalXml: text, // Preserve original XML from paste
         });
       } catch (err) {
         console.error("Failed to parse pasted DEXPI XML:", err);
@@ -359,21 +365,21 @@ export default function DiagramPage() {
     return () => window.removeEventListener("paste", handlePaste);
   }, [jsonEditMode, importData]);
 
-  // Helper function to find line number for a node ID in content
-  const findNodeLineNumber = useCallback((content: string, nodeId: string, format: "json" | "dexpi"): number | null => {
+  // Helper function to find line number for a node or edge ID in content
+  const findElementLineNumber = useCallback((content: string, elementId: string, format: "json" | "dexpi"): number | null => {
     const lines = content.split("\n");
     
     if (format === "json") {
-      // Look for "id": "nodeId" pattern
-      const pattern = new RegExp(`"id":\\s*"${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
+      // Look for "id": "elementId" pattern
+      const pattern = new RegExp(`"id":\\s*"${elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
       for (let i = 0; i < lines.length; i++) {
         if (pattern.test(lines[i])) {
           return i + 1; // Line numbers are 1-indexed
         }
       }
     } else {
-      // Look for id="nodeId" pattern in XML
-      const pattern = new RegExp(`id="${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
+      // Look for id="elementId" pattern in XML (for DEXPI)
+      const pattern = new RegExp(`id="${elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`);
       for (let i = 0; i < lines.length; i++) {
         if (pattern.test(lines[i])) {
           return i + 1;
@@ -383,23 +389,31 @@ export default function DiagramPage() {
     return null;
   }, []);
 
-  // Effect to handle code view highlighting from context menu
+  // Effect to handle code view highlighting from context menu (for both nodes and edges)
   useEffect(() => {
-    if (highlightedNodeId && highlightFormat) {
+    if (highlightedElementId && highlightFormat) {
       // Open code view with the correct tab
       setShowJsonView(true);
       setCodeViewMode(highlightFormat);
       
       // Find the line number in the generated content
-      const content = highlightFormat === "json" ? generateJsonString() : generateDexpiXml();
-      const lineNumber = findNodeLineNumber(content, highlightedNodeId, highlightFormat);
+      const content = highlightFormat === "json" 
+        ? generateJsonString() 
+        : highlightFormat === "original" 
+          ? (originalXml || "")
+          : generateDexpiXml();
+      const lineNumber = findElementLineNumber(content, highlightedElementId, highlightFormat === "original" ? "dexpi" : highlightFormat);
       
       if (lineNumber) {
         setHighlightLine(lineNumber);
         
         // Scroll to line after a short delay to allow CodeMirror to render
         setTimeout(() => {
-          const editorRef = highlightFormat === "json" ? jsonEditorRef : dexpiEditorRef;
+          const editorRef = highlightFormat === "json" 
+            ? jsonEditorRef 
+            : highlightFormat === "original" 
+              ? originalEditorRef 
+              : dexpiEditorRef;
           const view = editorRef.current?.view;
           
           if (view) {
@@ -412,14 +426,14 @@ export default function DiagramPage() {
         }, 100);
       }
     }
-  }, [highlightedNodeId, highlightFormat, generateJsonString, generateDexpiXml, findNodeLineNumber, setHighlightLine]);
+  }, [highlightedElementId, highlightFormat, generateJsonString, generateDexpiXml, originalXml, findElementLineNumber, setHighlightLine]);
 
   // Clear highlight when closing code view
   useEffect(() => {
-    if (!showJsonView && highlightedNodeId) {
+    if (!showJsonView && highlightedElementId) {
       clearHighlight();
     }
-  }, [showJsonView, highlightedNodeId, clearHighlight]);
+  }, [showJsonView, highlightedElementId, clearHighlight]);
 
   const handleTranscript = useCallback(
     async (text: string) => {
@@ -926,7 +940,7 @@ export default function DiagramPage() {
               <div className="w-full h-full flex flex-col bg-gray-900 relative overflow-hidden">
                 <Tabs
                   value={codeViewMode}
-                  onValueChange={(value) => setCodeViewMode(value as "json" | "dexpi")}
+                  onValueChange={(value) => setCodeViewMode(value as "json" | "dexpi" | "original")}
                   className="flex flex-col h-full"
                 >
                   {/* Toolbar with Tabs and Actions */}
@@ -934,7 +948,7 @@ export default function DiagramPage() {
                     {/* Tabs */}
                     <TabsList className="bg-neutral-900 border border-neutral-700">
                       <TabsTrigger value="json" className="data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100 text-neutral-400">
-                        JSON
+                        JSON DEXPI 2.0
                       </TabsTrigger>
                       <TabsTrigger
                         value="dexpi"
@@ -942,8 +956,17 @@ export default function DiagramPage() {
                         disabled={!canExportToDexpi(mode)}
                         title={!canExportToDexpi(mode) ? "DEXPI XML is only available in BFD/PFD/P&ID modes" : undefined}
                       >
-                        DEXPI XML
+                        DEXPI 2.0 XML
                       </TabsTrigger>
+                      {originalXml && (
+                        <TabsTrigger
+                          value="original"
+                          className="data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100 text-neutral-400"
+                          title="View the original imported XML"
+                        >
+                          XML Original
+                        </TabsTrigger>
+                      )}
                     </TabsList>
 
                     {/* Action Buttons */}
@@ -997,12 +1020,14 @@ export default function DiagramPage() {
                         onClick={() => {
                           const content = codeViewMode === "json"
                             ? (jsonEditMode ? editableJson : generateJsonString())
-                            : generateDexpiXml();
+                            : codeViewMode === "original"
+                              ? (originalXml || "")
+                              : generateDexpiXml();
                           navigator.clipboard.writeText(content);
                           setJsonCopied(true);
                           setTimeout(() => setJsonCopied(false), 2000);
                         }}
-                        title={`Copy ${codeViewMode === "json" ? "JSON" : "DEXPI XML"} to clipboard`}
+                        title={`Copy ${codeViewMode === "json" ? "JSON" : codeViewMode === "original" ? "Original XML" : "DEXPI XML"} to clipboard`}
                       >
                         {jsonCopied ? (
                           <>
@@ -1046,7 +1071,7 @@ export default function DiagramPage() {
                       basicSetup={{
                         lineNumbers: true,
                         highlightActiveLineGutter: true,
-                        highlightActiveLine: jsonEditMode || !!highlightedNodeId,
+                        highlightActiveLine: jsonEditMode || !!highlightedElementId,
                         foldGutter: true,
                         bracketMatching: true,
                         closeBrackets: jsonEditMode,
@@ -1070,13 +1095,36 @@ export default function DiagramPage() {
                       basicSetup={{
                         lineNumbers: true,
                         highlightActiveLineGutter: true,
-                        highlightActiveLine: !!highlightedNodeId,
+                        highlightActiveLine: !!highlightedElementId,
                         foldGutter: true,
                         bracketMatching: true,
                       }}
                       className="h-full w-full max-w-full [&_.cm-editor]:h-full [&_.cm-editor]:w-full [&_.cm-scroller]:overflow-auto"
                     />
                   </TabsContent>
+
+                  {originalXml && (
+                    <TabsContent value="original" className="flex-1 overflow-hidden m-0 ring-0 w-full">
+                      <CodeMirror
+                        ref={originalEditorRef}
+                        value={originalXml}
+                        height="100%"
+                        width="100%"
+                        theme={vscodeDark}
+                        extensions={xmlExtensions}
+                        editable={false}
+                        readOnly={true}
+                        basicSetup={{
+                          lineNumbers: true,
+                          highlightActiveLineGutter: true,
+                          highlightActiveLine: !!highlightedElementId,
+                          foldGutter: true,
+                          bracketMatching: true,
+                        }}
+                        className="h-full w-full max-w-full [&_.cm-editor]:h-full [&_.cm-editor]:w-full [&_.cm-scroller]:overflow-auto"
+                      />
+                    </TabsContent>
+                  )}
                 </Tabs>
               </div>
             ) : (
