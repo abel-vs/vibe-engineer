@@ -785,7 +785,7 @@ const DrawioSvgPreview = memo(function DrawioSvgPreview({ path, className }: Dra
       })
       .then((text) => {
         // Hide connection points group
-        let cleaned = text.replace(
+        const cleaned = text.replace(
           /<g class="connection-points"[^>]*>[\s\S]*?<\/g>/gi,
           ""
         );
